@@ -1,9 +1,16 @@
 package com.example.backend.controllers;
 
+import com.example.backend.dto.JwtLoginResponseDto;
+import com.example.backend.dto.LoginRequestDto;
+import com.example.backend.dto.RegisterRequestDto;
+import com.example.backend.dto.RegisterResponseDto;
+import com.example.backend.exceptions.UserAlreadyExistsException;
+import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.exceptions.InvalidCredentialsException;
+import com.example.backend.services.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.auth.InvalidCredentialsException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,13 +21,13 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+@WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTests {
 
@@ -38,33 +45,37 @@ public class AuthControllerTests {
     private LoginRequestDto loginRequestDto;
     private JwtLoginResponseDto jwtLoginResponseDto;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         LocalDateTime datetime = LocalDateTime.now();
 
         registerRequest = RegisterRequestDto.builder()
                 .username("username")
                 .displayName("displayName")
-                .email("email")
-                .password("password")
-                .description("description");
+                .email("email@gmail.com")
+                .password("password1!")
+                .description("description")
+                .build();
 
         registerResponse = RegisterResponseDto.builder()
                 .publicId("publicId")
                 .username("username")
                 .displayName("displayName")
-                .email("email")
+                .email("email@gmail.com")
                 .description("description")
                 .registrationDate(datetime)
-                .lastUpdatedAt(datetime);
+                .lastUpdatedAt(datetime)
+                .build();
 
         loginRequestDto = LoginRequestDto.builder()
                 .username("username")
-                .password("passowrd");
+                .password("password1!")
+                .build();
 
         jwtLoginResponseDto = JwtLoginResponseDto.builder()
                 .token("token")
-                .refreshToken("refreshToken");
+                .refreshToken("refreshToken")
+                .build();
     }
 
     @Test
