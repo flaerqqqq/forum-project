@@ -5,8 +5,16 @@ import com.example.backend.dto.LoginRequestDto;
 import com.example.backend.dto.RegisterRequestDto;
 import com.example.backend.dto.RegisterResponseDto;
 import com.example.backend.exceptions.InvalidCredentialsException;
+import com.example.backend.exceptions.RoleNotFoundException;
 import com.example.backend.exceptions.UserAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.models.Role;
+import com.example.backend.models.User;
+import com.example.backend.repositories.RoleRepository;
+import com.example.backend.repositories.UserRepository;
+import com.example.backend.security.CustomUserDetails;
+import com.example.backend.services.impls.JwtServiceImpl;
+import com.example.backend.services.impls.RefreshTokenServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,13 +22,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import javax.management.relation.RoleNotFoundException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -32,13 +38,16 @@ import static org.mockito.Mockito.when;
 public class AuthServiceTests {
 
     @MockitoBean
-    PasswordEncoder passwordEncoder;
-
-    @MockitoBean
     UserRepository userRepository;
 
     @MockitoBean
     RoleRepository roleRepository;
+
+    @MockitoBean
+    JwtServiceImpl jwtService;
+
+    @MockitoBean
+    RefreshTokenServiceImpl refreshTokenService;
 
     @MockitoBean
     AuthenticationManager authManager;
@@ -63,7 +72,6 @@ public class AuthServiceTests {
 
     @BeforeEach
     public void setUp() {
-
         user = User.builder()
                 .id(1L)
                 .publicId("publicId")
@@ -78,17 +86,16 @@ public class AuthServiceTests {
                 .avatarUrl("avatarUrl")
                 .registrationDate(datetime)
                 .lastUpdatedAt(datetime)
-                .emailVerified(true)
+                .isEmailVerified(true)
+                .roles(new ArrayList<>())
                 .build();
-
-        customUserDetails = new CustomUserDetails(user);
 
         userRole = Role.builder()
                 .id(1L)
-                .name(Role.RoleName.USER_ROLE)
+                .name(Role.RoleName.ROLE_USER)
                 .build();
 
-        user.getRoles().add(userRole);
+        customUserDetails = new CustomUserDetails(user);
 
         registerRequestDto = RegisterRequestDto.builder()
                 .username("username")
@@ -123,20 +130,17 @@ public class AuthServiceTests {
                 password,
                 customUserDetails.getAuthorities()
         );
-        authenticatedToken.setAuthenticated(true);
 
         unauthenticatedToken = new UsernamePasswordAuthenticationToken(
                 user.getUsername(),
-                password,
-                customUserDetails.getAuthorities()
+                password
         );
     }
 
     @Test
     public void register_shouldReturnResponse_whenValidRequest() {
-        when(passwordEncoder.encode(anyString())).thenReturn(password);
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(roleRepository.findByUsername(anyString())).thenReturn(userRole);
+        when(roleRepository.findByName(any(Role.RoleName.class))).thenReturn(Optional.of(userRole));
 
         RegisterResponseDto actualResponse = authService.register(registerRequestDto);
 
@@ -145,21 +149,21 @@ public class AuthServiceTests {
 
     @Test
     public void register_shouldThrow_whenUserAlreadyExists() {
-        when(userRepository.existsByUsername(anyString())).thenThrow(UserAlreadyExistsException.class);
+        when(userRepository.existsByUsername(anyString())).thenReturn(true);
 
         assertThrows(UserAlreadyExistsException.class, () -> authService.register(registerRequestDto));
     }
 
     @Test
     public void register_shouldThrow_whenRoleNotFound() {
-        when(roleRepository.findByName(anyString())).thenReturn(Optional.empty());
+        when(roleRepository.findByName(any(Role.RoleName.class))).thenReturn(Optional.empty());
 
         assertThrows(RoleNotFoundException.class, () -> authService.register(registerRequestDto));
     }
 
     @Test
     public void login_shouldReturnResponse_whenCredentialsValid() {
-        when(userRepository.findByUsername(anyString())).thenReturn(user);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
         when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authenticatedToken);
         when(jwtService.generate(any(UserDetails.class))).thenReturn(token);
         when(refreshTokenService.generate(anyLong())).thenReturn(refreshToken);
@@ -178,7 +182,7 @@ public class AuthServiceTests {
 
     @Test
     public void login_shouldThrow_whenPasswordIncorrect() {
-        when(userRepository.findByUsername(anyString())).thenReturn(user);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
         when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(unauthenticatedToken);
 
         assertThrows(InvalidCredentialsException.class, () -> authService.login(loginRequestDto));
