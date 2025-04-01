@@ -14,7 +14,6 @@ import com.example.backend.repositories.RoleRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.impls.JwtServiceImpl;
-import com.example.backend.services.impls.RefreshTokenServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,9 +46,6 @@ public class AuthServiceTests {
     JwtServiceImpl jwtService;
 
     @MockitoBean
-    RefreshTokenServiceImpl refreshTokenService;
-
-    @MockitoBean
     AuthenticationManager authManager;
 
     @Autowired
@@ -57,7 +53,6 @@ public class AuthServiceTests {
 
     private final String password = "password";
     private final String token = "token";
-    private final String refreshToken = "refreshToken";
     private final LocalDateTime datetime = LocalDateTime.now();
 
     private User user;
@@ -122,7 +117,6 @@ public class AuthServiceTests {
 
         jwtLoginResponseDto = JwtLoginResponseDto.builder()
                 .token("token")
-                .refreshToken("refreshToken")
                 .build();
 
         authenticatedToken = new UsernamePasswordAuthenticationToken(
@@ -166,7 +160,6 @@ public class AuthServiceTests {
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(user));
         when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authenticatedToken);
         when(jwtService.generate(any(UserDetails.class))).thenReturn(token);
-        when(refreshTokenService.generate(anyLong())).thenReturn(refreshToken);
 
         JwtLoginResponseDto actualResponse = authService.login(loginRequestDto);
 

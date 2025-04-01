@@ -15,7 +15,6 @@ import com.example.backend.repositories.UserRepository;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.AuthService;
 import com.example.backend.services.JwtService;
-import com.example.backend.services.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,12 +25,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -49,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
 
         String hashedPassword = passwordEncoder.encode(request.getPassword());
         user.setPassword(hashedPassword);
+        user.setPublicId(UUID.randomUUID().toString());
 
         Role userRole = roleRepository.findByName(Role.RoleName.ROLE_USER).orElseThrow(() ->
                 new RoleNotFoundException("ROLE_USER is not found"));
@@ -64,20 +65,18 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow(() ->
                 new UserNotFoundException("User with such username=%s is not found".formatted(request.getUsername())));
 
-        authenticate(user);
+        authenticate(request);
 
         UserDetails userDetails = new CustomUserDetails(user);
         String token = jwtService.generate(userDetails);
-        String refreshToken = refreshTokenService.generate(user.getId());
 
         return JwtLoginResponseDto.builder()
                 .token(token)
-                .refreshToken(refreshToken)
                 .build();
     }
 
-    private void authenticate(User user) {
-        Authentication authToken = new UsernamePasswordAuthenticationToken(
+    private void authenticate(LoginRequestDto user) {
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                 user.getUsername(),
                 user.getPassword()
         );
