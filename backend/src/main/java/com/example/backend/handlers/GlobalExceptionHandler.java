@@ -1,8 +1,8 @@
 package com.example.backend.handlers;
 
+import com.example.backend.exceptions.InvalidCredentialsException;
 import com.example.backend.exceptions.UserAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
-import com.example.backend.exceptions.InvalidCredentialsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
