@@ -41,13 +41,13 @@ public class EmailServiceImpl implements EmailService {
 
     private void sendEmail(String to, String subject, String body) {
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper mimeHelper = new MimeMessageHelper(message);
 
         try {
+            MimeMessageHelper mimeHelper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED);
             mimeHelper.setFrom(from);
             mimeHelper.setTo(to);
             mimeHelper.setSubject(subject);
-            mimeHelper.setText(body);
+            mimeHelper.setText(body, true);
 
             mailSender.send(message);
         } catch (MessagingException e) {
