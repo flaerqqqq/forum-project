@@ -8,12 +8,14 @@ import com.example.backend.exceptions.InvalidCredentialsException;
 import com.example.backend.exceptions.RoleNotFoundException;
 import com.example.backend.exceptions.UserAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.models.EmailConfirmToken;
 import com.example.backend.models.Role;
 import com.example.backend.models.User;
 import com.example.backend.repositories.RoleRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.AuthService;
+import com.example.backend.services.EmailConfirmService;
 import com.example.backend.services.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -37,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
     private final AuthenticationManager authManager;
+    private final EmailConfirmService emailConfirmService;
 
     @Override
     public RegisterResponseDto register(RegisterRequestDto request) {
@@ -56,6 +59,8 @@ public class AuthServiceImpl implements AuthService {
         user.getRoles().add(userRole);
 
         User savedUser = userRepository.save(user);
+
+        emailConfirmService.initiateConfirmation(user);
 
         return modelMapper.map(savedUser, RegisterResponseDto.class);
     }
