@@ -12,6 +12,4 @@ import lombok.RequiredArgsConstructor;
 public class JwtLoginResponseDto {
 
     private String token;
-
-    private String refreshToken;
 }

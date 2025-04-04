@@ -8,3 +8,14 @@ spring:
     password: ${POSTGRES_PASSWORD}
     url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
     driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+
+jwt:
+  expiration: 3600000
+  secret: ${JWT_SECRET}
