@@ -1,5 +1,6 @@
 package com.example.backend.handlers;
 
+import com.example.backend.exceptions.EmailConfirmTokenNotFoundException;
 import com.example.backend.exceptions.InvalidCredentialsException;
 import com.example.backend.exceptions.UserAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
@@ -27,8 +28,11 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder(ex, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage()).build());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+    @ExceptionHandler({
+            UserNotFoundException.class,
+            EmailConfirmTokenNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("User not found: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)

@@ -16,6 +16,10 @@ spring:
     init:
       mode: always
 
+server:
+  servlet:
+    context-path: /api/v1
+
 jwt:
   expiration: 3600000
   secret: ${JWT_SECRET}
