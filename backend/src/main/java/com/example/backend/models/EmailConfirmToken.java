@@ -3,6 +3,8 @@ package com.example.backend.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -23,4 +25,13 @@ public class EmailConfirmToken {
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
+
+    @Column(name = "expire_at", nullable = false)
+    private Date expireAt;
+
+    @PrePersist
+    protected void calculateExpirationDate() {
+        expireAt = new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000);
+    }
+
 }

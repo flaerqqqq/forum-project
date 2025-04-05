@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
 
-    @Value("${GMAIL_USERNAME}")
+    @Value("${gmail.username}")
     private String from;
 
     private final JavaMailSender mailSender;

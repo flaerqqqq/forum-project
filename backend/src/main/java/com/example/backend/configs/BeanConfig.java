@@ -6,16 +6,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.util.Properties;
 
 @Configuration
+@EnableScheduling
+@EnableTransactionManagement
 public class BeanConfig {
 
     @Value("${gmail.username}")
-    private String gmailUsername;
-
-    @Value("${gmail.password}")
+    private String gmailUsername;   @Value("${gmail.password}")
     private String gmailPassword;
 
     @Bean
