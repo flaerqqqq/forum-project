@@ -17,7 +17,9 @@ import java.util.Properties;
 public class BeanConfig {
 
     @Value("${gmail.username}")
-    private String gmailUsername;   @Value("${gmail.password}")
+    private String gmailUsername;
+
+    @Value("${gmail.password}")
     private String gmailPassword;
 
     @Bean

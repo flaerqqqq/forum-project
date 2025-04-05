@@ -26,10 +26,10 @@ public class EmailConfirmTokenCleanUpTask {
         boolean hasMore = true;
 
         while (hasMore) {
-            Page<EmailConfirmToken> expiredTokens = tokenRepository.findAll(PageRequest.of(page++, batchSize));
-            hasMore = !expiredTokens.isEmpty();
+            Page<EmailConfirmToken> tokens = tokenRepository.findAll(PageRequest.of(page++, batchSize));
+            hasMore = !tokens.isEmpty();
 
-            List<EmailConfirmToken> toBeDeleted = expiredTokens.stream()
+            List<EmailConfirmToken> toBeDeleted = tokens.stream()
                     .filter(token -> token.getExpireAt().before(new Date())
                             || token.getUser().getIsEmailVerified())
                     .toList();
