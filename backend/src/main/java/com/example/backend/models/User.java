@@ -40,13 +40,13 @@ public class User {
 
     private String description;
 
-    private Long postsCount;
+    private Long postsCount = 0L;
 
-    private Long receivedLikesCount;
+    private Long receivedLikesCount = 0L;
 
-    private Long receivedDislikesCount;
+    private Long receivedDislikesCount = 0L;
 
-    private Long userRating;
+    private Long userRating = 1L;
 
     private String avatarUrl;
 
