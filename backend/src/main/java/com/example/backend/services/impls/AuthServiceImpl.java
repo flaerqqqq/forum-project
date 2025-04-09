@@ -8,7 +8,6 @@ import com.example.backend.exceptions.InvalidCredentialsException;
 import com.example.backend.exceptions.RoleNotFoundException;
 import com.example.backend.exceptions.UserAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
-import com.example.backend.models.EmailConfirmToken;
 import com.example.backend.models.Role;
 import com.example.backend.models.User;
 import com.example.backend.repositories.RoleRepository;
