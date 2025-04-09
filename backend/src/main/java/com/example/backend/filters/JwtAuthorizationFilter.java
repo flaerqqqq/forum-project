@@ -57,8 +57,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
             }
-
-            filterChain.doFilter(request, response);
         }
+        filterChain.doFilter(request, response);
     }
 }

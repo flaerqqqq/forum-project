@@ -1,5 +1,6 @@
 package com.example.backend.security;
 
+import com.example.backend.exceptions.UserEmailNotVerifiedException;
 import com.example.backend.models.User;
 import com.example.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username).orElseThrow(() ->
                 new UsernameNotFoundException(username));
+
+        if (!user.getIsEmailVerified()) {
+            throw new UserEmailNotVerifiedException();
+        }
+
         return new CustomUserDetails(user);
     }
 }

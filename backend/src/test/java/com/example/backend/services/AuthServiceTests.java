@@ -13,6 +13,7 @@ import com.example.backend.models.User;
 import com.example.backend.repositories.RoleRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.security.CustomUserDetails;
+import com.example.backend.services.impls.EmailConfirmServiceImpl;
 import com.example.backend.services.impls.JwtServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ public class AuthServiceTests {
 
     @MockitoBean
     JwtServiceImpl jwtService;
+
+    @MockitoBean
+    EmailConfirmServiceImpl emailConfirmService;
 
     @MockitoBean
     AuthenticationManager authManager;

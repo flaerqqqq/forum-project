@@ -19,3 +19,7 @@ spring:
 jwt:
   expiration: 3600000
   secret: ${JWT_SECRET}
+
+gmail:
+  username: ${GMAIL_USERNAME}
+  password: ${GMAIL_PASSWORD}
