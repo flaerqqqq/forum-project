@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.models.Avatar;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,8 +37,6 @@ public class UserDto {
 
     private Long userRating;
 
-    private String avatarUrl;
-
     private LocalDateTime registrationDate;
 
     private LocalDateTime lastUpdatedAt;
@@ -45,4 +44,6 @@ public class UserDto {
     private Boolean isEmailVerified;
 
     private List<RoleDto> roles;
+
+    private Avatar avatarDto;
 }

@@ -48,8 +48,6 @@ public class User {
 
     private Long userRating = 1L;
 
-    private String avatarUrl;
-
     @CreationTimestamp
     @Column(name = "registration_date", updatable = false)
     private LocalDateTime registrationDate;
@@ -67,4 +65,7 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
     private List<Role> roles = new ArrayList<>();
+
+    @OneToOne(mappedBy = "user" ,cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Avatar avatar;
 }
