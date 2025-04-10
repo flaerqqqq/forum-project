@@ -40,6 +40,7 @@ public class User {
 
     private String description;
 
+    @Column(name = "posts_count")
     private Long postsCount = 0L;
 
     private Long receivedLikesCount = 0L;
