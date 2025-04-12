@@ -8,6 +8,8 @@ public interface UserService {
 
     UserDto findByPublicId(String publicId);
 
+    UserDto findByUsername(String username);
+
     UserDto updateUser(String publicId, UpdateUserProfileDto updateDto);
 
     void deleteUser(String publicId);

@@ -18,11 +18,11 @@ public abstract class UserReactionMapper {
 
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "targetUser.id", target = "targetUserId")
-    abstract UserReactionDto toDto(UserReaction userReaction);
+    public abstract UserReactionDto toDto(UserReaction userReaction);
 
-    abstract UserReaction toEntity(UserReactionDto userReactionDto);
+    public abstract UserReaction toEntity(UserReactionDto userReactionDto);
 
-     public User resolverUser(Long userId) {
+     public User resolveUser(Long userId) {
         if (userId == null) {
             return null;
         }

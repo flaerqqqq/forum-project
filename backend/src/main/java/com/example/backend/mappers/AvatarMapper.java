@@ -18,10 +18,10 @@ public abstract class AvatarMapper {
     private UserRepository userRepository;
 
     @Mapping(source = "user", target = "userId")
-    abstract AvatarDto toDto(Avatar avatar);
+    public abstract AvatarDto toDto(Avatar avatar);
 
     @InheritInverseConfiguration
-    abstract Avatar toEntity(AvatarDto avatarDto);
+    public abstract Avatar toEntity(AvatarDto avatarDto);
 
     public User resolveUser(Long userId) {
         if (userId == null) {
