@@ -1,9 +1,6 @@
 package com.example.backend.handlers;
 
-import com.example.backend.exceptions.EmailConfirmTokenNotFoundException;
-import com.example.backend.exceptions.InvalidCredentialsException;
-import com.example.backend.exceptions.UserAlreadyExistsException;
-import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.exceptions.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +27,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             UserNotFoundException.class,
-            EmailConfirmTokenNotFoundException.class
+            EmailConfirmTokenNotFoundException.class,
+            RoleNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("User not found: {}", ex.getMessage());
@@ -70,5 +68,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, errors.toString()).build());
+    }
+
+    @ExceptionHandler({
+            ImageValidationException.class,
+            InappropriateReactionTypeException.class
+    })
+    public ResponseEntity<ErrorResponse> handleBadRequestException(UserAlreadyExistsException ex) {
+        log.warn("Bad request exception: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build());
     }
 }
