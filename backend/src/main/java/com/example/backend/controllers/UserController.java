@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -29,5 +30,12 @@ public class UserController {
                                                       @RequestBody @Valid UpdateUserProfileDto updateRequest) {
         UserDto userDto = userService.updateUser(userPublicId, updateRequest);
         return ResponseEntity.ok(userMapper.toResponseDto(userDto));
+    }
+
+    @PostMapping("/{userPublicId}/avatar")
+    public ResponseEntity<String> uploadAvatar(@PathVariable String userPublicId,
+                             @RequestParam("avatar") MultipartFile file) {
+        String newAvatarUrl = userService.addAvatar(userPublicId, file);
+        return ResponseEntity.ok(newAvatarUrl);
     }
 }

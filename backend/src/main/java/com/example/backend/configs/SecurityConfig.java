@@ -54,6 +54,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/api/v1/users/{userPublicId}")
                                 .permitAll()
+                                .anyRequest()
+                                .permitAll()
                 )
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
