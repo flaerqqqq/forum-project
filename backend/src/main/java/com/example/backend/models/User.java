@@ -40,15 +40,17 @@ public class User {
 
     private String description;
 
-    private Long postsCount;
+    @Column(name = "posts_count", nullable = false)
+    private Long postsCount = 0L;
 
-    private Long receivedLikesCount;
+    @Column(name = "received_likes_count", nullable = false)
+    private Long receivedLikesCount = 0L;
 
-    private Long receivedDislikesCount;
+    @Column(name = "received_dislikes_count", nullable = false)
+    private Long receivedDislikesCount = 0L;
 
-    private Long userRating;
-
-    private String avatarUrl;
+    @Column(name = "user_rating", nullable = false)
+    private Long userRating = 1L;
 
     @CreationTimestamp
     @Column(name = "registration_date", updatable = false)
@@ -58,7 +60,7 @@ public class User {
     @Column(name = "last_updated_at")
     private LocalDateTime lastUpdatedAt;
 
-    @Column(name = "is_email_verfied", nullable = false)
+    @Column(name = "is_email_verified", nullable = false)
     private Boolean isEmailVerified = false;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -67,4 +69,7 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
     private List<Role> roles = new ArrayList<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    private Avatar avatar;
 }
