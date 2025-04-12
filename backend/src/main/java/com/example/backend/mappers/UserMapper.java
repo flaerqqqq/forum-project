@@ -9,7 +9,9 @@ import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(config = MapperConfig.class, uses = {RoleMapper.class, AvatarMapper.class})
+@Mapper(config = MapperConfig.class, uses = {
+        RoleMapper.class, AvatarMapper.class, UserReactionMapper.class
+})
 public interface UserMapper {
 
     @Mapping(source = "avatar", target = "avatarDto")

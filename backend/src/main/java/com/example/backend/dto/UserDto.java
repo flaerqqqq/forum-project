@@ -1,6 +1,9 @@
 package com.example.backend.dto;
 
 import com.example.backend.models.Avatar;
+import com.example.backend.models.UserReaction;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -46,4 +49,8 @@ public class UserDto {
     private List<RoleDto> roles;
 
     private Avatar avatarDto;
+
+    private List<UserReactionDto> userReactions;
+
+    private List<UserReactionDto> receivedUserReactions;
 }
