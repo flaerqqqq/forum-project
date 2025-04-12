@@ -39,9 +39,9 @@ public class JwtServiceImpl implements JwtService {
         Date expiredAt = new Date(issuedAt.getTime() + expiration);
         return Jwts.builder()
                 .setClaims(claims)
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiredAt)
-                .setIssuer(userDetails.getUsername())
                 .signWith(key)
                 .compact();
     }
@@ -79,6 +79,7 @@ public class JwtServiceImpl implements JwtService {
 
     private Claims extractClaims(String token) {
         return Jwts.parserBuilder()
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
