@@ -82,7 +82,6 @@ public class AuthServiceTests {
                 .postsCount(0L)
                 .receivedLikesCount(0L)
                 .receivedDislikesCount(0L)
-                .avatarUrl("avatarUrl")
                 .registrationDate(datetime)
                 .lastUpdatedAt(datetime)
                 .isEmailVerified(true)

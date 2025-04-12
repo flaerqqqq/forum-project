@@ -9,3 +9,10 @@ spring:
 gmail:
   username: any
   password: any
+
+aws:
+  secret-key: any
+  access-key: any
+  region: any
+  user-avatars-bucket:
+    name: any

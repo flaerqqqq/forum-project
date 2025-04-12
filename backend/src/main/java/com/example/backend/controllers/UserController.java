@@ -7,6 +7,7 @@ import com.example.backend.mappers.UserMapper;
 import com.example.backend.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,5 +38,11 @@ public class UserController {
                              @RequestParam("avatar") MultipartFile file) {
         String newAvatarUrl = userService.addAvatar(userPublicId, file);
         return ResponseEntity.ok(newAvatarUrl);
+    }
+
+    @DeleteMapping("/{userPublicId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable String userPublicId) {
+        userService.deleteUser(userPublicId);
     }
 }

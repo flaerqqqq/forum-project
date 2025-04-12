@@ -51,6 +51,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void deleteUser(String publicId) {
+        if (!userRepository.existsByPublicId(publicId)) {
+            throw new UserNotFoundException("User with such publicId=%s not found".formatted(publicId));
+        }
+        userRepository.deleteByPublicId(publicId);
+    }
+
+    @Override
     @Transactional
     public String addAvatar(String publicId, MultipartFile file) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->

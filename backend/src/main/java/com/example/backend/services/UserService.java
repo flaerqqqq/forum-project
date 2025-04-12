@@ -10,5 +10,7 @@ public interface UserService {
 
     UserDto updateUser(String publicId, UpdateUserProfileDto updateDto);
 
+    void deleteUser(String publicId);
+
     String addAvatar(String publicId, MultipartFile file);
 }

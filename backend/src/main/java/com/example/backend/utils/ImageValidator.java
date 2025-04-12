@@ -81,6 +81,5 @@ public class ImageValidator {
                     .collect(Collectors.joining(", "));
             throw new ImageValidationException("The given picture has an inappropriate content: %s".formatted(labelsString));
         }
-
     }
 }
