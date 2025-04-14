@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AuthInput from '../components/AuthInput';
 import {loginUser} from '../services/AuthService'
 import { useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 
 export default function Login() {
     const [form, setForm] = useState({ username: '', password: '' });
@@ -20,7 +21,10 @@ export default function Login() {
             const res = await loginUser(form);
             const token = res.data.token;
 
-            localStorage.setItem('jwt', token);
+            Cookies.set("token", token, {
+                expires: 1,
+                sameSite: "strict",
+            })
 
             navigate('/');
         } catch (err) {

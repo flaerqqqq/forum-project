@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import EmailVerificationNotice from './pages/EmailVerificationNotice'
-import GuestOnlyRoute from "./routes/GuestOnlyRoute.js";
+import GuestOnlyRoute from "./routes/GuestOnlyRoute";
 
 function App() {
     return (

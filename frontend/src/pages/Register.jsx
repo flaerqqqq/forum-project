@@ -33,7 +33,7 @@ const Register = () => {
 
         try {
             await registerUser(form);
-            navigate('/email-verify-notice');
+            navigate('/email-verify-notice', {state: { fromRegister: true }});
         } catch (err) {
             const backendMessage = err.response?.data?.body.detail || 'Registration failed.';
             setError(Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage);

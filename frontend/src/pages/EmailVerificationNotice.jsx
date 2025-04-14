@@ -1,4 +1,12 @@
+import {Navigate, useLocation} from "react-router-dom";
+
 const EmailVerificationNotice = () => {
+    const location = useLocation();
+
+    if (!location.state?.fromRegister) {
+        return <Navigate to="/" replace />
+    }
+
     return (
         <div className="email-verification-notice">
             <h2>Verify Your Email!</h2>
@@ -9,7 +17,7 @@ const EmailVerificationNotice = () => {
             </p>
 
         </div>
-    )
+    );
 }
 
 export default EmailVerificationNotice;
