@@ -12,7 +12,7 @@ INSERT INTO users (
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-    1, 'publicId', 'username', 'Display Name', 'user@example.com', 'password',
+    99, 'publicId', 'username', 'Display Name', 'user@example.com', 'password',
     'User description', 0, 0, 0, 1, NOW(), NOW(), true
 );
 INSERT INTO users (
@@ -20,12 +20,12 @@ INSERT INTO users (
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-    2, 'publicId2', 'username2', 'Display Name', 'user2@example.com', 'password',
+    100, 'publicId2', 'username2', 'Display Name', 'user2@example.com', 'password',
     'User description', 0, 0, 0, 1, NOW(), NOW(), true
 );
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (1, 1);
+VALUES (99, 1);
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (2, 1);
+VALUES (100, 1);

@@ -34,3 +34,7 @@ aws:
   region: ${AWS_REGION}
   user-avatars-bucket:
     name: ${USER_AVATARS_BUCKET_NAME}
+
+api:
+  front-end:
+    host: ${FRONT_END_HOST}
