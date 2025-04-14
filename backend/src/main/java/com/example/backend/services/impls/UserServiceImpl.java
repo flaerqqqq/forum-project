@@ -34,6 +34,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDto findByUsername(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() ->
+                new UserNotFoundException("User with such username=%s not found".formatted(username)));
+        return userMapper.toDto(user);
+    }
+
+    @Override
     public UserDto updateUser(String publicId, UpdateUserProfileDto updateDto) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));

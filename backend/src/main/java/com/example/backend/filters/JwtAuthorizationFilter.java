@@ -40,7 +40,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 String username = jwtService.extractUsername(token);
                 List<GrantedAuthority> authorities = jwtService.extractAuthorities(token);
 
-                if (username != null) {
+                if (username == null) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token: username not found");
                 }
 
