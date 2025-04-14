@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AuthInput from '../components/AuthInput';
-import axios from 'axios';
+import {loginUser} from '../services/AuthService'
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
@@ -17,16 +17,14 @@ export default function Login() {
         setError('');
 
         try {
-            const res = await axios.post('http://localhost:8080/api/v1/auth/login', form);
+            const res = await loginUser(form);
             const token = res.data.token;
 
-            // Save token to localStorage or context
             localStorage.setItem('jwt', token);
 
-            // Navigate to homepage or dashboard
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            setError(err.response?.data?.body.detail || 'Login failed');
         }
     };
 

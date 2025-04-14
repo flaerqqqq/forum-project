@@ -9,6 +9,7 @@ const Register = () => {
         displayName: '',
         email: '',
         password: '',
+        passwordConfirm: '',
         description: '',
     });
 
@@ -24,12 +25,17 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        if (form.password !== form.passwordConfirm) {
+            setError("Passwords do not match.");
+            return;
+        }
+
         try {
             await registerUser(form);
-            alert('Registration successful! Please check your email to verify your account.');
-            navigate('/login');
+            navigate('/email-verify-notice');
         } catch (err) {
-            const backendMessage = err.response?.data?.message || 'Registration failed.';
+            const backendMessage = err.response?.data?.body.detail || 'Registration failed.';
             setError(Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage);
         }
     };
@@ -68,6 +74,14 @@ const Register = () => {
                     name="password"
                     placeholder="Password"
                     value={form.password}
+                    onChange={handleChange}
+                    required
+                />
+                <input
+                    type="password"
+                    name="passwordConfirm"
+                    placeholder="Password Confirm"
+                    value={form.passwordConfirm}
                     onChange={handleChange}
                     required
                 />
