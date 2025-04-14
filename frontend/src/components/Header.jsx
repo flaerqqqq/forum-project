@@ -1,5 +1,6 @@
 import {Link, useNavigate} from 'react-router-dom';
 import { isAuthenticated } from '../utils/auth';
+import ProfileButton from "./ProfileButton";
 import Cookies from 'js-cookie';
 
 const Header = () => {
@@ -20,8 +21,8 @@ const Header = () => {
                     <Link to="/login">Login</Link>
                 ) : (
                     <>
-                    <Link to="/users/me">Profile</Link> // Or the logged-in user's ID
-                    <button onClick={handleLogout()}>Logout</button>
+                    <ProfileButton />
+                    <button onClick={handleLogout}>Logout</button>
                     </>
                 )}
             </nav>

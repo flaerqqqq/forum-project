@@ -4,6 +4,8 @@ import Login from './pages/Login';
 import EmailVerificationNotice from './pages/EmailVerificationNotice'
 import GuestOnlyRoute from "./routes/GuestOnlyRoute";
 import AuthLayout from "./layouts/AuthLayout";
+import MainLayout from "./layouts/MainLayout";
+import UserProfile from "./pages/UserProfile";
 
 function App() {
     return (
@@ -21,6 +23,9 @@ function App() {
                         </GuestOnlyRoute>
                     } />
                     <Route path="/email-verify-notice" element={<EmailVerificationNotice />} />
+                </Route>
+                <Route element={<MainLayout/>}>
+                    <Route path="/users/:username" element={<UserProfile />}/>
                 </Route>
             </Routes>
         </BrowserRouter>
