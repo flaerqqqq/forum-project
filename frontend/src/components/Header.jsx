@@ -1,17 +1,9 @@
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import { isAuthenticated } from '../utils/auth';
-import ProfileButton from "./ProfileButton";
-import Cookies from 'js-cookie';
+import AvatarMenu from "./AvatarMenu.jsx";
 
 const Header = () => {
     const auth = isAuthenticated();
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        Cookies.remove('token');
-
-        navigate('/login')
-    }
 
     return (
         <header className="header">
@@ -21,8 +13,7 @@ const Header = () => {
                     <Link to="/login">Login</Link>
                 ) : (
                     <>
-                    <ProfileButton />
-                    <button onClick={handleLogout}>Logout</button>
+                    <AvatarMenu />
                     </>
                 )}
             </nav>

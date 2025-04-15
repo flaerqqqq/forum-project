@@ -28,7 +28,7 @@ const AvatarUpload = ({ username }) => {
                 }
             );
             alert('Avatar uploaded!');
-            window.location.reload(); // reload to show new avatar
+            window.location.reload();
         } catch (err) {
             setError(err.response?.data?.body.detail || 'Failed to upload avatar!');
         }
