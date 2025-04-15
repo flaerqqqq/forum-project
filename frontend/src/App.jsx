@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import Home from './pages/Home';
 import EmailVerificationNotice from './pages/EmailVerificationNotice'
 import GuestOnlyRoute from "./routes/GuestOnlyRoute";
 import AuthLayout from "./layouts/AuthLayout";
@@ -26,6 +27,7 @@ function App() {
                 </Route>
                 <Route element={<MainLayout/>}>
                     <Route path="/users/:username" element={<UserProfile />}/>
+                    <Route path="/" element={<Home />}/>
                 </Route>
             </Routes>
         </BrowserRouter>

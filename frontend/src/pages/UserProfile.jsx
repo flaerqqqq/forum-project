@@ -4,6 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import AvatarUpload from '../components/AvatarUpload';
 import {getUsernameFromToken} from "../utils/Auth.js";
+import UserNotFound from "../components/UserNotFound.jsx";
 
 const UserProfile = () => {
     const { username: profileUsername } = useParams();  // Get the username from the URL
@@ -26,12 +27,17 @@ const UserProfile = () => {
                 const res = await axios.get(`http://localhost:8080/api/v1/users/${profileUsername}`);
                 setUser(res.data);
             } catch (err) {
-                setError('Error loading user');
+                if (err.response?.status === 404) {
+                    setError("not_found")
+                } else {
+                    setError("unexpected")
+                }
             }
         };
         fetchUser();
     }, [profileUsername]);
 
+    if (error === "not_found") return <UserNotFound />
     if (error) return <div>{error}</div>;
     if (!user) return <div>Loading...</div>;
 

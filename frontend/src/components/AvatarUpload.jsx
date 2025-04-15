@@ -18,7 +18,7 @@ const AvatarUpload = ({ username }) => {
         formData.append('avatar', avatar);
 
         try {
-            await axios.post(
+            const res = await axios.post(
                 `http://localhost:8080/api/v1/users/${username}/avatar`,
                 formData, {
                     headers: {
@@ -30,8 +30,7 @@ const AvatarUpload = ({ username }) => {
             alert('Avatar uploaded!');
             window.location.reload(); // reload to show new avatar
         } catch (err) {
-            console.error(err);
-            setError('Upload failed');
+            setError(err.response?.data?.body.detail || 'Failed to upload avatar!');
         }
     };
 
