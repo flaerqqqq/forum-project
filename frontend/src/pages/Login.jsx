@@ -27,6 +27,7 @@ export default function Login() {
             });
 
             navigate('/');
+            window.navigation.reload();
         } catch (err) {
             setError(err.response?.data?.body.detail || 'Login failed');
         }

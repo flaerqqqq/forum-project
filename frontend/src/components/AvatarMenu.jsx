@@ -5,26 +5,29 @@ import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 
 const AvatarMenu = () => {
-    const [open, setOpen] = useState(false);
     const [user, setUser] = useState(null);
+    const [open, setOpen] = useState(false);
     const [error, setError] = useState(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
-    const token = Cookies.get("token");
-    const username = token ? jwtDecode(token).sub : null;
-
     useEffect(() => {
-        const fetchAvatarUrl = async () => {
-            try {
-                const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`);
-                setUser(res.data);
-            } catch (err) {
-                setError(err);
-            }
-        };
-        if (username) fetchAvatarUrl();
-    }, [username]);
+        const token = Cookies.get("token");
+        const username = token ? jwtDecode(token).sub : null;
+
+        if (username) {
+            const fetchAvatarUrl = async () => {
+                try {
+                    const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`);
+                    setUser(res.data); // Set user data in context
+                } catch (err) {
+                    setError("Failed to load user data.");
+                }
+            };
+            fetchAvatarUrl();
+        }
+    }, [Cookies.get("token")]); // 👈 token is now watched reactively
+
 
     const toggleDropdown = () => {
         setOpen((prev) => !prev);
@@ -33,6 +36,7 @@ const AvatarMenu = () => {
     const handleLogout = () => {
         Cookies.remove("token");
         navigate("/login");
+        window.navigation.reload();
     };
 
     const handleClickOutside = (e) => {
@@ -49,14 +53,14 @@ const AvatarMenu = () => {
     // Close the dropdown when navigating
     useEffect(() => {
         setOpen(false); // Close dropdown on navigation
-    }, [navigate]); // This ensures the dropdown closes when navigation happens
+    }, [navigate]);
 
-    if (!user) return null;
+    if (!user) return null; // Prevent rendering if user data is not available
 
     return (
         <div className="relative" ref={dropdownRef}>
             <img
-                src={user.avatarUrl}
+                src={user.avatarUrl || '/path/to/default/avatar.png'} // Use a default avatar if none is set
                 alt="avatar"
                 className={`w-9 h-9 rounded-full cursor-pointer ring-4 transition ${open ? 'ring-gray-200' : 'ring-transparent hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
@@ -81,7 +85,7 @@ const AvatarMenu = () => {
                         Profile
                     </button>
                 </div>
-                <div className="flex justify-center ">
+                <div className="flex justify-center">
                     <button
                         className="w-[95%] text-left px-4 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {

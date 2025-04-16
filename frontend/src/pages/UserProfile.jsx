@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import AvatarUpload from '../components/AvatarUpload';
 import { getUsernameFromToken } from '../utils/Auth.js';
 import UserNotFound from '../components/UserNotFound.jsx';
 
@@ -63,9 +62,9 @@ const UserProfile = () => {
 
                     {authenticatedUser === profileUsername && (
                         <div className="absolute top-6 right-6">
-                            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            <Link to="/settings" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                                 Edit profile
-                            </button>
+                            </Link>
                         </div>
                     )}
                 </div>
