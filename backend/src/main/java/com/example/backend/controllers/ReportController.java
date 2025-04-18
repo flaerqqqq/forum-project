@@ -1,0 +1,29 @@
+package com.example.backend.controllers;
+
+import com.example.backend.dto.ReportRequestDto;
+import com.example.backend.dto.ReportResponseDto;
+import com.example.backend.dto.UserDto;
+import com.example.backend.services.ReportService;
+import com.example.backend.services.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/reports")
+@RequiredArgsConstructor
+public class ReportController {
+
+    private final UserService userService;
+    private final ReportService reportService;
+
+    @PostMapping
+    public ResponseEntity<ReportResponseDto> report(@RequestBody ReportRequestDto request,
+                                                    Authentication authentication) {
+        UserDto reportedDto = userService.findByUsername(authentication.getName());
+        ReportResponseDto responseDto = reportService.report(reportedDto.getPublicId(), request);
+        return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
+    }
+}
