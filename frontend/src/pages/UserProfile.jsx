@@ -41,10 +41,8 @@ const UserProfile = () => {
 
     return (
         <div className="w-screen bg-gray-100 min-h-screen">
-            {/* Banner */}
             <div className="bg-black h-32 w-full" />
 
-            {/* Profile Card */}
             <div className="max-w-3xl mx-auto">
                 <div className="bg-white rounded-lg shadow -mt-16 p-6 relative text-center  ">
                     <img
@@ -69,7 +67,6 @@ const UserProfile = () => {
                     )}
                 </div>
 
-                {/* Stats Card */}
                 <div className="mt-6 bg-white rounded-lg shadow p-4 flex justify-around text-gray-700 text-sm">
                     <div className="flex items-center space-x-2">
                         <span>📰</span>

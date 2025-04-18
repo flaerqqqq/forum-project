@@ -15,7 +15,6 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
 
         try {
             const res = await loginUser(form);
@@ -51,7 +50,6 @@ export default function Login() {
                             className="w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                         <input
@@ -63,7 +61,6 @@ export default function Login() {
                             className="w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                         />
                     </div>
-
                     <div className="mt-1">
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -82,7 +79,6 @@ export default function Login() {
                             <span className="ml-2 text-sm text-gray-600">Show Password</span>
                         </label>
                     </div>
-
                     <div className="flex justify-center">
                         <button
                             type="submit"
@@ -92,7 +88,6 @@ export default function Login() {
                         </button>
                     </div>
                 </form>
-
                 <p className="text-sm text-center text-gray-600 mt-4">
                     Don’t have an account?{' '}
                     <a href="/register" className="text-blue-600 hover:underline">

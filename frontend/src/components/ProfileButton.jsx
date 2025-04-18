@@ -8,7 +8,6 @@ const ProfileButton = () => {
         const username = getUsernameFromToken();
 
         if (username) {
-            // Navigate to the user's profile page
             navigate(`/users/${username}`);
         } else {
             alert("You need to log in first!");

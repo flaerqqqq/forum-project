@@ -6,10 +6,10 @@ export const isAuthenticated = () => {
 }
 
 export const getUsernameFromToken = () => {
-    const token = Cookies.get("token"); // Retrieve the token from cookies
+    const token = Cookies.get("token");
     if (token) {
-        const decoded = jwtDecode(token);  // Decode the token
-        return decoded.sub;           // Assuming 'username' is part of the decoded token
+        const decoded = jwtDecode(token);
+        return decoded.sub;
     }
     return null;
 };
