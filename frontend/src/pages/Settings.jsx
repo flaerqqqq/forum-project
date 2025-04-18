@@ -18,7 +18,6 @@ const Settings = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    // Fetch user data
     const token = Cookies.get("token");
     const username = token ? jwtDecode(token).sub : null;
 
@@ -34,7 +33,6 @@ const Settings = () => {
         }
     }, [username]);
 
-    // Handle input changes
     const handleChange = (e) => {
         const { name, value } = e.target;
         setUser({
@@ -44,7 +42,7 @@ const Settings = () => {
     };
 
     const handleAvatarUpload = async () => {
-        if (!avatar) return true; // Skip if no new avatar selected
+        if (!avatar) return true;
 
         const formData = new FormData();
         formData.append("avatar", avatar);
@@ -112,8 +110,6 @@ const Settings = () => {
 
     return (
         <div className="w-screen bg-gray-100 min-h-screen">
-            {/* Header */}
-
             <div className="max-w-3xl pt-[90px] mx-auto">
                 <div className="flex justify-between items-center mb-6">
                     <div>
@@ -121,13 +117,10 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Error */}
                 {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 space-y-6">
                     <h1 className="text-2xl font-semibold text-gray-900 mt-2">Profile</h1>
-                    {/* Display Name */}
                     <div>
                         <label className="block text-base font-medium text-black" htmlFor="displayName">
                             Profile Name
@@ -143,7 +136,6 @@ const Settings = () => {
                         />
                     </div>
 
-                    {/* Description */}
                     <div>
                         <label className="block text-base font-medium text-black" htmlFor="description">
                             Description
@@ -158,7 +150,6 @@ const Settings = () => {
                         />
                     </div>
 
-                    {/* Avatar */}
                     <div>
                         <label className="block text-base font-medium text-black" htmlFor="avatar">
                             Profile image
@@ -178,7 +169,6 @@ const Settings = () => {
                         )}
                     </div>
 
-                    {/* Submit Button */}
                     <div className="flex justify-center">
                         <button
                             type="submit"

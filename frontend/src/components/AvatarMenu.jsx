@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
+import Cookies from "js-cookie";
 import axios from "axios";
 
 const AvatarMenu = () => {
@@ -19,15 +19,14 @@ const AvatarMenu = () => {
             const fetchAvatarUrl = async () => {
                 try {
                     const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`);
-                    setUser(res.data); // Set user data in context
+                    setUser(res.data);
                 } catch (err) {
                     setError("Failed to load user data.");
                 }
             };
             fetchAvatarUrl();
         }
-    }, [Cookies.get("token")]); // 👈 token is now watched reactively
-
+    });
 
     const toggleDropdown = () => {
         setOpen((prev) => !prev);
@@ -50,22 +49,20 @@ const AvatarMenu = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Close the dropdown when navigating
     useEffect(() => {
-        setOpen(false); // Close dropdown on navigation
+        setOpen(false);
     }, [navigate]);
 
-    if (!user) return null; // Prevent rendering if user data is not available
+    if (!user) return null;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <img
-                src={user.avatarUrl || '/path/to/default/avatar.png'} // Use a default avatar if none is set
+                src={user.avatarUrl || '/path/to/default/avatar.png'}
                 alt="avatar"
                 className={`w-9 h-9 rounded-full cursor-pointer ring-4 transition ${open ? 'ring-gray-200' : 'ring-transparent hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
             />
-
             <div
                 className={`absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm transform transition-all duration-200 ease-out
                 ${open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
@@ -78,7 +75,7 @@ const AvatarMenu = () => {
                     <button
                         className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {
-                            setOpen(false); // Close the dropdown on navigation
+                            setOpen(false);
                             navigate(`/users/${user.username}`);
                         }}
                     >
