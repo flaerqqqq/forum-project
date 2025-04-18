@@ -1,6 +1,7 @@
 package com.example.backend.dto;
 
 import com.example.backend.models.Avatar;
+import com.example.backend.models.Report;
 import com.example.backend.models.UserReaction;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.OneToMany;
@@ -53,4 +54,6 @@ public class UserDto {
     private List<UserReactionDto> userReactions;
 
     private List<UserReactionDto> receivedUserReactions;
+
+    private List<Report> sentReports;
 }

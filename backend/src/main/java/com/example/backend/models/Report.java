@@ -22,7 +22,8 @@ public class Report {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;
 
     @Enumerated(EnumType.STRING)
@@ -30,7 +31,7 @@ public class Report {
     private ReportTargetType targetType;
 
     @Column(name = "target_id", nullable = false)
-    private Long targetId;
+    private String targetId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -42,7 +43,8 @@ public class Report {
     @Column(name = "reported_at", nullable = false, updatable = false)
     private LocalDateTime reportedAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "moderator_id")
     private User moderator;
 
     @Column(name = "moderator_note")
