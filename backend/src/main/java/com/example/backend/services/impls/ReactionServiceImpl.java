@@ -12,6 +12,7 @@ import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.ReactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -25,6 +26,7 @@ public class ReactionServiceImpl implements ReactionService {
 
 
     @Override
+    @Transactional
     public UserReactionDto reactToUser(String senderUsername, String targetPublicId, ReactionType reactionType) {
         if (reactionType != ReactionType.LIKE && reactionType != ReactionType.DISLIKE)
             throw new InappropriateReactionTypeException("ReactionType must be either LIKE or DISLIKE");
@@ -39,12 +41,15 @@ public class ReactionServiceImpl implements ReactionService {
             UserReaction userReaction = userReactionOpt.get();
             if (userReaction.getType() == reactionType) {
                 userReactionRepository.delete(userReaction);
+                decreaseReactionCount(targetUser, reactionType);
                 return UserReactionDto.builder()
                         .type(ReactionType.NO_REACTION)
                         .build();
             } else {
                 userReaction.setType(reactionType);
                 UserReaction updatedReaction = userReactionRepository.save(userReaction);
+                increaseReactionCount(targetUser, reactionType);
+                decreaseReactionCount(targetUser, reactionType == ReactionType.LIKE ? ReactionType.DISLIKE : ReactionType.LIKE);
                 return userReactionMapper.toDto(updatedReaction);
             }
         }
@@ -55,7 +60,24 @@ public class ReactionServiceImpl implements ReactionService {
                 .type(reactionType)
                 .build();
         UserReaction savedReaction = userReactionRepository.save(newCreatedUserReaction);
+        increaseReactionCount(targetUser, reactionType);
 
         return userReactionMapper.toDto(savedReaction);
+    }
+
+    private void increaseReactionCount(User user, ReactionType type) {
+        if (type == ReactionType.LIKE) {
+            user.setReceivedLikesCount(user.getReceivedLikesCount() + 1);
+        } else if (type == ReactionType.DISLIKE) {
+            user.setReceivedDislikesCount(user.getReceivedDislikesCount() + 1);
+        }
+    }
+
+    private void decreaseReactionCount(User user, ReactionType type) {
+        if (type == ReactionType.LIKE) {
+            user.setReceivedLikesCount(user.getReceivedLikesCount() - 1);
+        } else if (type == ReactionType.DISLIKE) {
+            user.setReceivedDislikesCount(user.getReceivedDislikesCount() - 1);
+        }
     }
 }
