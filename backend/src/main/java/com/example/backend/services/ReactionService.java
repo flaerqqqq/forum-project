@@ -6,4 +6,6 @@ import com.example.backend.models.enums.ReactionType;
 public interface ReactionService {
 
     UserReactionDto reactToUser(String senderUsername, String targetPublicId, ReactionType reactionType);
+
+    UserReactionDto findReactionBetweenUsers(String senderPublicId, String targetPublicId);
 }

@@ -24,9 +24,20 @@ INSERT INTO users (
     100, 'username2', 'username2', 'Display Name', 'user2@example.com', 'password',
     'User description', 0, 0, 0, 1, NOW(), NOW(), true
 );
+INSERT INTO users (
+    id, public_id, username, display_name, email, password, description,
+    posts_count, received_likes_count, received_dislikes_count, user_rating,
+    registration_date, last_updated_at, is_email_verified
+) VALUES (
+             101, 'username3', 'username3', 'Display Name', 'user3@example.com', 'password',
+             'User description', 0, 0, 0, 1, NOW(), NOW(), true
+         );
 
 INSERT INTO users_roles (user_id, role_id)
 VALUES (99, 1);
 
 INSERT INTO users_roles (user_id, role_id)
 VALUES (100, 1);
+
+INSERT INTO users_roles (user_id, role_id)
+VALUES (101, 1);

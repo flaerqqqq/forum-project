@@ -30,7 +30,8 @@ public class GlobalExceptionHandler {
             UserNotFoundException.class,
             EmailConfirmTokenNotFoundException.class,
             RoleNotFoundException.class,
-            ReportNotFoundException.class
+            ReportNotFoundException.class,
+            ReactionNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("User not found: {}", ex.getMessage());
