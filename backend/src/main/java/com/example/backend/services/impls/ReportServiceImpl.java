@@ -9,6 +9,7 @@ import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.ReportMapper;
 import com.example.backend.models.Report;
 import com.example.backend.models.User;
+import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.repositories.ReportRepository;
@@ -43,8 +44,12 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public Page<ReportDto> findPage(Pageable pageable) {
-        return reportRepository.findAll(pageable)
+    public Page<ReportDto> findFiltered(String reporterId,
+                                     ReportTargetType targetType,
+                                     ReportReason reason,
+                                     ReportStatus status,
+                                     Pageable pageable) {
+        return reportRepository.findFilteredPage(reporterId, targetType, reason, status, pageable)
                 .map(reportMapper::toDto);
     }
 

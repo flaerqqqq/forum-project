@@ -4,6 +4,9 @@ import com.example.backend.dto.ReportDto;
 import com.example.backend.dto.ReportRequestDto;
 import com.example.backend.dto.ReportResponseDto;
 import com.example.backend.dto.UserDto;
+import com.example.backend.models.enums.ReportReason;
+import com.example.backend.models.enums.ReportStatus;
+import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.services.ReportService;
 import com.example.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +40,12 @@ public class ReportController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ReportDto>> findPage(Pageable pageable) {
-        Page<ReportDto> response = reportService.findPage(pageable);
+    public ResponseEntity<Page<ReportDto>> findPage(Pageable pageable,
+                                                    @RequestParam(required = false) ReportStatus status,
+                                                    @RequestParam(required = false) ReportTargetType targetType,
+                                                    @RequestParam(required = false) ReportReason reason,
+                                                    @RequestParam(required = false) String reporterId) {
+        Page<ReportDto> response = reportService.findFiltered(reporterId, targetType, reason, status, pageable);
         return ResponseEntity.ok(response);
     }
 }
