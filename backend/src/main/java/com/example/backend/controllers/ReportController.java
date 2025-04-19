@@ -60,4 +60,14 @@ public class ReportController {
         reportService.deleteById(reportId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/reasons")
+    public ResponseEntity<ReportReason[]> getReasons() {
+        return ResponseEntity.ok(ReportReason.values());
+    }
+
+    @GetMapping("/statuses")
+    public ResponseEntity<ReportStatus[]> getStatuses() {
+        return ResponseEntity.ok(ReportStatus.values());
+    }
 }
