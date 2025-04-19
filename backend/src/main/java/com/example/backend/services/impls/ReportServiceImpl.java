@@ -15,6 +15,8 @@ import com.example.backend.repositories.ReportRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.ReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,6 +40,12 @@ public class ReportServiceImpl implements ReportService {
     public ReportDto findById(Long reportId) {
         Report report = reportRepository.findById(reportId).orElseThrow(() -> new ReportNotFoundException());
         return reportMapper.toDto(report);
+    }
+
+    @Override
+    public Page<ReportDto> findPage(Pageable pageable) {
+        return reportRepository.findAll(pageable)
+                .map(reportMapper::toDto);
     }
 
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {

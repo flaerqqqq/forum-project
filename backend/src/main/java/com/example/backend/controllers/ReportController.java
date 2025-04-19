@@ -7,6 +7,8 @@ import com.example.backend.dto.UserDto;
 import com.example.backend.services.ReportService;
 import com.example.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,6 +33,12 @@ public class ReportController {
     @GetMapping("/{reportId}")
     public ResponseEntity<ReportDto> findReportById(@PathVariable Long reportId) {
         ReportDto response = reportService.findById(reportId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ReportDto>> findPage(Pageable pageable) {
+        Page<ReportDto> response = reportService.findPage(pageable);
         return ResponseEntity.ok(response);
     }
 }

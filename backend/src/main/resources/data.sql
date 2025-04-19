@@ -3,6 +3,7 @@ DELETE FROM roles WHERE true;
 DELETE FROM email_confirm_tokens WHERE TRUE;
 DELETE FROM avatars WHERE TRUE;
 DELETE FROM user_reactions WHERE TRUE;
+DELETE FROM reports WHERE TRUE;
 DELETE FROM users WHERE true;
 
 INSERT INTO roles (id, name) VALUES (1, 'ROLE_USER');
