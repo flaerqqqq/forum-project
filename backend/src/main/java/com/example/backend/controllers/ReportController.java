@@ -48,4 +48,12 @@ public class ReportController {
         Page<ReportDto> response = reportService.findFiltered(reporterId, targetType, reason, status, pageable);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{reportId}/review")
+    public ResponseEntity<ReportDto> review(@PathVariable Long reportId,
+                                            @RequestBody ReportReviewRequestDto reviewRequest) {
+        ReportDto response = reportService.review(reportId, reviewRequest);
+        return ResponseEntity.ok(response);
+    }
+
 }
