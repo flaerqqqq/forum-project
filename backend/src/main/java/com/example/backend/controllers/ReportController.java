@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class ReportController {
     private final UserService userService;
     private final ReportService reportService;
 
+    @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping
     public ResponseEntity<ReportResponseDto> report(@RequestBody ReportRequestDto request,
                                                     Authentication authentication) {
@@ -30,12 +32,14 @@ public class ReportController {
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
     @GetMapping("/{reportId}")
     public ResponseEntity<ReportDto> findReportById(@PathVariable Long reportId) {
         ReportDto response = reportService.findById(reportId);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
     @GetMapping
     public ResponseEntity<Page<ReportDto>> findPage(Pageable pageable,
                                                     @RequestParam(required = false) ReportStatus status,
@@ -46,8 +50,8 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
-    // Add moderator preAuthorization role checking
-    @PutMapping("/{reportId}/review")
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
+    @PutMapping("/{reportId}")
     public ResponseEntity<ReportDto> review(@PathVariable Long reportId,
                                             @RequestBody ReportReviewRequestDto reviewRequest,
                                             Authentication authentication) {
@@ -55,6 +59,7 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
     @DeleteMapping("/{reportId}")
     public ResponseEntity<Void> deleteReportById(@PathVariable Long reportId) {
         reportService.deleteById(reportId);
