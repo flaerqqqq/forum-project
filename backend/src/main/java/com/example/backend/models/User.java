@@ -78,4 +78,7 @@ public class User {
 
     @OneToMany(mappedBy = "targetUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserReaction> receivedUserReactions;
+
+    @OneToMany(mappedBy = "reporter", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Report> sentReports;
 }

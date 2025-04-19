@@ -29,7 +29,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             UserNotFoundException.class,
             EmailConfirmTokenNotFoundException.class,
-            RoleNotFoundException.class
+            RoleNotFoundException.class,
+            ReportNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("User not found: {}", ex.getMessage());
@@ -73,9 +74,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             ImageValidationException.class,
-            InappropriateReactionTypeException.class
+            InappropriateReactionTypeException.class,
+            SimilarReportException.class,
+            UserEmailNotVerifiedException.class
     })
-    public ResponseEntity<ErrorResponse> handleBadRequestException(UserAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException ex) {
         log.warn("Bad request exception: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

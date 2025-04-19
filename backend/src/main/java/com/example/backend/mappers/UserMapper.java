@@ -10,7 +10,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(config = MapperConfig.class, uses = {
-        RoleMapper.class, AvatarMapper.class, UserReactionMapper.class
+        RoleMapper.class,
+        AvatarMapper.class,
+        UserReactionMapper.class,
+        ReportMapper.class
 })
 public interface UserMapper {
 

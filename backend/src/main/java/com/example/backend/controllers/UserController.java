@@ -3,11 +3,17 @@ package com.example.backend.controllers;
 import com.example.backend.dto.*;
 import com.example.backend.mappers.UserMapper;
 import com.example.backend.models.UserReaction;
+import com.example.backend.models.enums.ReportReason;
+import com.example.backend.models.enums.ReportStatus;
+import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.services.ReactionService;
+import com.example.backend.services.ReportService;
 import com.example.backend.services.UserService;
 import com.sun.security.auth.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +31,7 @@ public class UserController {
     private final UserService userService;
     private final UserMapper userMapper;
     private final ReactionService reactionService;
+    private final ReportService reportService;
 
     @GetMapping("/{userPublicId}")
     public ResponseEntity<UserResponseDto> getUserInfo(@PathVariable String userPublicId) {
@@ -64,6 +71,18 @@ public class UserController {
                 .likesCount(userDto.getReceivedLikesCount())
                 .dislikesCount(userDto.getReceivedDislikesCount())
                 .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/me/reports")
+    public ResponseEntity<Page<ReportDto>> findMyReports(Pageable pageable,
+                                                         Authentication authentication,
+                                                        @RequestParam(required = false) ReportStatus status,
+                                                        @RequestParam(required = false) ReportTargetType targetType,
+                                                        @RequestParam(required = false) ReportReason reason) {
+        UserDto currentUser = userService.findByUsername(authentication.getName());
+        Page<ReportDto> response = reportService.findFiltered(currentUser.getPublicId(), targetType, reason, status, pageable);
         return ResponseEntity.ok(response);
     }
 }
