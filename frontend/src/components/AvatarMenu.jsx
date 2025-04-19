@@ -12,6 +12,7 @@ const AvatarMenu = () => {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
+    // ✅ Fetch user info once on mount
     useEffect(() => {
         const token = Cookies.get("token");
         const username = token ? jwtDecode(token).sub : null;
@@ -19,7 +20,11 @@ const AvatarMenu = () => {
         if (username) {
             const fetchAvatarUrl = async () => {
                 try {
-                    const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`);
+                    const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
                     setUser(res.data);
                 } catch (err) {
                     setError("Failed to load user data.");
@@ -27,7 +32,7 @@ const AvatarMenu = () => {
             };
             fetchAvatarUrl();
         }
-    });
+    }, []);
 
     const toggleDropdown = () => {
         setOpen((prev) => !prev);
@@ -36,7 +41,7 @@ const AvatarMenu = () => {
     const handleLogout = () => {
         Cookies.remove("token");
         navigate("/login");
-        window.navigation.reload();
+        window.location.reload(); // ✅ Corrected reload
     };
 
     const handleClickOutside = (e) => {
@@ -49,10 +54,6 @@ const AvatarMenu = () => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
-
-    useEffect(() => {
-        setOpen(false);
-    }, [navigate]);
 
     if (!user) return null;
 

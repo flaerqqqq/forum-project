@@ -4,7 +4,8 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { getUsernameFromToken } from '../utils/Auth.js';
 import UserNotFound from '../components/UserNotFound.jsx';
-import defaultAvatar from '../assets/images/default-avatar.png'
+import UserReactions from '../components/UserReactions.jsx';
+import defaultAvatar from '../assets/images/default-avatar.png';
 
 const UserProfile = () => {
     const { username: profileUsername } = useParams();
@@ -12,6 +13,7 @@ const UserProfile = () => {
     const [error, setError] = useState(null);
     const [authenticatedUser, setAuthenticatedUser] = useState(null);
 
+    // Get auth user from JWT
     useEffect(() => {
         const token = Cookies.get('token');
         if (token) {
@@ -20,6 +22,7 @@ const UserProfile = () => {
         }
     }, []);
 
+    // Fetch user data
     useEffect(() => {
         const fetchUser = async () => {
             try {
@@ -33,6 +36,7 @@ const UserProfile = () => {
                 }
             }
         };
+
         fetchUser();
     }, [profileUsername]);
 
@@ -45,19 +49,31 @@ const UserProfile = () => {
             <div className="bg-black h-32 w-full" />
 
             <div className="max-w-3xl mx-auto">
-                <div className="bg-white rounded-lg shadow -mt-16 p-6 relative text-center  ">
+                <div className="bg-white rounded-lg shadow -mt-16 p-6 relative text-center">
                     <img
                         src={user.avatarUrl || defaultAvatar}
                         alt="avatar"
-                        className="w-28 h-28 rounded-full border-4 border-white mx-auto "
+                        className="w-28 h-28 rounded-full border-4 border-white mx-auto"
                     />
                     <h2 className="text-2xl font-bold text-gray-700 mt-2 m-4">{user.displayName}</h2>
                     <p className="text-gray-600">{user.description || "404 bio not found"}</p>
                     <p className="text-sm text-gray-500 mt-6">
                         🎂 Joined on {new Date(user.registrationDate).toLocaleDateString(undefined, {
-                        year: 'numeric', month: 'short', day: 'numeric'
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
                     })}
                     </p>
+
+                    {/* 👍 Render UserReactions in read-only if own profile */}
+                    {user.publicId && (
+                        <div className="mt-4">
+                            <UserReactions
+                                targetPublicId={user.publicId}
+                                readOnly={authenticatedUser === profileUsername}
+                            />
+                        </div>
+                    )}
 
                     {authenticatedUser === profileUsername && (
                         <div className="absolute top-6 right-6">
@@ -82,15 +98,15 @@ const UserProfile = () => {
                         <span>Followed</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <span>💾</span> {/* Using the floppy disk emoji for "Saved" */}
+                        <span>💾</span>
                         <span>Saved</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <span>❤️</span> {/* Using the heart emoji for "Liked" */}
+                        <span>❤️</span>
                         <span>Liked</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <span>👎</span> {/* Using the thumbs down emoji for "Disliked" */}
+                        <span>👎</span>
                         <span>Disliked</span>
                     </div>
                 </div>
