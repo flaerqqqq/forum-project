@@ -3,6 +3,7 @@ package com.example.backend.services.impls;
 import com.example.backend.dto.ReportDto;
 import com.example.backend.dto.ReportRequestDto;
 import com.example.backend.dto.ReportResponseDto;
+import com.example.backend.dto.ReportReviewRequestDto;
 import com.example.backend.exceptions.ReportNotFoundException;
 import com.example.backend.exceptions.SimilarReportException;
 import com.example.backend.exceptions.UserNotFoundException;
@@ -15,10 +16,13 @@ import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.repositories.ReportRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.ReportService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +55,22 @@ public class ReportServiceImpl implements ReportService {
                                      Pageable pageable) {
         return reportRepository.findFilteredPage(reporterId, targetType, reason, status, pageable)
                 .map(reportMapper::toDto);
+    }
+
+    @Override
+    @Transactional
+    public ReportDto review(Long reportId, String moderatorUsername, ReportReviewRequestDto reviewRequest) {
+        Report report = reportRepository.findById(reportId).orElseThrow(() -> new ReportNotFoundException());
+        User moderator = userRepository.findByUsername(moderatorUsername).orElseThrow(() -> new UserNotFoundException());
+
+        report.setStatus(reviewRequest.getStatus());
+        report.setModerator(moderator);
+        report.setReviewedAt(LocalDateTime.now());
+        report.setModeratorNote(reviewRequest.getNote());
+
+        Report updatedReport = reportRepository.save(report);
+
+        return reportMapper.toDto(updatedReport);
     }
 
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {

@@ -50,7 +50,7 @@ public class Report {
     @Column(name = "moderator_note")
     private String moderatorNote;
 
-    @Column(name = "reviewed_at", updatable = false)
+    @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
     @Enumerated(EnumType.STRING)

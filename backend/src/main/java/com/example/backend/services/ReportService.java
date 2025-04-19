@@ -3,6 +3,7 @@ package com.example.backend.services;
 import com.example.backend.dto.ReportDto;
 import com.example.backend.dto.ReportRequestDto;
 import com.example.backend.dto.ReportResponseDto;
+import com.example.backend.dto.ReportReviewRequestDto;
 import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
@@ -20,4 +21,6 @@ public interface ReportService {
                                      ReportReason reason,
                                      ReportStatus status,
                                      Pageable pageable);
+
+    ReportDto review(Long reportId, String moderatorUsername, ReportReviewRequestDto reviewRequest);
 }

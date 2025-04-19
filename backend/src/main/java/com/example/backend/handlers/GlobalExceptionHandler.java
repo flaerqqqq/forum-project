@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
             SimilarReportException.class,
             UserEmailNotVerifiedException.class
     })
-    public ResponseEntity<ErrorResponse> handleBadRequestException(UserAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException ex) {
         log.warn("Bad request exception: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

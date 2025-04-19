@@ -1,9 +1,6 @@
 package com.example.backend.controllers;
 
-import com.example.backend.dto.ReportDto;
-import com.example.backend.dto.ReportRequestDto;
-import com.example.backend.dto.ReportResponseDto;
-import com.example.backend.dto.UserDto;
+import com.example.backend.dto.*;
 import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
@@ -49,11 +46,12 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    // Add moderator preAuthorization role checking
     @PutMapping("/{reportId}/review")
     public ResponseEntity<ReportDto> review(@PathVariable Long reportId,
-                                            @RequestBody ReportReviewRequestDto reviewRequest) {
-        ReportDto response = reportService.review(reportId, reviewRequest);
+                                            @RequestBody ReportReviewRequestDto reviewRequest,
+                                            Authentication authentication) {
+        ReportDto response = reportService.review(reportId, authentication.getName(), reviewRequest);
         return ResponseEntity.ok(response);
     }
-
 }
