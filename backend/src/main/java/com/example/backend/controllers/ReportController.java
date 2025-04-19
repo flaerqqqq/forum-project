@@ -54,4 +54,10 @@ public class ReportController {
         ReportDto response = reportService.review(reportId, authentication.getName(), reviewRequest);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{reportId}")
+    public ResponseEntity<Void> deleteReportById(@PathVariable Long reportId) {
+        reportService.deleteById(reportId);
+        return ResponseEntity.noContent().build();
+    }
 }

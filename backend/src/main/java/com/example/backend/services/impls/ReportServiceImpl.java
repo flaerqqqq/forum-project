@@ -73,6 +73,15 @@ public class ReportServiceImpl implements ReportService {
         return reportMapper.toDto(updatedReport);
     }
 
+    @Override
+    public void deleteById(Long reportId) {
+        if (reportRepository.existsById(reportId)) {
+            reportRepository.deleteById(reportId);
+        } else {
+            throw new ReportNotFoundException();
+        }
+    }
+
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {
         User targetUser = userRepository.findByPublicId(reportRequest.getTargetId()).orElseThrow(() ->
                 new UserNotFoundException());

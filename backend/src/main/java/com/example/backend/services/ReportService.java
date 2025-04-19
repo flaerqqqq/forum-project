@@ -23,4 +23,6 @@ public interface ReportService {
                                      Pageable pageable);
 
     ReportDto review(Long reportId, String moderatorUsername, ReportReviewRequestDto reviewRequest);
+
+    void deleteById(Long reportId);
 }
