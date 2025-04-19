@@ -1,7 +1,9 @@
 package com.example.backend.services.impls;
 
+import com.example.backend.dto.ReportDto;
 import com.example.backend.dto.ReportRequestDto;
 import com.example.backend.dto.ReportResponseDto;
+import com.example.backend.exceptions.ReportNotFoundException;
 import com.example.backend.exceptions.SimilarReportException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.ReportMapper;
@@ -30,6 +32,12 @@ public class ReportServiceImpl implements ReportService {
             return reportUser(reporter, reportRequest);
         }
         return null;
+    }
+
+    @Override
+    public ReportDto findById(Long reportId) {
+        Report report = reportRepository.findById(reportId).orElseThrow(() -> new ReportNotFoundException());
+        return reportMapper.toDto(report);
     }
 
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {

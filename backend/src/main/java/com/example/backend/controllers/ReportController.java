@@ -1,5 +1,6 @@
 package com.example.backend.controllers;
 
+import com.example.backend.dto.ReportDto;
 import com.example.backend.dto.ReportRequestDto;
 import com.example.backend.dto.ReportResponseDto;
 import com.example.backend.dto.UserDto;
@@ -25,5 +26,11 @@ public class ReportController {
         UserDto reporterDto = userService.findByUsername(authentication.getName());
         ReportResponseDto responseDto = reportService.report(reporterDto.getPublicId(), request);
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{reportId}")
+    public ResponseEntity<ReportDto> findReportById(@PathVariable Long reportId) {
+        ReportDto response = reportService.findById(reportId);
+        return ResponseEntity.ok(response);
     }
 }
