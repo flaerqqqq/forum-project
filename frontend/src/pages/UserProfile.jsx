@@ -4,6 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { getUsernameFromToken } from '../utils/Auth.js';
 import UserNotFound from '../components/UserNotFound.jsx';
+import defaultAvatar from '../assets/images/default-avatar.png'
 
 const UserProfile = () => {
     const { username: profileUsername } = useParams();
@@ -46,7 +47,7 @@ const UserProfile = () => {
             <div className="max-w-3xl mx-auto">
                 <div className="bg-white rounded-lg shadow -mt-16 p-6 relative text-center  ">
                     <img
-                        src={user.avatarUrl || "/default-avatar.png"}
+                        src={user.avatarUrl || defaultAvatar}
                         alt="avatar"
                         className="w-28 h-28 rounded-full border-4 border-white mx-auto "
                     />
@@ -70,15 +71,27 @@ const UserProfile = () => {
                 <div className="mt-6 bg-white rounded-lg shadow p-4 flex justify-around text-gray-700 text-sm">
                     <div className="flex items-center space-x-2">
                         <span>📰</span>
-                        <span>{user.postsCount || 0} posts published</span>
+                        <span>Posts</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>💬</span>
-                        <span>{user.commentsCount || 0} comments written</span>
+                        <span>Comments</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>#️⃣</span>
-                        <span>{user.categoriesFollowCount || 0} categories followed</span>
+                        <span>Followed</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span>💾</span> {/* Using the floppy disk emoji for "Saved" */}
+                        <span>Saved</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span>❤️</span> {/* Using the heart emoji for "Liked" */}
+                        <span>Liked</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span>👎</span> {/* Using the thumbs down emoji for "Disliked" */}
+                        <span>Disliked</span>
                     </div>
                 </div>
             </div>

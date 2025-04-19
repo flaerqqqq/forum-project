@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
 import axios from "axios";
+import defaultAvatar from '../assets/images/default-avatar.png';
 
 const AvatarMenu = () => {
     const [user, setUser] = useState(null);
@@ -58,7 +59,7 @@ const AvatarMenu = () => {
     return (
         <div className="relative" ref={dropdownRef}>
             <img
-                src={user.avatarUrl || '/path/to/default/avatar.png'}
+                src={user.avatarUrl || defaultAvatar}
                 alt="avatar"
                 className={`w-9 h-9 rounded-full cursor-pointer ring-4 transition ${open ? 'ring-gray-200' : 'ring-transparent hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
