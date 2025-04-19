@@ -19,6 +19,7 @@ public abstract class ReportMapper {
     @Mapping(source = "moderator.publicId", target = "moderatorId")
     public abstract ReportDto toDto(Report report);
 
+    @Mapping(source = "reporter.publicId", target = "reporterId")
     public abstract ReportResponseDto toResponseDto(Report report);
 
     public User resolveUser(String userPublicId) {

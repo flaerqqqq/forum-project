@@ -15,8 +15,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ReportRequestDto {
 
-    private User reporter;
-
     private ReportTargetType targetType;
 
     private String targetId;

@@ -22,8 +22,8 @@ public class ReportController {
     @PostMapping
     public ResponseEntity<ReportResponseDto> report(@RequestBody ReportRequestDto request,
                                                     Authentication authentication) {
-        UserDto reportedDto = userService.findByUsername(authentication.getName());
-        ReportResponseDto responseDto = reportService.report(reportedDto.getPublicId(), request);
+        UserDto reporterDto = userService.findByUsername(authentication.getName());
+        ReportResponseDto responseDto = reportService.report(reporterDto.getPublicId(), request);
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 }
