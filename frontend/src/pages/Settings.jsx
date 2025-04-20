@@ -1,4 +1,3 @@
-// src/pages/Settings.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -14,9 +13,9 @@ const Settings = () => {
     const [description, setDescription] = useState(user?.description || '');
 
     if (loading) return <div>Loading...</div>;
-    if (!user) {
-        navigate('/login');
-        return null;
+
+    if (error) {
+        throw error;
     }
 
     const handleSubmit = async (e) => {
@@ -37,7 +36,7 @@ const Settings = () => {
             setUser({ ...user, ...response.data });
             navigate(`/users/${user.username}`);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update profile');
+            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to update profile'));
         } finally {
             setIsUpdating(false);
         }
@@ -66,7 +65,7 @@ const Settings = () => {
             );
             setUser({ ...user, avatarUrl: response.data });
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to upload avatar');
+            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to upload avatar'));
         } finally {
             setIsUpdating(false);
         }
@@ -125,12 +124,6 @@ const Settings = () => {
                                             disabled={isUpdating}
                                         />
                                     </div>
-
-                                    {error && (
-                                        <div className="text-red-500 text-sm">
-                                            {error}
-                                        </div>
-                                    )}
 
                                     <div className="flex justify-end">
                                         <button

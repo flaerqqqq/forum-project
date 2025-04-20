@@ -6,11 +6,16 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
     const [reaction, setReaction] = useState(null);
     const [likes, setLikes] = useState(0);
     const [dislikes, setDislikes] = useState(0);
+    const [error, setError] = useState(null);
     const { user: authenticatedUser } = useUser();
 
     const headers = authenticatedUser ? {
         Authorization: `Bearer ${authenticatedUser.token}`
     } : {};
+
+    if (error) {
+        throw error;
+    }
 
     const fetchInitialReaction = async () => {
         try {
@@ -27,7 +32,7 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
             }
         } catch (err) {
             if (err.response && err.response.status !== 404) {
-                console.error("An error occurred:", err);
+                setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to fetch reactions'));
             }
         }
     };
@@ -45,7 +50,7 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
             setLikes(res.data.likesCount);
             setDislikes(res.data.dislikesCount);
         } catch (err) {
-            console.error("Failed to send reaction", err);
+            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to send reaction'));
         }
     };
 

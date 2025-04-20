@@ -155,11 +155,11 @@ const UserProfile = () => {
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>❤️</span>
-                        <span>Likes {profileUser.receivedLikesCount || 0}</span>
+                        <span>Likes {profileUser.sentLikesCount || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>👎</span>
-                        <span>Dislikes {profileUser.receivedDislikesCount || 0}</span>
+                        <span>Dislikes {profileUser.sentDislikesCount || 0}</span>
                     </div>
                 </div>
             </div>
