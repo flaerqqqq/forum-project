@@ -1,32 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
-import axios from "axios";
+import { useUser } from '../contexts/UserContext';
+import defaultAvatar from '../assets/images/default-avatar.png';
 
 const AvatarMenu = () => {
-    const [user, setUser] = useState(null);
     const [open, setOpen] = useState(false);
-    const [error, setError] = useState(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const token = Cookies.get("token");
-        const username = token ? jwtDecode(token).sub : null;
-
-        if (username) {
-            const fetchAvatarUrl = async () => {
-                try {
-                    const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`);
-                    setUser(res.data);
-                } catch (err) {
-                    setError("Failed to load user data.");
-                }
-            };
-            fetchAvatarUrl();
-        }
-    });
+    const { user, loading } = useUser();
 
     const toggleDropdown = () => {
         setOpen((prev) => !prev);
@@ -35,7 +17,7 @@ const AvatarMenu = () => {
     const handleLogout = () => {
         Cookies.remove("token");
         navigate("/login");
-        window.navigation.reload();
+        window.location.reload();
     };
 
     const handleClickOutside = (e) => {
@@ -49,16 +31,13 @@ const AvatarMenu = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    useEffect(() => {
-        setOpen(false);
-    }, [navigate]);
-
+    if (loading) return null;
     if (!user) return null;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <img
-                src={user.avatarUrl || '/path/to/default/avatar.png'}
+                src={user.avatarUrl || defaultAvatar}
                 alt="avatar"
                 className={`w-9 h-9 rounded-full cursor-pointer ring-4 transition ${open ? 'ring-gray-200' : 'ring-transparent hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
@@ -84,7 +63,7 @@ const AvatarMenu = () => {
                 </div>
                 <div className="flex justify-center">
                     <button
-                        className="w-[95%] text-left px-4 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
+                        className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {
                             setOpen(false);
                             navigate("/settings");

@@ -1,7 +1,9 @@
 package com.example.backend.services.impls;
 
+import com.amazonaws.services.codegurureviewer.model.Reaction;
 import com.example.backend.dto.UserReactionDto;
 import com.example.backend.exceptions.InappropriateReactionTypeException;
+import com.example.backend.exceptions.ReactionNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.UserReactionMapper;
 import com.example.backend.models.User;
@@ -63,6 +65,13 @@ public class ReactionServiceImpl implements ReactionService {
         increaseReactionCount(targetUser, reactionType);
 
         return userReactionMapper.toDto(savedReaction);
+    }
+
+    @Override
+    public UserReactionDto findReactionBetweenUsers(String senderPublicId, String targetPublicId) {
+        UserReaction reaction = userReactionRepository.findReactionBetweenUsers(senderPublicId, targetPublicId).orElseThrow(() ->
+                new ReactionNotFoundException("User reaction between two users is not found"));
+        return userReactionMapper.toDto(reaction);
     }
 
     private void increaseReactionCount(User user, ReactionType type) {

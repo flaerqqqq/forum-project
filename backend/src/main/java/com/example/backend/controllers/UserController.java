@@ -10,6 +10,7 @@ import com.example.backend.services.ReactionService;
 import com.example.backend.services.ReportService;
 import com.example.backend.services.UserService;
 import com.sun.security.auth.UserPrincipal;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -70,6 +71,21 @@ public class UserController {
                 .type(userReactionDto.getType())
                 .likesCount(userDto.getReceivedLikesCount())
                 .dislikesCount(userDto.getReceivedDislikesCount())
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{targetPublicId}/reactions")
+    public ResponseEntity<UserReactionResponseDto> findReactionBetweenUsers(@PathVariable String targetPublicId,
+                                                                           Authentication authentication) {
+        UserDto reactionSender = userService.findByUsername(authentication.getName());
+        UserDto targetUser = userService.findByPublicId(targetPublicId);
+        UserReactionDto userReaction = reactionService.findReactionBetweenUsers(reactionSender.getPublicId(),
+                targetPublicId);
+        UserReactionResponseDto response = UserReactionResponseDto.builder()
+                .type(userReaction.getType())
+                .likesCount(targetUser.getReceivedLikesCount())
+                .dislikesCount(targetUser.getReceivedDislikesCount())
                 .build();
         return ResponseEntity.ok(response);
     }

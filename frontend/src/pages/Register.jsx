@@ -16,6 +16,10 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [step, setStep] = useState(1);
 
+    if (error) {
+        throw error;
+    }
+
     const handleChange = (e) => {
         setForm({
             ...form,
@@ -25,9 +29,10 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
 
         if (form.password !== form.passwordConfirm) {
-            setError('Passwords do not match.');
+            setError(new Error('Passwords do not match.'));
             return;
         }
 
@@ -36,7 +41,7 @@ const Register = () => {
             navigate('/email-verify-notice', { state: { fromRegister: true } });
         } catch (err) {
             const backendMessage = err.response?.data?.body.detail || 'Registration failed.';
-            setError(Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage);
+            setError(new Error(Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage));
         }
     };
 
@@ -44,7 +49,6 @@ const Register = () => {
         <div className="flex w-screen h-screen justify-center items-center bg-gray-100">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Join the Forum Community</h2>
-                {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
 
                 {step === 1 && (
                     <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
