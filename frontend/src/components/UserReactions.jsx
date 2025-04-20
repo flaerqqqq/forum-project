@@ -18,7 +18,6 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
             setLikes(userRes.data.receivedLikesCount);
             setDislikes(userRes.data.receivedDislikesCount);
 
-            // Only fetch the user's reaction if they're authenticated and it's not read-only
             if (authenticatedUser && !readOnly) {
                 const res = await axios.get(
                     `http://localhost:8080/api/v1/users/${targetPublicId}/reactions`,

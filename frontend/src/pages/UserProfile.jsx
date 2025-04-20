@@ -1,51 +1,100 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useUser } from '../contexts/UserContext';
-import UserNotFound from '../components/UserNotFound';
 import UserReactions from '../components/UserReactions';
 import defaultAvatar from '../assets/images/default-avatar.png';
+import UserNotFound from "../components/UserNotFound.jsx";
 
 const UserProfile = () => {
-    const { username: profileUsername } = useParams();
+    const rawParams = useParams();
+    const profileUsername = typeof rawParams === 'object' && rawParams?.username ? rawParams.username : '';
     const [profileUser, setProfileUser] = useState(null);
-    const [error, setError] = useState(null);
     const { user: authenticatedUser, loading: authLoading } = useUser();
     const [isLoading, setIsLoading] = useState(true);
+    const [retryCount, setRetryCount] = useState(0);
+    const [failedToLoad, setFailedToLoad] = useState(false);
+    const [notFound, setNotFound] = useState(false);
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 2000;
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchProfileUser = async () => {
-            if (authLoading) return;
+        let timeoutId;
+        let isMounted = true;
 
-            setIsLoading(true);
-            if (authenticatedUser && profileUsername === authenticatedUser.username) {
-                setProfileUser(authenticatedUser);
-                setIsLoading(false);
-                return;
-            }
+        if (retryCount > MAX_RETRIES || authLoading || failedToLoad || notFound) return;
+
+        const fetchProfileUser = async () => {
+            if (authLoading || failedToLoad || notFound) return;
 
             try {
-                const res = await axios.get(`http://localhost:8080/api/v1/users/${profileUsername}`);
-                setProfileUser(res.data);
-                setError(null);
-            } catch (err) {
-                if (err.response?.status === 404) {
-                    setError("not_found");
-                } else {
-                    setError("unexpected");
+                if (authenticatedUser && profileUsername === authenticatedUser.username) {
+                    if (isMounted) {
+                        setProfileUser(authenticatedUser);
+                        setIsLoading(false);
+                    }
+                    return;
                 }
-            } finally {
-                setIsLoading(false);
+
+                const res = await axios.get(`http://localhost:8080/api/v1/users/${profileUsername}`);
+                if (isMounted) {
+                    setProfileUser(res.data);
+                    setIsLoading(false);
+                }
+            } catch (error) {
+                if (!isMounted) return;
+
+                if (error.response?.status === 404) {
+                    setNotFound(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (retryCount < MAX_RETRIES) {
+                    timeoutId = setTimeout(() => {
+                        if (isMounted) {
+                            setRetryCount(prev => prev + 1);
+                        }
+                    }, RETRY_DELAY);
+                } else {
+                    setIsLoading(false);
+                    setFailedToLoad(true);
+                    console.error('Error loading profile:', error);
+                }
             }
         };
 
         fetchProfileUser();
-    }, [profileUsername, authenticatedUser, authLoading]);
 
-    if (authLoading || isLoading) return <div>Loading...</div>;
-    if (error === "not_found") return <UserNotFound />;
-    if (error) return <div>{error}</div>;
-    if (!profileUser) return <div>Loading...</div>;
+        return () => {
+            isMounted = false;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [profileUsername, authenticatedUser, authLoading, retryCount, navigate]);
+
+    if (notFound) {
+        return (<UserNotFound/>);
+    }
+
+    if (authLoading || isLoading) {
+        return (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    {retryCount > 0 && (
+                        <p className="text-gray-600">
+                            Retrying... ({retryCount}/{MAX_RETRIES})
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    if (!profileUser) {
+        return <div>Error loading user profile.</div>;
+    }
 
     const isOwnProfile = authenticatedUser?.username === profileUsername;
 
@@ -68,10 +117,10 @@ const UserProfile = () => {
                     </p>
                     <p className="text-sm text-gray-500 mt-6">
                         🎂 Joined on {new Date(profileUser.registrationDate).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        })}
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    })}
                     </p>
 
                     {profileUser.publicId && (
@@ -85,8 +134,8 @@ const UserProfile = () => {
 
                     {isOwnProfile && (
                         <div className="absolute top-6 right-6">
-                            <Link 
-                                to="/settings" 
+                            <Link
+                                to="/settings"
                                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                             >
                                 Edit profile
@@ -98,27 +147,19 @@ const UserProfile = () => {
                 <div className="mt-6 bg-white rounded-lg shadow p-4 flex justify-around text-gray-700 text-sm">
                     <div className="flex items-center space-x-2">
                         <span>📰</span>
-                        <span>Posts</span>
+                        <span>Posts {profileUser.postsCount || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>💬</span>
-                        <span>Comments</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span>#️⃣</span>
-                        <span>Followed</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span>💾</span>
-                        <span>Saved</span>
+                        <span>Comments {profileUser.commentsCount || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>❤️</span>
-                        <span>Liked</span>
+                        <span>Likes {profileUser.receivedLikesCount || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <span>👎</span>
-                        <span>Disliked</span>
+                        <span>Dislikes {profileUser.receivedDislikesCount || 0}</span>
                     </div>
                 </div>
             </div>

@@ -3,10 +3,15 @@ import { loginUser } from '../services/AuthService';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
+// ErrorThrower component to convert async errors to render errors
+const ErrorThrower = ({ error }) => {
+    throw error;
+};
+
 export default function Login() {
     const [form, setForm] = useState({ username: '', password: '' });
-    const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loginError, setLoginError] = useState(null);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -15,7 +20,7 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        
         try {
             const res = await loginUser(form);
             const token = res.data.token;
@@ -27,16 +32,22 @@ export default function Login() {
 
             navigate('/');
             window.navigation.reload();
-        } catch (err) {
-            setError(err.response?.data?.body.detail || 'Login failed');
+        } catch (error) {
+            const errorMessage = error.response?.data?.body?.detail || 
+                               error.response?.data?.message || 
+                               'Invalid username or password';
+            setLoginError(new Error(errorMessage));
         }
     };
+
+    if (loginError) {
+        return <ErrorThrower error={loginError} />;
+    }
 
     return (
         <div className="flex w-screen h-screen justify-center items-center bg-gray-100">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-md p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Welcome Back</h2>
-                {error && <p className="text-red-600 mb-4 text-sm text-center">{error}</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -89,7 +100,7 @@ export default function Login() {
                     </div>
                 </form>
                 <p className="text-sm text-center text-gray-600 mt-4">
-                    Don’t have an account?{' '}
+                    Don't have an account?{' '}
                     <a href="/register" className="text-blue-600 hover:underline">
                         Sign up
                     </a>

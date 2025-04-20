@@ -63,7 +63,7 @@ const AvatarMenu = () => {
                 </div>
                 <div className="flex justify-center">
                     <button
-                        className="w-[95%] text-left px-4 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
+                        className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {
                             setOpen(false);
                             navigate("/settings");

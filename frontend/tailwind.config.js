@@ -20,4 +20,9 @@ export default {
     },
   },
   plugins: [],
+  corePlugins: {
+    ringOpacity: false,
+    ring: false,
+  }
+
 };
