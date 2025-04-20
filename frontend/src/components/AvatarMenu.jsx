@@ -1,38 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
-import axios from "axios";
+import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
 
 const AvatarMenu = () => {
-    const [user, setUser] = useState(null);
     const [open, setOpen] = useState(false);
-    const [error, setError] = useState(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
-
-    // ✅ Fetch user info once on mount
-    useEffect(() => {
-        const token = Cookies.get("token");
-        const username = token ? jwtDecode(token).sub : null;
-
-        if (username) {
-            const fetchAvatarUrl = async () => {
-                try {
-                    const res = await axios.get(`http://localhost:8080/api/v1/users/${username}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
-                    setUser(res.data);
-                } catch (err) {
-                    setError("Failed to load user data.");
-                }
-            };
-            fetchAvatarUrl();
-        }
-    }, []);
+    const { user, loading } = useUser();
 
     const toggleDropdown = () => {
         setOpen((prev) => !prev);
@@ -41,7 +17,7 @@ const AvatarMenu = () => {
     const handleLogout = () => {
         Cookies.remove("token");
         navigate("/login");
-        window.location.reload(); // ✅ Corrected reload
+        window.location.reload();
     };
 
     const handleClickOutside = (e) => {
@@ -55,6 +31,7 @@ const AvatarMenu = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    if (loading) return null;
     if (!user) return null;
 
     return (
