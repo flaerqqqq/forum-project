@@ -1,27 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Camera } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
+import {toast} from "react-toastify";
 
 const Settings = () => {
     const navigate = useNavigate();
     const { user, setUser, loading } = useUser();
     const [isUpdating, setIsUpdating] = useState(false);
-    const [error, setError] = useState(null);
     const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [description, setDescription] = useState(user?.description || '');
 
     if (loading) return <div>Loading...</div>;
 
-    if (error) {
-        throw error;
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsUpdating(true);
-        setError(null);
 
         try {
             const response = await axios.patch(
@@ -35,8 +31,9 @@ const Settings = () => {
             );
             setUser({ ...user, ...response.data });
             navigate(`/users/${user.username}`);
+            toast.success('Profile updated successfully');
         } catch (err) {
-            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to update profile'));
+            toast.error(err.response?.data?.body.detail || 'Failed to update profile');
         } finally {
             setIsUpdating(false);
         }
@@ -47,7 +44,6 @@ const Settings = () => {
         if (!file) return;
 
         setIsUpdating(true);
-        setError(null);
 
         const formData = new FormData();
         formData.append('avatar', file);
@@ -64,8 +60,9 @@ const Settings = () => {
                 }
             );
             setUser({ ...user, avatarUrl: response.data });
+            toast.success('Avatar updated successfully');
         } catch (err) {
-            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to upload avatar'));
+            toast.error(err.response?.data?.body.detail.split(':')[1] || 'Failed to upload avatar');
         } finally {
             setIsUpdating(false);
         }
@@ -85,7 +82,7 @@ const Settings = () => {
                                             alt="Avatar"
                                             className="w-32 h-32 rounded-full object-cover"
                                         />
-                                        <label className="absolute bottom-0 right-0 bg-gray-800 rounded-full p-2 cursor-pointer hover:bg-gray-700">
+                                        <label className="absolute bottom-0 right-0 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-gray-700">
                                             <input
                                                 type="file"
                                                 className="hidden"
@@ -93,7 +90,7 @@ const Settings = () => {
                                                 onChange={handleAvatarChange}
                                                 disabled={isUpdating}
                                             />
-                                            📷
+                                            <Camera className="text-white w-5 h-5" />
                                         </label>
                                     </div>
                                 </div>

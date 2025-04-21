@@ -5,6 +5,11 @@ import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
 import defaultAvatar from '../assets/images/default-avatar.png';
 import UserNotFound from "../components/UserNotFound.jsx";
+import ReportUserModal from '../components/ReportUserModal';  // Import the modal
+import UserReports from '../components/UserReports'; // Import the UserReports component
+import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
+import 'react-toastify/dist/ReactToastify.css';
+import {isModerator} from "../utils/Auth.js"; // Import React-Toastify CSS
 
 const UserProfile = () => {
     const rawParams = useParams();
@@ -15,6 +20,8 @@ const UserProfile = () => {
     const [retryCount, setRetryCount] = useState(0);
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [notFound, setNotFound] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);  // State to control the modal
+    const [showReportsSection, setShowReportsSection] = useState(false); // State to toggle reports section
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 2000;
     const navigate = useNavigate();
@@ -60,7 +67,6 @@ const UserProfile = () => {
                 } else {
                     setIsLoading(false);
                     setFailedToLoad(true);
-                    console.error('Error loading profile:', error);
                 }
             }
         };
@@ -74,7 +80,7 @@ const UserProfile = () => {
     }, [profileUsername, authenticatedUser, authLoading, retryCount, navigate]);
 
     if (notFound) {
-        return (<UserNotFound/>);
+        return (<UserNotFound />);
     }
 
     if (authLoading || isLoading) {
@@ -142,27 +148,67 @@ const UserProfile = () => {
                             </Link>
                         </div>
                     )}
+
+                    {authenticatedUser && !isOwnProfile && (
+                        <div className="absolute top-6 right-20">
+                            <button
+                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                                onClick={() => setShowReportModal(true)}
+                            >
+                                Report User
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                <div className="mt-6 bg-white rounded-lg shadow p-4 flex justify-around text-gray-700 text-sm">
-                    <div className="flex items-center space-x-2">
-                        <span>📰</span>
-                        <span>Posts {profileUser.postsCount || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span>💬</span>
-                        <span>Comments {profileUser.commentsCount || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span>❤️</span>
-                        <span>Likes {profileUser.sentLikesCount || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <span>👎</span>
-                        <span>Dislikes {profileUser.sentDislikesCount || 0}</span>
+                <div className="mt-6 bg-white rounded-lg shadow p-4 text-gray-700 text-sm">
+                    <div className="flex justify-around flex-wrap gap-4">
+                        <button className="flex items-center space-x-2">
+                            <span>📰</span>
+                            <span>Posts</span>
+                        </button>
+
+                        <button className="flex items-center space-x-2">
+                            <span>💬</span>
+                            <span>Comments</span>
+                        </button>
+
+                        <button className="flex items-center space-x-2">
+                            <span>❤️</span>
+                            <span>Likes</span>
+                        </button>
+
+                        <button className="flex items-center space-x-2">
+                            <span>👎</span>
+                            <span>Dislikes</span>
+                        </button>
+
+                        {isOwnProfile && !isModerator() && (
+                            <div className="relative">
+                                <button
+                                    className="flex items-center space-x-2"
+                                    onClick={() => setShowReportsSection(!showReportsSection)} // Toggle reports section visibility
+                                >
+                                    <span>🚨</span>
+                                    <span>Reports</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {/* Style the UserReports like the profile container */}
+                {showReportsSection && (
+                    <UserReports userId={profileUser.publicId} />
+                )}
             </div>
+
+            {showReportModal && (
+                <ReportUserModal
+                    targetUsername={profileUser.username}
+                    onClose={() => setShowReportModal(false)}
+                />
+            )}
         </div>
     );
 };

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import {toast} from "react-toastify";
 
 const AvatarUpload = ({ username }) => {
     const [avatar, setAvatar] = useState(null);
-    const [error, setError] = useState(null);
     const token = Cookies.get('token');
 
     const handleFileChange = (e) => {
@@ -27,16 +27,15 @@ const AvatarUpload = ({ username }) => {
                     }
                 }
             );
-            alert('Avatar uploaded!');
+            toast.success('Avatar uploaded successfully!');
             window.location.reload();
         } catch (err) {
-            setError(err.response?.data?.body.detail || 'Failed to upload avatar!');
+           toast.error(err.response?.data?.body.detail || 'Failed to upload avatar!');
         }
     };
 
     return (
         <div>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
             <input type="file" accept="image/*" onChange={handleFileChange} />
             <button onClick={handleUpload}>Upload Avatar</button>
         </div>

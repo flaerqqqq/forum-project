@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/AuthService';
+import {toast} from "react-toastify";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Register = () => {
         setError(null);
 
         if (form.password !== form.passwordConfirm) {
-            setError(new Error('Passwords do not match.'));
+            toast.error('Passwords do not match.');
             return;
         }
 
@@ -41,7 +42,7 @@ const Register = () => {
             navigate('/email-verify-notice', { state: { fromRegister: true } });
         } catch (err) {
             const backendMessage = err.response?.data?.body.detail || 'Registration failed.';
-            setError(new Error(Array.isArray(backendMessage) ? backendMessage.join(', ') : backendMessage));
+            toast.error(backendMessage);
         }
     };
 

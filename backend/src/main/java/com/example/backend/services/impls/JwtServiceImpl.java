@@ -53,8 +53,10 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public List<GrantedAuthority> extractAuthorities(String token) {
-        return ((List<Map<String, String>>)extractClaims(token).get("roles")).get(0).values().stream()
-                .map(SimpleGrantedAuthority::new)
+        List<Map<String, String>> roles = (List<Map<String, String>>) extractClaims(token).get("roles");
+
+        return roles.stream()
+                .map(roleMap -> new SimpleGrantedAuthority(roleMap.get("authority")))
                 .collect(Collectors.toList());
     }
 

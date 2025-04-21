@@ -7,6 +7,7 @@ DELETE FROM reports WHERE TRUE;
 DELETE FROM users WHERE true;
 
 INSERT INTO roles (id, name) VALUES (1, 'ROLE_USER');
+INSERT INTO roles (id, name) VALUES (2, 'ROLE_MODERATOR');
 
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
@@ -35,6 +36,9 @@ INSERT INTO users (
 
 INSERT INTO users_roles (user_id, role_id)
 VALUES (99, 1);
+
+INSERT INTO users_roles (user_id, role_id)
+VALUES (99, 2);
 
 INSERT INTO users_roles (user_id, role_id)
 VALUES (100, 1);

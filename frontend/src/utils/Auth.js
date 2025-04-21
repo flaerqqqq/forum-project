@@ -13,3 +13,17 @@ export const getUsernameFromToken = () => {
     }
     return null;
 };
+
+export const isModerator = () => {
+    const token = Cookies.get('token');
+    if (!token) return false;
+
+    try {
+        const decoded = jwtDecode(token);
+        const roles = decoded.roles?.map(role => role.authority);
+        return roles?.includes('ROLE_MODERATOR');
+    } catch (error) {
+        console.error('Invalid JWT in isModerator:', error);
+        return false;
+    }
+};
