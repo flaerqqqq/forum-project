@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
+import {isModerator} from "../utils/Auth.js";
 
 const AvatarMenu = () => {
     const [open, setOpen] = useState(false);
@@ -47,10 +48,21 @@ const AvatarMenu = () => {
                 ${open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
             >
                 <div className="p-4 px-6 border-b border-gray-200">
-                    <div className="font-semibold text-gray-900">{user.displayName || user.username}</div>
+                    <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        {user.displayName || user.username}
+                        {isModerator() ? (
+                            <span className="text-xs bg-purple-100 text-purple-600 font-semibold px-2 py-0.5 rounded-full">
+                                MODERATOR
+                            </span>
+                        ) :
+                            <span className="text-xs bg-green-100 text-green-600 font-semibold px-2 py-0.5 rounded-full">
+                                USER
+                            </span>
+                        }
+                    </div>
                     <div className="text-gray-500">@{user.username}</div>
                 </div>
-                <div className="flex justify-center py-1">
+                <div className="flex justify-center pt-1.5">
                     <button
                         className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {
@@ -61,7 +73,7 @@ const AvatarMenu = () => {
                         Profile
                     </button>
                 </div>
-                <div className="flex justify-center">
+                <div className="flex justify-center py-1">
                     <button
                         className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                         onClick={() => {
@@ -72,8 +84,21 @@ const AvatarMenu = () => {
                         Settings
                     </button>
                 </div>
+                {isModerator() && (
+                    <div className="flex justify-center pb-0.5">
+                        <button
+                            className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
+                            onClick={() => {
+                                setOpen(false);
+                                navigate("/moderator");
+                            }}
+                        >
+                            Moderator Panel
+                        </button>
+                    </div>
+                )}
                 <hr className="my-1" />
-                <div className="flex justify-center p-0.5 pb-1">
+                <div className="flex justify-center pt-0.5 pb-1.5">
                     <button
                         className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 outline-none hover:underline transition"
                         onClick={handleLogout}

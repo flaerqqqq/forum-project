@@ -8,7 +8,8 @@ import UserNotFound from "../components/UserNotFound.jsx";
 import ReportUserModal from '../components/ReportUserModal';  // Import the modal
 import UserReports from '../components/UserReports'; // Import the UserReports component
 import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
-import 'react-toastify/dist/ReactToastify.css'; // Import React-Toastify CSS
+import 'react-toastify/dist/ReactToastify.css';
+import {isModerator} from "../utils/Auth.js"; // Import React-Toastify CSS
 
 const UserProfile = () => {
     const rawParams = useParams();
@@ -182,7 +183,7 @@ const UserProfile = () => {
                             <span>Dislikes</span>
                         </button>
 
-                        {isOwnProfile && (
+                        {isOwnProfile && !isModerator() && (
                             <div className="relative">
                                 <button
                                     className="flex items-center space-x-2"

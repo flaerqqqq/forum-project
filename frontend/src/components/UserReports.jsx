@@ -4,6 +4,8 @@ import SingleReport from './SingleReport';
 import { useUser } from '../contexts/UserContext';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
+import { isModerator } from '../utils/Auth';
+import { Oval } from 'react-loader-spinner';
 
 const STATUSES = ['All', 'OPEN', 'UNDER_REVIEW', 'REJECTED', 'RESOLVED'];
 const REASONS = ['All', 'SPAM', 'HARASSMENT', 'HATE_SPEECH', 'INAPPROPRIATE_CONTENT', 'OTHER'];
@@ -16,6 +18,7 @@ const SORT_OPTIONS = [
 ];
 
 const PAGE_SIZE = 8;
+const MIN_LOADING_TIME = 300;
 
 const UserReports = () => {
     const { user } = useUser();
@@ -23,6 +26,8 @@ const UserReports = () => {
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [initialLoadDone, setInitialLoadDone] = useState(false);
+    const [reportId, setReportId] = useState('');
 
     const [selectedStatus, setSelectedStatus] = useState('All');
     const [selectedReason, setSelectedReason] = useState('All');
@@ -31,6 +36,7 @@ const UserReports = () => {
 
     const token = Cookies.get('token');
     const observer = useRef();
+    const isModer = isModerator();
 
     const lastReportRef = useCallback(node => {
         if (loading) return;
@@ -45,54 +51,95 @@ const UserReports = () => {
 
     const fetchReports = useCallback(async () => {
         setLoading(true);
+        const startTime = Date.now();
+        let fetchedReports = [];
+        let isLast = false;
+
         try {
-            const res = await axios.get(`http://localhost:8080/api/v1/users/me/reports`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: {
-                    status: selectedStatus !== 'All' ? selectedStatus : undefined,
-                    reason: selectedReason !== 'All' ? selectedReason : undefined,
-                    targetType: selectedTargetType !== 'All' ? selectedTargetType : undefined,
-                    sort: sortOption,
-                    page,
-                    size: PAGE_SIZE,
-                },
-            });
+            if (reportId.trim()) {
+                const res = await axios.get(`http://localhost:8080/api/v1/reports/${reportId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                fetchedReports = [res.data];
+                isLast = true;
+            } else {
+                const url = isModer
+                    ? 'http://localhost:8080/api/v1/reports'
+                    : 'http://localhost:8080/api/v1/users/me/reports';
 
-            const newReports = res.data.content || [];
-            setReports(prev => (page === 0 ? newReports : [...prev, ...newReports]));
-            setHasMore(!res.data.last);
+                const res = await axios.get(url, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        status: selectedStatus !== 'All' ? selectedStatus : undefined,
+                        reason: selectedReason !== 'All' ? selectedReason : undefined,
+                        targetType: selectedTargetType !== 'All' ? selectedTargetType : undefined,
+                        sort: sortOption,
+                        page,
+                        size: PAGE_SIZE,
+                    },
+                });
+
+                fetchedReports = res.data.content || [];
+                isLast = res.data.last;
+            }
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail.split(':')[1] || 'Failed to load reports. Please try again.';
-            toast.error(errorMessage);
+            const errorMessage = err.response?.data?.body?.detail?.split(':')[1] || 'Failed to load reports. Please try again.';
+            if (err.response?.status !== 404 && err.response?.status !== 500) {
+                toast.error(errorMessage);
+            }
+            fetchedReports = [];
+            isLast = true;
         } finally {
-            setLoading(false);
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+            setTimeout(() => {
+                setReports(prev => (page === 0 ? fetchedReports : [...prev, ...fetchedReports]));
+                setHasMore(!isLast);
+                setLoading(false);
+                setInitialLoadDone(true);
+            }, remainingTime);
         }
-    }, [token, selectedStatus, selectedReason, selectedTargetType, sortOption, page]);
+    }, [token, isModer, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page]);
 
     useEffect(() => {
-        if (user) fetchReports();
-    }, [user, fetchReports]);
+        if (!user) return;
 
-    // Reset on filters change
-    useEffect(() => {
-        setPage(0);
-        setReports([]);
-        setHasMore(true);
-    }, [selectedStatus, selectedReason, selectedTargetType, sortOption]);
+        const timeout = setTimeout(() => {
+            setPage(0);
+            setReports([]);
+            setHasMore(true);
+            setInitialLoadDone(false);
+            fetchReports();
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [user, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption]);
 
     return (
         <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
-            <h2 className="text-xl font-bold mb-4 border-b pb-2">🚨 My Reports</h2>
+            <h2 className="text-xl font-bold mb-4 border-b pb-2">{isModer ? '🛡️ Moderator Reports' : '🚨 My Reports'}</h2>
 
             <div className="flex gap-4 mb-4 flex-wrap">
-                {/* Filters */}
-                {[
-                    ['Status', STATUSES, selectedStatus, e => setSelectedStatus(e.target.value), 'status'],
+                {isModer && (
+                    <div className="flex flex-col">
+                        <label htmlFor="reportId" className="text-sm font-semibold mb-1 text-gray-600">
+                            Report ID
+                        </label>
+                        <input
+                            id="reportId"
+                            type="text"
+                            className="px-4 py-2 rounded-md border"
+                            placeholder="Enter Report ID"
+                            value={reportId}
+                            onChange={e => setReportId(e.target.value)}
+                        />
+                    </div>
+                )}
+
+                {[['Status', STATUSES, selectedStatus, e => setSelectedStatus(e.target.value), 'status'],
                     ['Reason', REASONS, selectedReason, e => setSelectedReason(e.target.value), 'reason'],
                     ['Target Type', TARGET_TYPES, selectedTargetType, e => setSelectedTargetType(e.target.value), 'targetType'],
-                    [
-                        'Sort by',
-                        SORT_OPTIONS.map(opt => opt.label),
+                    ['Sort by', SORT_OPTIONS.map(opt => opt.label),
                         sortOption,
                         e => setSortOption(SORT_OPTIONS.find(o => o.label === e.target.value)?.value || 'reportedAt,DESC'),
                         'sortBy'
@@ -114,9 +161,7 @@ const UserReports = () => {
                                 onChange={onChange}
                             >
                                 {options.map(opt => (
-                                    <option key={opt} value={opt}>
-                                        {opt}
-                                    </option>
+                                    <option key={opt} value={opt}>{opt}</option>
                                 ))}
                             </select>
                         </div>
@@ -124,8 +169,19 @@ const UserReports = () => {
                 })}
             </div>
 
-            {reports.length === 0 && !loading ? (
-                <p className="text-gray-500">You haven't submitted any reports yet.</p>
+            {!initialLoadDone ? (
+                <div className="flex justify-center mt-4">
+                    <Oval
+                        height={40}
+                        width={40}
+                        color="#3b82f6"
+                        secondaryColor="#dbeafe"
+                        strokeWidth={4}
+                        visible={true}
+                    />
+                </div>
+            ) : reports.length === 0 ? (
+                <p className="text-gray-500">No reports found.</p>
             ) : (
                 <div className="space-y-4">
                     {reports.map((report, i) => (
@@ -136,7 +192,9 @@ const UserReports = () => {
                 </div>
             )}
 
-            {loading && <p className="text-gray-500 mt-4">Loading more reports...</p>}
+            {!loading && hasMore && reports.length > 0 && (
+                <p className="text-gray-500 mt-4">Loading more reports...</p>
+            )}
         </div>
     );
 };
