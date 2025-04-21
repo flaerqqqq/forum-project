@@ -3,25 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
+import {toast} from "react-toastify";
 
 const Settings = () => {
     const navigate = useNavigate();
     const { user, setUser, loading } = useUser();
     const [isUpdating, setIsUpdating] = useState(false);
-    const [error, setError] = useState(null);
     const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [description, setDescription] = useState(user?.description || '');
 
     if (loading) return <div>Loading...</div>;
 
-    if (error) {
-        throw error;
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsUpdating(true);
-        setError(null);
 
         try {
             const response = await axios.patch(
@@ -35,8 +30,9 @@ const Settings = () => {
             );
             setUser({ ...user, ...response.data });
             navigate(`/users/${user.username}`);
+            toast.success('Profile updated successfully');
         } catch (err) {
-            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to update profile'));
+            toast.error(err.response?.data?.body.detail || 'Failed to update profile');
         } finally {
             setIsUpdating(false);
         }
@@ -47,7 +43,6 @@ const Settings = () => {
         if (!file) return;
 
         setIsUpdating(true);
-        setError(null);
 
         const formData = new FormData();
         formData.append('avatar', file);
@@ -64,8 +59,9 @@ const Settings = () => {
                 }
             );
             setUser({ ...user, avatarUrl: response.data });
+            toast.success('Avatar updated successfully');
         } catch (err) {
-            setError(new Error(err.response?.data?.body.detail.split(':')[1] || 'Failed to upload avatar'));
+            toast.error(err.response?.data?.body.detail.split(':')[1] || 'Failed to upload avatar');
         } finally {
             setIsUpdating(false);
         }

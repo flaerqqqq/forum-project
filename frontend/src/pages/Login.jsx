@@ -2,16 +2,11 @@ import { useState } from 'react';
 import { loginUser } from '../services/AuthService';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-
-// ErrorThrower component to convert async errors to render errors
-const ErrorThrower = ({ error }) => {
-    throw error;
-};
+import {toast} from "react-toastify";
 
 export default function Login() {
     const [form, setForm] = useState({ username: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
-    const [loginError, setLoginError] = useState(null);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -33,16 +28,10 @@ export default function Login() {
             navigate('/');
             window.navigation.reload();
         } catch (error) {
-            const errorMessage = error.response?.data?.body?.detail || 
-                               error.response?.data?.message || 
-                               'Invalid username or password';
-            setLoginError(new Error(errorMessage));
+            const errorMessage = error.response?.data?.body?.detail || 'Error while logging. Please try again.';
+            toast.error(errorMessage);
         }
     };
-
-    if (loginError) {
-        return <ErrorThrower error={loginError} />;
-    }
 
     return (
         <div className="flex w-screen h-screen justify-center items-center bg-gray-100">
