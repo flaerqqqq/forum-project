@@ -3,19 +3,19 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
-import {isModerator} from "../utils/Auth.js";
+import { isModerator } from "../utils/Auth.js";
 
 const AvatarMenu = () => {
     const [open, setOpen] = useState(false);
+    const [logoutTriggered, setLogoutTriggered] = useState(false); // 🆕
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const { user, loading } = useUser();
 
-    const toggleDropdown = () => {
-        setOpen((prev) => !prev);
-    };
+    const toggleDropdown = () => setOpen(prev => !prev);
 
     const handleLogout = () => {
+        setLogoutTriggered(true);  // 🆕 immediately stop rendering dropdown
         Cookies.remove("token");
         navigate("/login");
         window.location.reload();
@@ -32,81 +32,83 @@ const AvatarMenu = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    if (loading) return null;
-    if (!user) return null;
+    if (loading || !user) return null;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <img
                 src={user.avatarUrl || defaultAvatar}
                 alt="avatar"
-                className={`w-9 h-9 rounded-full cursor-pointer ring-4 transition ${open ? 'ring-gray-200' : 'ring-transparent hover:ring-gray-200'}`}
+                className={`w-9 h-9 rounded-full cursor-pointer transition 
+                ${open ? 'ring-4 ring-gray-200' : 'ring-1 ring-gray-600 hover:ring-4 hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
             />
-            <div
-                className={`absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm transform transition-all duration-200 ease-out
-                ${open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-            >
-                <div className="p-4 px-6 border-b border-gray-200">
-                    <div className="font-semibold text-gray-900 flex items-center gap-2">
-                        {user.displayName || user.username}
-                        {isModerator() ? (
-                            <span className="text-xs bg-purple-100 text-purple-600 font-semibold px-2 py-0.5 rounded-full">
-                                MODERATOR
-                            </span>
-                        ) :
-                            <span className="text-xs bg-green-100 text-green-600 font-semibold px-2 py-0.5 rounded-full">
-                                USER
-                            </span>
-                        }
+            {!logoutTriggered && (
+                <div
+                    className={`absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm transform transition-all duration-200 ease-out
+                    ${open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                >
+                    <div className="p-4 px-6 border-b border-gray-200">
+                        <div className="font-semibold text-gray-900 flex items-center gap-2">
+                            {user.displayName || user.username}
+                            {isModerator() ? (
+                                <span className="text-xs bg-purple-100 text-purple-600 font-semibold px-2 py-0.5 rounded-full">
+                                    MODERATOR
+                                </span>
+                            ) : (
+                                <span className="text-xs bg-green-100 text-green-600 font-semibold px-2 py-0.5 rounded-full">
+                                    USER
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-gray-500">@{user.username}</div>
                     </div>
-                    <div className="text-gray-500">@{user.username}</div>
-                </div>
-                <div className="flex justify-center pt-1.5">
-                    <button
-                        className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
-                        onClick={() => {
-                            setOpen(false);
-                            navigate(`/users/${user.username}`);
-                        }}
-                    >
-                        Profile
-                    </button>
-                </div>
-                <div className="flex justify-center py-1">
-                    <button
-                        className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
-                        onClick={() => {
-                            setOpen(false);
-                            navigate("/settings");
-                        }}
-                    >
-                        Settings
-                    </button>
-                </div>
-                {isModerator() && (
-                    <div className="flex justify-center pb-0.5">
+                    <div className="flex justify-center pt-1.5">
                         <button
                             className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
                             onClick={() => {
                                 setOpen(false);
-                                navigate("/moderator");
+                                navigate(`/users/${user.username}`);
                             }}
                         >
-                            Moderator Panel
+                            Profile
                         </button>
                     </div>
-                )}
-                <hr className="my-1" />
-                <div className="flex justify-center pt-0.5 pb-1.5">
-                    <button
-                        className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 outline-none hover:underline transition"
-                        onClick={handleLogout}
-                    >
-                        Sign Out
-                    </button>
+                    <div className="flex justify-center py-1">
+                        <button
+                            className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
+                            onClick={() => {
+                                setOpen(false);
+                                navigate("/settings");
+                            }}
+                        >
+                            Settings
+                        </button>
+                    </div>
+                    {isModerator() && (
+                        <div className="flex justify-center pb-0.5">
+                            <button
+                                className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 hover:outline-none hover:underline transition"
+                                onClick={() => {
+                                    setOpen(false);
+                                    navigate("/moderator");
+                                }}
+                            >
+                                Moderator Panel
+                            </button>
+                        </div>
+                    )}
+                    <hr className="my-1" />
+                    <div className="flex justify-center pt-0.5 pb-1.5">
+                        <button
+                            className="w-[95%] text-left px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-blue-200 outline-none hover:underline transition"
+                            onClick={handleLogout}
+                        >
+                            Sign Out
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
