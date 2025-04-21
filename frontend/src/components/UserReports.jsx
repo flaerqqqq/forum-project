@@ -23,10 +23,10 @@ const MIN_LOADING_TIME = 300;
 const UserReports = () => {
     const { user } = useUser();
     const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // Used for pagination loading state
+    const [initialLoading, setInitialLoading] = useState(true); // Used for initial load or new filter load state
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const [initialLoadDone, setInitialLoadDone] = useState(false);
     const [reportId, setReportId] = useState('');
 
     const [selectedStatus, setSelectedStatus] = useState('All');
@@ -39,7 +39,7 @@ const UserReports = () => {
     const isModer = isModerator();
 
     const lastReportRef = useCallback(node => {
-        if (loading) return;
+        if (loading || initialLoading) return; // Prevent triggering while any loading is happening
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && hasMore) {
@@ -47,10 +47,15 @@ const UserReports = () => {
             }
         });
         if (node) observer.current.observe(node);
-    }, [loading, hasMore]);
+    }, [loading, initialLoading, hasMore]); // Include initialLoading in dependencies
 
     const fetchReports = useCallback(async () => {
-        setLoading(true);
+        if (page === 0) {
+            setInitialLoading(true); // Set initial loading for the first page (new query)
+        } else {
+            setLoading(true); // Set loading for subsequent pages (pagination)
+        }
+
         const startTime = Date.now();
         let fetchedReports = [];
         let isLast = false;
@@ -88,32 +93,69 @@ const UserReports = () => {
                 toast.error(errorMessage);
             }
             fetchedReports = [];
-            isLast = true;
+            isLast = true; // Treat errors as the end of data for current query
         } finally {
             const elapsedTime = Date.now() - startTime;
             const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
             setTimeout(() => {
+                // Append reports for pagination, replace for new searches/filters
                 setReports(prev => (page === 0 ? fetchedReports : [...prev, ...fetchedReports]));
                 setHasMore(!isLast);
-                setLoading(false);
-                setInitialLoadDone(true);
+                if (page === 0) {
+                    setInitialLoading(false); // End of initial/new query load
+                } else {
+                    setLoading(false); // End of pagination load
+                }
             }, remainingTime);
         }
     }, [token, isModer, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page]);
 
+    // Effect to trigger data fetching when relevant state changes
     useEffect(() => {
         if (!user) return;
 
-        const timeout = setTimeout(() => {
-            setPage(0);
-            setReports([]);
-            setHasMore(true);
-            setInitialLoadDone(false);
-            fetchReports();
-        }, 300);
+        // Use a timeout to debounce rapid state changes (e.g., multiple filter changes)
+        // and to allow setPage(0) from handlers to take effect before fetching.
+        const delay = page === 0 ? 100 : 0; // Debounce first page fetches
 
-        return () => clearTimeout(timeout);
-    }, [user, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption]);
+        const handler = setTimeout(() => {
+            // State (page, filters, sort, reportId) is in desired state here.
+            // fetchReports will fetch based on this state and manage its own loading state.
+            fetchReports();
+        }, delay);
+
+        return () => clearTimeout(handler);
+
+    }, [user, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page, fetchReports]); // Dependencies
+
+    // Handlers to update state and reset page on filter/sort/reportId changes
+    const handleStatusChange = useCallback((e) => {
+        setSelectedStatus(e.target.value);
+        setPage(0); // Reset page on filter change
+    }, []);
+
+    const handleReasonChange = useCallback((e) => {
+        setSelectedReason(e.target.value);
+        setPage(0); // Reset page on filter change
+    }, []);
+
+    const handleTargetTypeChange = useCallback((e) => {
+        setSelectedTargetType(e.target.value);
+        setPage(0); // Reset page on filter change
+    }, []);
+
+    const handleSortChange = useCallback((e) => {
+        const selectedLabel = e.target.value;
+        const selectedValue = SORT_OPTIONS.find(o => o.label === selectedLabel)?.value || 'reportedAt,DESC';
+        setSortOption(selectedValue);
+        setPage(0); // Reset page on sort change
+    }, []);
+
+    const handleReportIdChange = useCallback((e) => {
+        setReportId(e.target.value);
+        setPage(0); // Reset page on report ID change
+    }, []);
+
 
     return (
         <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
@@ -131,45 +173,53 @@ const UserReports = () => {
                             className="px-4 py-2 rounded-md border"
                             placeholder="Enter Report ID"
                             value={reportId}
-                            onChange={e => setReportId(e.target.value)}
+                            onChange={handleReportIdChange}
                         />
                     </div>
                 )}
 
-                {[['Status', STATUSES, selectedStatus, e => setSelectedStatus(e.target.value), 'status'],
-                    ['Reason', REASONS, selectedReason, e => setSelectedReason(e.target.value), 'reason'],
-                    ['Target Type', TARGET_TYPES, selectedTargetType, e => setSelectedTargetType(e.target.value), 'targetType'],
+                {[['Status', STATUSES, selectedStatus, handleStatusChange, 'status'],
+                    ['Reason', REASONS, selectedReason, handleReasonChange, 'reason'],
+                    ['Target Type', TARGET_TYPES, selectedTargetType, handleTargetTypeChange, 'targetType'],
                     ['Sort by', SORT_OPTIONS.map(opt => opt.label),
-                        sortOption,
-                        e => setSortOption(SORT_OPTIONS.find(o => o.label === e.target.value)?.value || 'reportedAt,DESC'),
+                        sortOption, // Use the value from state
+                        handleSortChange, // Use the specific handler
                         'sortBy'
                     ]
                 ].map(([label, options, value, onChange, id], i) => {
+                    // For display in the select, find the label corresponding to the current value
                     const displayValue = label === 'Sort by'
                         ? SORT_OPTIONS.find(o => o.value === value)?.label
                         : value;
 
                     return (
-                        <div className="flex flex-col" key={i}>
+                        <div className="flex flex-col" key={id}> {/* Use id as key */}
                             <label htmlFor={id} className="text-sm font-semibold mb-1 text-gray-600">
                                 {label}
                             </label>
                             <select
                                 id={id}
                                 className="px-4 py-2 rounded-md border"
-                                value={displayValue}
-                                onChange={onChange}
+                                value={displayValue} // Select element uses the display value (label)
+                                onChange={onChange} // Use the appropriate handler
                             >
-                                {options.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
+                                {options.map(opt => {
+                                    // For sort options, the value of the option should be the label for the select element
+                                    // For others, the option value is the status/reason/type string itself
+                                    const optionValue = label === 'Sort by' ? opt : opt;
+
+                                    return (
+                                        <option key={optionValue} value={optionValue}>{opt}</option>
+                                    );
+                                })}
                             </select>
                         </div>
                     );
                 })}
             </div>
 
-            {!initialLoadDone ? (
+            {/* Conditional Rendering for Initial/New Query Loading, No Results, or Reports List */}
+            {initialLoading && reports.length === 0 ? ( // Show initial spinner only if initial loading and no reports loaded yet
                 <div className="flex justify-center mt-4">
                     <Oval
                         height={40}
@@ -180,20 +230,39 @@ const UserReports = () => {
                         visible={true}
                     />
                 </div>
-            ) : reports.length === 0 ? (
+            ) : reports.length === 0 && !initialLoading ? ( // Show "No reports found" if reports is empty and initial loading is done
                 <p className="text-gray-500">No reports found.</p>
             ) : (
-                <div className="space-y-4">
-                    {reports.map((report, i) => (
-                        <div key={report.id} ref={i === reports.length - 1 ? lastReportRef : null}>
-                            <SingleReport report={report} reportedEntityName={report.targetId} />
-                        </div>
-                    ))}
+                // Reports list (only show if reports.length > 0)
+                reports.length > 0 && (
+                    <div className="space-y-4">
+                        {reports.map((report, i) => (
+                            // Use report.id for key, and ref the last element
+                            <div key={report.id} ref={i === reports.length - 1 ? lastReportRef : null}>
+                                <SingleReport report={report} reportedEntityName={report.targetId} />
+                            </div>
+                        ))}
+                    </div>
+                )
+            )}
+
+            {/* Pagination Spinner */}
+            {loading && reports.length > 0 && ( // Show pagination spinner if loading AND there are already reports
+                <div className="flex justify-center mt-4">
+                    <Oval
+                        height={30}
+                        width={30}
+                        color="#3b82f6"
+                        secondaryColor="#dbeafe"
+                        strokeWidth={3}
+                        visible={true}
+                    />
                 </div>
             )}
 
-            {!loading && hasMore && reports.length > 0 && (
-                <p className="text-gray-500 mt-4">Loading more reports...</p>
+            {/* "Scroll to load" message */}
+            {!loading && hasMore && reports.length > 0 && !initialLoading && ( // Show message if not loading pagination, has more, reports exist, and initial load is done
+                <p className="text-gray-500 mt-4 text-center">Scroll down to load more reports...</p>
             )}
         </div>
     );
