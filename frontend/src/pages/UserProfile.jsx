@@ -198,10 +198,7 @@ const UserProfile = () => {
 
                 {/* Style the UserReports like the profile container */}
                 {showReportsSection && (
-                    <div className="bg-white rounded-lg shadow p-6 mt-6">
-                        <h3 className="text-xl font-bold text-gray-700 mb-4">Reported Issues</h3>
-                        <UserReports userId={profileUser.publicId} /> {/* Display reports section */}
-                    </div>
+                    <UserReports userId={profileUser.publicId} />
                 )}
             </div>
 

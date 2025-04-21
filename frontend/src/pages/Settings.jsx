@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Camera } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import defaultAvatar from '../assets/images/default-avatar.png';
 import {toast} from "react-toastify";
@@ -81,7 +82,7 @@ const Settings = () => {
                                             alt="Avatar"
                                             className="w-32 h-32 rounded-full object-cover"
                                         />
-                                        <label className="absolute bottom-0 right-0 bg-gray-800 rounded-full p-2 cursor-pointer hover:bg-gray-700">
+                                        <label className="absolute bottom-0 right-0 bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-gray-700">
                                             <input
                                                 type="file"
                                                 className="hidden"
@@ -89,7 +90,7 @@ const Settings = () => {
                                                 onChange={handleAvatarChange}
                                                 disabled={isUpdating}
                                             />
-                                            📷
+                                            <Camera className="text-white w-5 h-5" />
                                         </label>
                                     </div>
                                 </div>
