@@ -11,7 +11,8 @@ import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(config = MapperConfig.class, uses = {
-        CategoryFollowMapper.class
+        CategoryFollowMapper.class,
+        CategoryModeratorMapper.class
 })
 public abstract class CategoryMapper {
 
