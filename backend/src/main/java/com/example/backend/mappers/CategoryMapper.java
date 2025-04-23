@@ -22,7 +22,7 @@ public abstract class CategoryMapper {
     abstract Category toEntity(CategoryDto categoryDto);
 
     @Mapping(source = "createdBy.id", target = "creatorId")
-    abstract CategoryDto toDto(Category category);
+    public abstract CategoryDto toDto(Category category);
 
     public User resolverUser(Long userId) {
         if (userId == null) return null;

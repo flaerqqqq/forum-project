@@ -25,10 +25,10 @@ public abstract class CategoryFollowMapper {
 
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "category.id", target = "categoryId")
-    abstract CategoryFollowDto toDto(CategoryFollow entity);
+    public abstract CategoryFollowDto toDto(CategoryFollow entity);
 
     @InheritInverseConfiguration
-    abstract CategoryFollow toEntity(CategoryFollowDto dto);
+    public abstract CategoryFollow toEntity(CategoryFollowDto dto);
 
     public User resolveUser(Long userId) {
         if (userId == null) return null;

@@ -22,11 +22,11 @@ public abstract class CategoryModeratorMapper {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    abstract CategoryModerator toEntity(CategoryModeratorDto dto);
+    public abstract CategoryModerator toEntity(CategoryModeratorDto dto);
 
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "category.id", target = "categoryId")
-    abstract CategoryModeratorDto toDto(CategoryModerator entity);
+    public abstract CategoryModeratorDto toDto(CategoryModerator entity);
 
     public User resolverUser(Long userId) {
         if (userId == null) return null;
