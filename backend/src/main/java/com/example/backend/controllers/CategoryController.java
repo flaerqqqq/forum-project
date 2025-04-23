@@ -1,9 +1,6 @@
 package com.example.backend.controllers;
 
-import com.example.backend.dto.CategoryCreateRequestDto;
-import com.example.backend.dto.CategoryResponseDto;
-import com.example.backend.dto.CategoryUpdateRequestDto;
-import com.example.backend.dto.UserDto;
+import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.services.CategoryService;
 import com.example.backend.services.UserService;
@@ -46,5 +43,11 @@ public class CategoryController {
         CategoryResponseDto response = categoryMapper.toResponseDto(
                 categoryService.update(categoryId, request, iconFile, bannerFile));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{categoryId}")
+    public ResponseEntity<CategoryResponseDto> getCategoryById(@PathVariable Long categoryId) {
+        CategoryDto categoryDto = categoryService.findCategoryById(categoryId);
+        return ResponseEntity.ok(categoryMapper.toResponseDto(categoryDto));
     }
 }

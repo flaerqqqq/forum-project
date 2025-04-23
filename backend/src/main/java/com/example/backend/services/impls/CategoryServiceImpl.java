@@ -116,4 +116,9 @@ public class CategoryServiceImpl implements CategoryService {
 
         return categoryMapper.toDto(savedCategory);
     }
+
+    @Override
+    public CategoryDto findCategoryById(Long categoryId) {
+        Category category = categoryRepository.findById()
+    }
 }

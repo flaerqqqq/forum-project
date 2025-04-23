@@ -16,4 +16,6 @@ public interface CategoryService {
                        CategoryUpdateRequestDto request,
                        MultipartFile iconFile,
                        MultipartFile bannerFile);
+
+    CategoryDto findCategoryById(Long categoryId);
 }
