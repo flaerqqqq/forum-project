@@ -54,5 +54,7 @@ public class UserDto {
 
     private List<Report> sentReports;
 
+    private List<CategoryDto> createdCategories;
+
     private List<CategoryFollowDto> followedCategories;
 }

@@ -82,6 +82,9 @@ public class User {
     @OneToMany(mappedBy = "reporter", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Report> sentReports;
 
+    @OneToMany(mappedBy = "createdBy")
+    private List<Category> createdCategories;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CategoryFollow> followedCategories;
 }
