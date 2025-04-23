@@ -4,6 +4,7 @@ import com.example.backend.dto.CategoryCreateRequestDto;
 import com.example.backend.dto.CategoryDto;
 import com.example.backend.dto.CategoryUpdateRequestDto;
 import com.example.backend.exceptions.CategoryAlreadyExistsException;
+import com.example.backend.exceptions.CategoryNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.models.Category;
@@ -82,7 +83,37 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryDto update(Long categoryId, CategoryUpdateRequestDto request, MultipartFile iconFile, MultipartFile bannerFile) {
-        return null;
+    public CategoryDto update(Long categoryId,
+                              CategoryUpdateRequestDto request,
+                              MultipartFile iconFile,
+                              MultipartFile bannerFile) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException());
+
+        if (!category.getSlug().equals(request.getSlug()) && categoryRepository.existsBySlug(request.getSlug())) {
+            throw new CategoryAlreadyExistsException("Category with such a slug=%s already exists".formatted(
+                    request.getSlug()));
+        }
+
+        category.setName(request.getName());
+        category.setSlug(request.getSlug());
+        category.setDescription(request.getDescription());
+        category.setVisibility(request.getVisibility());
+        category.setPostPermission(request.getPostPermission());
+
+        if (iconFile != null) {
+            String oldIconUrl = category.getIconUrl();
+            category.setIconUrl(s3Service.uploadCategoryIcon(iconFile));
+            if (oldIconUrl != null) s3Service.deleteCategoryIcon(oldIconUrl);
+        }
+
+        if (bannerFile != null) {
+            String oldBannerUrl = category.getBannerUrl();
+            category.setBannerUrl(s3Service.uploadCategoryBanner(bannerFile));
+            if(oldBannerUrl != null) s3Service.deleteCategoryBanner(oldBannerUrl);
+        }
+
+        Category savedCategory = categoryRepository.save(category);
+
+        return categoryMapper.toDto(savedCategory);
     }
 }

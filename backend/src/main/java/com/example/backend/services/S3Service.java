@@ -8,6 +8,10 @@ public interface S3Service {
 
     void deleteAvatar(String url);
 
+    void deleteCategoryIcon(String url);
+
+    void deleteCategoryBanner(String url);
+
     String uploadCategoryBanner(MultipartFile file);
 
     String uploadCategoryIcon(MultipartFile file);

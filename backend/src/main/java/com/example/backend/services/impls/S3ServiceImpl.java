@@ -42,8 +42,17 @@ public class S3ServiceImpl implements S3Service {
 
     @Override
     public void deleteAvatar(String url) {
-        String key = url.substring(url.lastIndexOf('/') + 1);
-        s3Client.deleteObject(avatarBucketName, key);
+        deleteByUrl(avatarBucketName, url);
+    }
+
+    @Override
+    public void deleteCategoryIcon(String url) {
+        deleteByUrl(categoryIconBucketName, url);
+    }
+
+    @Override
+    public void deleteCategoryBanner(String url) {
+        deleteByUrl(categoryBannerBucketName, url);
     }
 
     @Override
@@ -76,5 +85,10 @@ public class S3ServiceImpl implements S3Service {
         }
 
         return s3Client.getUrl(bucketName, key).toExternalForm();
+    }
+
+    private void deleteByUrl(String bucketName, String url) {
+        String key = url.substring(url.lastIndexOf('/') + 1);
+        s3Client.deleteObject(bucketName, key);
     }
 }
