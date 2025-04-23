@@ -6,6 +6,7 @@ import com.example.backend.dto.CategoryResponseDto;
 import com.example.backend.dto.UserDto;
 import com.example.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CategoryController {
 
     private final UserService userService;
+    private final CategoryService categoryService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
@@ -26,8 +28,8 @@ public class CategoryController {
                                                       @RequestParam(value = "banner", required = false) MultipartFile bannerFile,
                                                       Authentication authentication) {
         UserDto creator = userService.findByUsername(authentication.getName());
-        CategoryDto categoryDto = categoryService.create(....);
+        CategoryDto categoryDto = categoryService.create(creator.getPublicId(), request, iconFile, bannerFile);
 
+        return new ResponseEntity<>(creator, HttpStatus.CREATED);
     }
-
 }
