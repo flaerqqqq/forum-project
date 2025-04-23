@@ -2,6 +2,7 @@ package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryCreateRequestDto;
 import com.example.backend.dto.CategoryDto;
+import com.example.backend.dto.CategoryUpdateRequestDto;
 import com.example.backend.exceptions.CategoryAlreadyExistsException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CategoryMapper;
@@ -78,5 +79,10 @@ public class CategoryServiceImpl implements CategoryService {
         Category savedCategory = categoryRepository.save(category);
 
         return categoryMapper.toDto(savedCategory);
+    }
+
+    @Override
+    public CategoryDto update(Long categoryId, CategoryUpdateRequestDto request, MultipartFile iconFile, MultipartFile bannerFile) {
+        return null;
     }
 }
