@@ -1,9 +1,10 @@
 package com.example.backend.controllers;
 
 import com.example.backend.dto.CategoryCreateRequestDto;
-import com.example.backend.dto.CategoryDto;
 import com.example.backend.dto.CategoryResponseDto;
 import com.example.backend.dto.UserDto;
+import com.example.backend.mappers.CategoryMapper;
+import com.example.backend.services.CategoryService;
 import com.example.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,16 +21,17 @@ public class CategoryController {
 
     private final UserService userService;
     private final CategoryService categoryService;
+    private final CategoryMapper categoryMapper;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
-    public ResponseEntity<CategoryResponseDto> create(@RequestBody CategoryCreateRequestDto request,
+    public ResponseEntity<CategoryResponseDto> create(@RequestPart("data") CategoryCreateRequestDto request,
                                                       @RequestParam(value = "icon", required = false) MultipartFile iconFile,
                                                       @RequestParam(value = "banner", required = false) MultipartFile bannerFile,
                                                       Authentication authentication) {
         UserDto creator = userService.findByUsername(authentication.getName());
-        CategoryDto categoryDto = categoryService.create(creator.getPublicId(), request, iconFile, bannerFile);
-
-        return new ResponseEntity<>(creator, HttpStatus.CREATED);
+        CategoryResponseDto response = categoryMapper.toResponseDto(
+                categoryService.create(creator.getPublicId(), request, iconFile, bannerFile));
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }

@@ -26,7 +26,7 @@ public class S3ServiceImpl implements S3Service {
     @Value("${aws.category-banners.name}")
     private String categoryBannerBucketName;
 
-    @Value("${aws.category-icons.name.name}")
+    @Value("${aws.category-icons.name}")
     private String categoryIconBucketName;
 
     private final AmazonS3 s3Client;
