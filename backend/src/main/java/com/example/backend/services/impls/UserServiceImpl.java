@@ -76,7 +76,6 @@ public class UserServiceImpl implements UserService {
     public String addAvatar(String publicId, MultipartFile file) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
-        imageValidator.validateAvatar(file);
 
         String newAvatarUrl = s3Service.uploadAvatar(file);
 
