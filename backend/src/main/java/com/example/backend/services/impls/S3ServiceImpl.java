@@ -3,8 +3,10 @@ package com.example.backend.services.impls;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.example.backend.exceptions.S3UploadException;
 import com.example.backend.services.S3Service;
 import com.example.backend.utils.FileUtils;
+import com.example.backend.utils.ImageValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,31 +23,58 @@ public class S3ServiceImpl implements S3Service {
     @Value("${aws.user-avatars-bucket.name}")
     private String avatarBucketName;
 
+    @Value("${aws.category-banners.name}")
+    private String categoryBannerBucketName;
+
+    @Value("${aws.category-icons.name.name}")
+    private String categoryIconBucketName;
+
     private final AmazonS3 s3Client;
+    private final ImageValidator imageValidator;
 
     @Override
     public String uploadAvatar(MultipartFile file) {
-        String key = UUID.randomUUID().toString();
-        try {
-            File tempFile = FileUtils.convertMultipartFileToFile(file);
-
-            PutObjectRequest putRequest = new PutObjectRequest(avatarBucketName, key, tempFile);
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(tempFile.length());
-            metadata.setContentType(file.getContentType());
-            putRequest.setMetadata(metadata);
-
-            s3Client.putObject(putRequest);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return s3Client.getUrl(avatarBucketName, key).toExternalForm();
+        imageValidator.validateIconFormatImage(file);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        return uploadFile(file, avatarBucketName, metadata);
     }
 
     @Override
     public void deleteAvatar(String url) {
         String key = url.substring(url.lastIndexOf('/') + 1);
         s3Client.deleteObject(avatarBucketName, key);
+    }
+
+    @Override
+    public String uploadCategoryBanner(MultipartFile file) {
+        imageValidator.validateBannerFormatImage(file);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        return uploadFile(file, categoryBannerBucketName, metadata);
+    }
+
+    @Override
+    public String uploadCategoryIcon(MultipartFile file) {
+        imageValidator.validateIconFormatImage(file);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        return uploadFile(file, categoryIconBucketName, metadata);
+    }
+
+    private String uploadFile(MultipartFile file, String bucketName, ObjectMetadata metadata) {
+        String key = UUID.randomUUID().toString();
+        try {
+            File tempFile = FileUtils.convertMultipartFileToFile(file);
+
+            PutObjectRequest putRequest = new PutObjectRequest(bucketName, key, tempFile);
+            putRequest.setMetadata(metadata);
+
+            s3Client.putObject(putRequest);
+        } catch (Exception e) {
+            throw new S3UploadException(e);
+        }
+
+        return s3Client.getUrl(bucketName, key).toExternalForm();
     }
 }
