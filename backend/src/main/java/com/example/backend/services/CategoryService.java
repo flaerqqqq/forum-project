@@ -18,4 +18,6 @@ public interface CategoryService {
                        MultipartFile bannerFile);
 
     CategoryDto findCategoryById(Long categoryId);
+
+    CategoryDto findCategoryBySlug(String categorySlug);
 }
