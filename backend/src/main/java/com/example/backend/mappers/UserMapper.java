@@ -13,7 +13,8 @@ import org.mapstruct.Mapping;
         RoleMapper.class,
         AvatarMapper.class,
         UserReactionMapper.class,
-        ReportMapper.class
+        ReportMapper.class,
+        CategoryFollowMapper.class
 })
 public interface UserMapper {
 
