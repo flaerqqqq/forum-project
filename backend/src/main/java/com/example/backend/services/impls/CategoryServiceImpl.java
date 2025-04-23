@@ -17,6 +17,8 @@ import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CategoryService;
 import com.example.backend.services.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -129,5 +131,11 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
                 new CategoryNotFoundException("Category with a such slug=%s not found".formatted(categorySlug)));
         return categoryMapper.toDto(category);
+    }
+
+    @Override
+    public Page<CategoryDto> findCategoriesPage(Pageable pageable) {
+        return categoryRepository.findAll(pageable)
+                .map(categoryMapper::toDto);
     }
 }
