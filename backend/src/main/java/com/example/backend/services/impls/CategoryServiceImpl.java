@@ -55,10 +55,16 @@ public class CategoryServiceImpl implements CategoryService {
                 .createdBy(creator)
                 .build();
 
-        CategoryModerator categoryModerator = CategoryModerator.builder()
+        CategoryModerator categoryOwner = CategoryModerator.builder()
                 .user(creator)
                 .category(category)
                 .role(CategoryModeratorRole.OWNER)
+                .build();
+
+        CategoryModerator categoryModerator = CategoryModerator.builder()
+                .user(creator)
+                .category(category)
+                .role(CategoryModeratorRole.MODERATOR)
                 .build();
 
         CategoryFollow categoryFollow = CategoryFollow.builder()
@@ -67,7 +73,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .notificationEnabled(true)
                 .build();
 
-        category.setCategoryModerators(List.of(categoryModerator));
+        category.setCategoryModerators(List.of(categoryOwner, categoryModerator));
         category.setFollowers(List.of(categoryFollow));
         category.setFollowersCount(1L);
 
