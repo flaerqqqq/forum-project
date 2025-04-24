@@ -4,15 +4,15 @@ import com.example.backend.dto.*;
 import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
+import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.ReportService;
-import com.example.backend.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,15 +20,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ReportController {
 
-    private final UserService userService;
     private final ReportService reportService;
 
     @PreAuthorize("hasRole('ROLE_USER')")
     @PostMapping
     public ResponseEntity<ReportResponseDto> report(@RequestBody ReportRequestDto request,
-                                                    Authentication authentication) {
-        UserDto reporterDto = userService.findByUsername(authentication.getName());
-        ReportResponseDto responseDto = reportService.report(reporterDto.getPublicId(), request);
+                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
+        ReportResponseDto responseDto = reportService.report(userDetails.getPublicId(), request);
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 
@@ -54,8 +52,8 @@ public class ReportController {
     @PutMapping("/{reportId}")
     public ResponseEntity<ReportDto> review(@PathVariable Long reportId,
                                             @RequestBody ReportReviewRequestDto reviewRequest,
-                                            Authentication authentication) {
-        ReportDto response = reportService.review(reportId, authentication.getName(), reviewRequest);
+                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        ReportDto response = reportService.review(reportId, userDetails.getUsername(), reviewRequest);
         return ResponseEntity.ok(response);
     }
 
