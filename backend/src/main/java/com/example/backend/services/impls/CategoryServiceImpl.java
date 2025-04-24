@@ -2,6 +2,7 @@ package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryCreateRequestDto;
 import com.example.backend.dto.CategoryDto;
+import com.example.backend.dto.CategoryFollowDto;
 import com.example.backend.dto.CategoryUpdateRequestDto;
 import com.example.backend.exceptions.CategoryAlreadyExistsException;
 import com.example.backend.exceptions.CategoryNotFoundException;

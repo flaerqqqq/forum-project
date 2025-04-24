@@ -11,6 +11,8 @@ import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CategoryFollowService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,5 +65,12 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
         }
 
         categoryFollowRepository.delete(categoryFollow);
+    }
+
+    @Override
+    public Page<CategoryFollowDto> getCategoryFollowersPage(Long categoryId, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        return categoryFollowRepository.findAllByCategory(category, pageable).map(categoryFollowMapper::toDto);
     }
 }

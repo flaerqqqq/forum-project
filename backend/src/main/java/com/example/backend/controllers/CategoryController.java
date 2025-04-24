@@ -49,13 +49,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/id/{categoryId}")
+    @GetMapping("/{categoryId}")
     public ResponseEntity<CategoryResponseDto> getCategoryById(@PathVariable Long categoryId) {
         CategoryDto categoryDto = categoryService.findCategoryById(categoryId);
         return ResponseEntity.ok(categoryMapper.toResponseDto(categoryDto));
     }
 
-    @GetMapping("/{categorySlug}")
+    @GetMapping("/slug/{categorySlug}")
     public ResponseEntity<CategoryResponseDto> getCategoryBySlug(@PathVariable String categorySlug) {
         CategoryDto categoryDto = categoryService.findCategoryBySlug(categorySlug);
         return ResponseEntity.ok(categoryMapper.toResponseDto(categoryDto));
@@ -70,14 +70,13 @@ public class CategoryController {
         return ResponseEntity.ok(responsePage);
     }
 
-    @DeleteMapping("/id/{categoryId}")
+    @DeleteMapping("/{categoryId}")
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
     public ResponseEntity<Void> deleteCategoryById(@PathVariable Long categoryId,
                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
         categoryService.deleteCategoryById(userDetails.getPublicId(), categoryId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-
 
     @PostMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -95,5 +94,15 @@ public class CategoryController {
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
         categoryFollowService.deleteFollow(userDetails.getPublicId(), categoryId, followId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/{categoryId}/follows")
+    public ResponseEntity<Page<CategoryFollowDto>> getCategoryFollows(@PathVariable Long categoryId,
+                                                                      Pageable pageable) {
+        Page<CategoryFollowDto> followersPage = categoryFollowService.getCategoryFollowersPage(categoryId, pageable);
+        if (followersPage.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(followersPage);
     }
 }
