@@ -32,7 +32,8 @@ public class GlobalExceptionHandler {
             RoleNotFoundException.class,
             ReportNotFoundException.class,
             ReactionNotFoundException.class,
-            CategoryNotFoundException.class
+            CategoryNotFoundException.class,
+            CategoryFollowNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("Not found: {}", ex.getMessage());
@@ -43,7 +44,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             UserAlreadyExistsException.class,
-            CategoryAlreadyExistsException.class
+            CategoryAlreadyExistsException.class,
+            UserAlreadyFollowsCategoryException.class
     })
     public ResponseEntity<ErrorResponse> handleAlreadyExistsException(RuntimeException ex) {
         log.warn("Already exists: {}", ex.getMessage());
@@ -81,7 +83,8 @@ public class GlobalExceptionHandler {
             ImageValidationException.class,
             InappropriateReactionTypeException.class,
             SimilarReportException.class,
-            UserEmailNotVerifiedException.class
+            UserEmailNotVerifiedException.class,
+            UserNotFollowCategoryException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException ex) {
         log.warn("Bad request exception: {}", ex.getMessage());

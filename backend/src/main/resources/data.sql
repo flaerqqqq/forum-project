@@ -17,7 +17,7 @@ INSERT INTO users (
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-    99, 'username', 'username', 'Display Name', 'user@example.com', 'password',
+    1, 'username', 'username', 'Display Name', 'user@example.com', 'password',
     'User description', 0, 0, 0, 1, NOW(), NOW(), true
 );
 INSERT INTO users (
@@ -25,7 +25,7 @@ INSERT INTO users (
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-    100, 'username2', 'username2', 'Display Name', 'user2@example.com', 'password',
+    2, 'username2', 'username2', 'Display Name', 'user2@example.com', 'password',
     'User description', 0, 0, 0, 1, NOW(), NOW(), true
 );
 INSERT INTO users (
@@ -33,18 +33,45 @@ INSERT INTO users (
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-             101, 'username3', 'username3', 'Display Name', 'user3@example.com', 'password',
+             3, 'username3', 'username3', 'Display Name', 'user3@example.com', 'password',
              'User description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (99, 1);
+VALUES (1, 1);
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (99, 2);
+VALUES (1, 2);
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (100, 1);
+VALUES (2, 1);
 
 INSERT INTO users_roles (user_id, role_id)
-VALUES (101, 1);
+VALUES (3, 1);
+
+INSERT INTO categories (name, slug, visibility, post_permission, description, banner_url, icon_url, followers_count, created_by, created_at, updated_at)
+VALUES
+    ('Technology', 'technology', 'PUBLIC', 'EVERYONE', 'All things tech-related.', 'https://example.com/banners/tech.jpg', 'https://example.com/icons/tech.png', 120, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Gaming', 'gaming', 'PUBLIC', 'EVERYONE', 'Discussion on all types of games and platforms.', 'https://example.com/banners/gaming.jpg', 'https://example.com/icons/gaming.png', 200, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Science', 'science', 'PUBLIC', 'MODS_ONLY', 'For scientific discoveries, debates, and learning.', 'https://example.com/banners/science.jpg', 'https://example.com/icons/science.png', 90, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Programming', 'programming', 'PRIVATE', 'MODS_ONLY', 'A private space for developers.', 'https://example.com/banners/programming.jpg', 'https://example.com/icons/programming.png', 50, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('Art', 'art', 'PUBLIC', 'EVERYONE', 'Share and critique artistic creations.', 'https://example.com/banners/art.jpg', 'https://example.com/icons/art.png', 75, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- category_follows: creators (user 1 and 2) follow their categories
+INSERT INTO category_follows (category_id, user_id, followed_at, updated_at, notification_enabled) VALUES
+                                                                                                       (1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),  -- Technology by user 1
+                                                                                                       (2, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),  -- Gaming by user 2
+                                                                                                       (3, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true),  -- Programming by user 1
+                                                                                                       (4, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, true);  -- Art by user 2
+
+
+-- category_moderators: creators become moderators of their categories
+INSERT INTO category_moderators (user_id, category_id, role, assigned_at) VALUES
+                                                                              (1, 1, 'OWNER', CURRENT_TIMESTAMP),  -- Technology
+                                                                              (1, 1, 'MODERATOR', CURRENT_TIMESTAMP),  -- Technology
+                                                                              (2, 2, 'OWNER', CURRENT_TIMESTAMP),  -- Gaming
+                                                                              (2, 2, 'MODERATOR', CURRENT_TIMESTAMP),  -- Technology
+                                                                              (1, 3, 'OWNER', CURRENT_TIMESTAMP),  -- Programming
+                                                                              (1, 3, 'MODERATOR', CURRENT_TIMESTAMP),  -- Programming
+                                                                              (2, 4, 'OWNER', CURRENT_TIMESTAMP),  -- Art
+                                                                              (2, 4, 'MODERATOR', CURRENT_TIMESTAMP);  -- Art
