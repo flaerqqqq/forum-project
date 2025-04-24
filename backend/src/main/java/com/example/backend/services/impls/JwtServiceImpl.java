@@ -1,6 +1,9 @@
 package com.example.backend.services.impls;
 
 import com.example.backend.exceptions.JwtValidationException;
+import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.models.User;
+import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -22,19 +25,21 @@ import java.util.stream.Collectors;
 @Service
 public class JwtServiceImpl implements JwtService {
 
+    private final UserRepository userRepository;
+
     @Value("${jwt.expiration}")
     private long expiration;
 
     private SecretKey key;
 
-    public JwtServiceImpl(@Value("${jwt.secret}") String secret) {
+    public JwtServiceImpl(@Value("${jwt.secret}") String secret, UserRepository userRepository) {
         key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.userRepository = userRepository;
     }
 
     @Override
     public String generate(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities());
+        Map<String, Object> claims = setUpClaims(userDetails);
         Date issuedAt = new Date();
         Date expiredAt = new Date(issuedAt.getTime() + expiration);
         return Jwts.builder()
@@ -85,5 +90,16 @@ public class JwtServiceImpl implements JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private Map<String, Object> setUpClaims(UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow(() ->
+                new UserNotFoundException());
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userDetails.getAuthorities());
+        claims.put("publicId", user.getPublicId());
+
+        return claims;
     }
 }
