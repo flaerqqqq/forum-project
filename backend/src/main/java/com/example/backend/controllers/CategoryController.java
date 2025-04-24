@@ -2,6 +2,8 @@ package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
+import com.example.backend.security.CustomUserDetails;
+import com.example.backend.services.CategoryFollowService;
 import com.example.backend.services.CategoryService;
 import com.example.backend.services.UserService;
 import jakarta.validation.Valid;
@@ -12,27 +14,30 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final UserService userService;
     private final CategoryService categoryService;
+    private final CategoryFollowService categoryFollowService;
     private final CategoryMapper categoryMapper;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryResponseDto> create(@RequestPart("data") @Valid CategoryCreateRequestDto request,
                                                       @RequestParam(value = "icon", required = false) MultipartFile iconFile,
                                                       @RequestParam(value = "banner", required = false) MultipartFile bannerFile,
-                                                      Authentication authentication) {
-        UserDto creator = userService.findByUsername(authentication.getName());
+                                                      @AuthenticationPrincipal CustomUserDetails userDetails) {
         CategoryResponseDto response = categoryMapper.toResponseDto(
-                categoryService.create(creator.getPublicId(), request, iconFile, bannerFile));
+                categoryService.create(userDetails.getPublicId(), request, iconFile, bannerFile));
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -66,5 +71,23 @@ public class CategoryController {
         if (responsePage.isEmpty())
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         return ResponseEntity.ok(responsePage);
+    }
+
+    @PostMapping("/{categorySlug}/follows")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<CategoryFollowDto> follow(@PathVariable String categorySlug,
+                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CategoryFollowDto response = categoryFollowService.follow(userDetails.getPublicId(), categorySlug);
+        URI uri = URI.create("/api/v1/categories/%s/follows/%d".formatted(categorySlug, response.getId()));
+        return ResponseEntity.created(uri).body(response);
+    }
+
+    @DeleteMapping("/{categorySlug}/follows/{followId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Void> unfollow(@PathVariable String categorySlug,
+                                         @PathVariable Long followId,
+                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
+        categoryFollowService.deleteFollow(userDetails.getPublicId(), categorySlug, followId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
