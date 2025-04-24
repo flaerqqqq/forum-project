@@ -25,12 +25,12 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
 
     @Override
     @Transactional
-    public CategoryFollowDto follow(String publicId, String categorySlug) {
+    public CategoryFollowDto follow(String publicId, Long categoryId) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
 
-        Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a slug=%s not found".formatted(categorySlug)));
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         if (categoryFollowRepository.existsByUserAndCategory(user, category)) {
             throw new UserAlreadyFollowsCategoryException("User with publicId=%s already follows a category with slug=%s ".formatted(publicId, categorySlug));
@@ -48,18 +48,18 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
 
     @Override
     @Transactional
-    public void deleteFollow(String publicId, String categorySlug, Long followId) {
+    public void deleteFollow(String publicId, Long categoryId, Long followId) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
 
-        Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a slug=%s not found".formatted(categorySlug)));
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         CategoryFollow categoryFollow = categoryFollowRepository.findById(followId).orElseThrow(() ->
                 new CategoryFollowNotFoundException("Category follow with id=%d not found".formatted(followId)));
 
         if (!categoryFollow.getUser().equals(user) || !categoryFollow.getCategory().equals(category)) {
-            throw new UserNotFollowCategoryException("User with publicId=%s do not follow category with slug=%s".formatted(publicId, categorySlug));
+            throw new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId));
         }
 
         categoryFollowRepository.delete(categoryFollow);

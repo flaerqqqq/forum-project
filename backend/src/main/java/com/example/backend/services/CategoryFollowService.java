@@ -4,7 +4,7 @@ import com.example.backend.dto.CategoryFollowDto;
 
 public interface CategoryFollowService {
 
-    CategoryFollowDto follow(String publicId, String categorySlug);
+    CategoryFollowDto follow(String publicId, Long categoryId);
 
-    void deleteFollow(String publicId, String categorySlug, Long followId);
+    void deleteFollow(String publicId, Long categoryId, Long followId);
 }

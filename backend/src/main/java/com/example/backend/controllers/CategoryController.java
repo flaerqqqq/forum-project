@@ -5,7 +5,6 @@ import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CategoryFollowService;
 import com.example.backend.services.CategoryService;
-import com.example.backend.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,9 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -73,21 +70,21 @@ public class CategoryController {
         return ResponseEntity.ok(responsePage);
     }
 
-    @PostMapping("/{categorySlug}/follows")
+    @PostMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<CategoryFollowDto> follow(@PathVariable String categorySlug,
+    public ResponseEntity<CategoryFollowDto> follow(@PathVariable Long categoryId,
                                                     @AuthenticationPrincipal CustomUserDetails userDetails) {
-        CategoryFollowDto response = categoryFollowService.follow(userDetails.getPublicId(), categorySlug);
-        URI uri = URI.create("/api/v1/categories/%s/follows/%d".formatted(categorySlug, response.getId()));
+        CategoryFollowDto response = categoryFollowService.follow(userDetails.getPublicId(), categoryId);
+        URI uri = URI.create("/api/v1/categories/%d/follows/%d".formatted(categoryId, response.getId()));
         return ResponseEntity.created(uri).body(response);
     }
 
-    @DeleteMapping("/{categorySlug}/follows/{followId}")
+    @DeleteMapping("/{categoryId}/follows/{followId}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResponseEntity<Void> unfollow(@PathVariable String categorySlug,
+    public ResponseEntity<Void> unfollow(@PathVariable Long categoryId,
                                          @PathVariable Long followId,
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
-        categoryFollowService.deleteFollow(userDetails.getPublicId(), categorySlug, followId);
+        categoryFollowService.deleteFollow(userDetails.getPublicId(), categoryId, followId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
