@@ -70,6 +70,15 @@ public class CategoryController {
         return ResponseEntity.ok(responsePage);
     }
 
+    @DeleteMapping("/id/{categoryId}")
+    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
+    public ResponseEntity<Void> deleteCategoryById(@PathVariable Long categoryId,
+                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
+        categoryService.deleteCategoryById(userDetails.getPublicId(), categoryId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+
     @PostMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryFollowDto> follow(@PathVariable Long categoryId,

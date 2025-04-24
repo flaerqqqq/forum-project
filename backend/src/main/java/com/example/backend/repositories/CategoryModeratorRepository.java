@@ -1,0 +1,19 @@
+package com.example.backend.repositories;
+
+import com.example.backend.models.Category;
+import com.example.backend.models.CategoryModerator;
+import com.example.backend.models.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface CategoryModeratorRepository extends JpaRepository<CategoryModerator, Long> {
+
+    @Query("""
+    SELECT count(m) > 0 FROM CategoryModerator m
+    WHERE (m.user = :user)
+    AND (m.category = :category)  
+    AND (m.role = "OWNER")
+    """)
+    boolean isCategoryOwner(@Param("user") User user, @Param("category") Category category);
+}

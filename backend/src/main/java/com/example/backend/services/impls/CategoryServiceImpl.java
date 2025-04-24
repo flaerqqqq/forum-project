@@ -5,13 +5,12 @@ import com.example.backend.dto.CategoryDto;
 import com.example.backend.dto.CategoryUpdateRequestDto;
 import com.example.backend.exceptions.CategoryAlreadyExistsException;
 import com.example.backend.exceptions.CategoryNotFoundException;
+import com.example.backend.exceptions.UserNotCategoryOwnerException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CategoryMapper;
-import com.example.backend.models.Category;
-import com.example.backend.models.CategoryFollow;
-import com.example.backend.models.CategoryModerator;
-import com.example.backend.models.User;
+import com.example.backend.models.*;
 import com.example.backend.models.enums.CategoryModeratorRole;
+import com.example.backend.repositories.CategoryModeratorRepository;
 import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CategoryService;
@@ -31,6 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final CategoryModeratorRepository categoryModeratorRepository;
     private final S3Service s3Service;
     private final CategoryMapper categoryMapper;
 
@@ -143,5 +143,29 @@ public class CategoryServiceImpl implements CategoryService {
     public Page<CategoryDto> findCategoriesPage(Pageable pageable) {
         return categoryRepository.findAll(pageable)
                 .map(categoryMapper::toDto);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCategoryById(String publicId, Long categoryId) {
+        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+
+        if (!isUserAuthorizedToDelete(user, category)) {
+            throw new UserNotCategoryOwnerException("User with publicId=%s is not an owner of category with id=%d".formatted(publicId, categoryId));
+        }
+
+        categoryRepository.delete(category);
+    }
+
+    private boolean isUserAuthorizedToDelete(User user, Category category) {
+        if (user.getRoles().stream().anyMatch(role -> role.getName().equals(Role.RoleName.ROLE_MODERATOR))) {
+            return true;
+        }
+
+        return categoryModeratorRepository.isCategoryOwner(user, category);
     }
 }

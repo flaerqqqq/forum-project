@@ -25,4 +25,6 @@ public interface CategoryService {
     CategoryDto findCategoryBySlug(String categorySlug);
 
     Page<CategoryDto> findCategoriesPage(Pageable pageable);
+
+    void deleteCategoryById(String publicId, Long categoryId);
 }

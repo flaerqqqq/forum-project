@@ -54,8 +54,7 @@ VALUES
     ('Technology', 'technology', 'PUBLIC', 'EVERYONE', 'All things tech-related.', 'https://example.com/banners/tech.jpg', 'https://example.com/icons/tech.png', 120, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('Gaming', 'gaming', 'PUBLIC', 'EVERYONE', 'Discussion on all types of games and platforms.', 'https://example.com/banners/gaming.jpg', 'https://example.com/icons/gaming.png', 200, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('Science', 'science', 'PUBLIC', 'MODS_ONLY', 'For scientific discoveries, debates, and learning.', 'https://example.com/banners/science.jpg', 'https://example.com/icons/science.png', 90, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('Programming', 'programming', 'PRIVATE', 'MODS_ONLY', 'A private space for developers.', 'https://example.com/banners/programming.jpg', 'https://example.com/icons/programming.png', 50, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('Art', 'art', 'PUBLIC', 'EVERYONE', 'Share and critique artistic creations.', 'https://example.com/banners/art.jpg', 'https://example.com/icons/art.png', 75, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+    ('Programming', 'programming', 'PRIVATE', 'MODS_ONLY', 'A private space for developers.', 'https://example.com/banners/programming.jpg', 'https://example.com/icons/programming.png', 50, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- category_follows: creators (user 1 and 2) follow their categories
 INSERT INTO category_follows (category_id, user_id, followed_at, updated_at, notification_enabled) VALUES

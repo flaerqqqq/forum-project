@@ -33,7 +33,7 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         if (categoryFollowRepository.existsByUserAndCategory(user, category)) {
-            throw new UserAlreadyFollowsCategoryException("User with publicId=%s already follows a category with slug=%s ".formatted(publicId, categorySlug));
+            throw new UserAlreadyFollowsCategoryException("User with publicId=%s already follows a category with id=%d ".formatted(publicId, categoryId));
         }
 
         CategoryFollow categoryFollow = CategoryFollow.builder()
