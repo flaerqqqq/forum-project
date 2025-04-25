@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/categories")
@@ -116,7 +117,6 @@ public class CategoryController {
         return ResponseEntity.ok(categoryFollowDto);
     }
 
-    // add category moderator
     @PostMapping("/{categoryId}/moderators")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryModeratorDto> addModerator(@PathVariable Long categoryId,
@@ -127,7 +127,6 @@ public class CategoryController {
         return ResponseEntity.created(uri).body(response);
     }
 
-    // delete category moderator
     @DeleteMapping("/{categoryId}/moderators/{moderatorPublicId}")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Void> deleteModerator(@PathVariable Long categoryId,
@@ -147,6 +146,10 @@ public class CategoryController {
         return ResponseEntity.ok(pageOfModerators);
     }
 
-    // get all category moderators
-    // get category moderator by id
+    @GetMapping("/{categoryId}/moderators/{moderatorPublicId}")
+    public ResponseEntity<List<CategoryModeratorDto>> getModeratorById(@PathVariable Long categoryId,
+                                                @PathVariable String moderatorPublicId) {
+        List<CategoryModeratorDto> response = categoryModeratorService.getModeratorByPublicId(moderatorPublicId, categoryId);
+        return ResponseEntity.ok(response);
+    }
 }

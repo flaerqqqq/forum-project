@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Optional;
+
 public interface CategoryModeratorRepository extends JpaRepository<CategoryModerator, Long> {
 
     @Query("""
@@ -31,4 +34,6 @@ public interface CategoryModeratorRepository extends JpaRepository<CategoryModer
     void deleteByUserAndCategory(User user, Category category);
 
     Page<CategoryModerator> findAllByCategory(Category category, Pageable pageable);
+
+    List<CategoryModerator> findAllByUserAndCategory(User moderator, Category category);
 }

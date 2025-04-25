@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CategoryModeratorServiceImpl implements CategoryModeratorService {
@@ -83,5 +85,18 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
         return categoryModeratorRepository.findAllByCategory(category, pageable).map(categoryModeratorMapper::toDto);
+    }
+
+    @Override
+    public List<CategoryModeratorDto> getModeratorByPublicId(String moderatorPublicId, Long categoryId) {
+        User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        List<CategoryModerator> categoryModeratorsByUser = categoryModeratorRepository.findAllByUserAndCategory(moderator, category);
+        if (categoryModeratorsByUser.isEmpty()) {
+            throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an id=%d".formatted(moderatorPublicId, categoryId));
+        }
+        return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();
     }
 }
