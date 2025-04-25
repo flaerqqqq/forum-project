@@ -12,4 +12,6 @@ public interface CategoryFollowRepository extends JpaRepository<CategoryFollow, 
     boolean existsByUserAndCategory(User user, Category category);
 
     Page<CategoryFollow> findAllByCategory(Category category, Pageable pageable);
+
+    Page<CategoryFollow> findAllByUser(User user, Pageable pageable);
 }

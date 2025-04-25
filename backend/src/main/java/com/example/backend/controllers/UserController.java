@@ -6,6 +6,7 @@ import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.security.CustomUserDetails;
+import com.example.backend.services.CategoryFollowService;
 import com.example.backend.services.ReactionService;
 import com.example.backend.services.ReportService;
 import com.example.backend.services.UserService;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private final UserService userService;
+    private final CategoryFollowService categoryFollowService;
     private final UserMapper userMapper;
     private final ReactionService reactionService;
     private final ReportService reportService;
@@ -95,5 +97,18 @@ public class UserController {
                                                          @RequestParam(required = false) ReportReason reason) {
         Page<ReportDto> response = reportService.findFiltered(userDetails.getPublicId(), targetType, reason, status, pageable);
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/me/follows")
+    public ResponseEntity<Page<CategoryFollowDto>> findMyFollows(Pageable pageable,
+                                                                 @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Page<CategoryFollowDto> pageOfCategoryFollows = categoryFollowService.getUserFollows(userDetails.getPublicId(), pageable);
+
+        if (pageOfCategoryFollows.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return ResponseEntity.ok(pageOfCategoryFollows);
     }
 }

@@ -11,4 +11,6 @@ public interface CategoryFollowService {
     void deleteFollow(String publicId, Long categoryId, Long followId);
 
     Page<CategoryFollowDto> getCategoryFollowersPage(Long categoryId, Pageable pageable);
+
+    Page<CategoryFollowDto> getUserFollows(String publicId, Pageable pageable);
 }

@@ -73,4 +73,11 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
         return categoryFollowRepository.findAllByCategory(category, pageable).map(categoryFollowMapper::toDto);
     }
+
+    @Override
+    public Page<CategoryFollowDto> getUserFollows(String publicId, Pageable pageable) {
+        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+        return categoryFollowRepository.findAllByUser(user, pageable).map(categoryFollowMapper::toDto);
+    }
 }
