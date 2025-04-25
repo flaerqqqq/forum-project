@@ -87,12 +87,11 @@ public class CategoryController {
         return ResponseEntity.created(uri).body(response);
     }
 
-    @DeleteMapping("/{categoryId}/follows/{followId}")
+    @DeleteMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Void> unfollow(@PathVariable Long categoryId,
-                                         @PathVariable Long followId,
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
-        categoryFollowService.deleteFollow(userDetails.getPublicId(), categoryId, followId);
+        categoryFollowService.deleteFollow(userDetails.getPublicId(), categoryId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
@@ -106,13 +105,12 @@ public class CategoryController {
         return ResponseEntity.ok(followersPage);
     }
 
-    @PutMapping("/{categoryId}/follows/{followId}")
+    @PutMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryFollowDto> update(@PathVariable Long categoryId,
-                                         @PathVariable Long followId,
                                          @RequestBody CategoryFollowUpdateRequestDto request,
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
-        CategoryFollowDto categoryFollowDto = categoryFollowService.updateFollow(userDetails.getPublicId(), categoryId, followId, request);
+        CategoryFollowDto categoryFollowDto = categoryFollowService.updateFollow(userDetails.getPublicId(), categoryId, request);
         return ResponseEntity.ok(categoryFollowDto);
     }
 }

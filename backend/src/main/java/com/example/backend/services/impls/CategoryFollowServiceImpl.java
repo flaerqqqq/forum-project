@@ -52,8 +52,8 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
 
     @Override
     @Transactional
-    public void deleteFollow(String publicId, Long categoryId, Long followId) {
-        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId, followId);
+    public void deleteFollow(String publicId, Long categoryId) {
+        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId);
         Category category = categoryFollow.getCategory();
         category.setFollowersCount(category.getFollowersCount() - 1);
 
@@ -75,8 +75,8 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
     }
 
     @Override
-    public CategoryFollowDto updateFollow(String publicId, Long categoryId, Long followId, CategoryFollowUpdateRequestDto request) {
-        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId, followId);
+    public CategoryFollowDto updateFollow(String publicId, Long categoryId, CategoryFollowUpdateRequestDto request) {
+        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId);
 
         categoryFollow.setNotificationEnabled(request.getNotificationEnabled());
         CategoryFollow savedCategoryFollow = categoryFollowRepository.save(categoryFollow);
@@ -84,20 +84,14 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
         return categoryFollowMapper.toDto(savedCategoryFollow);
     }
 
-    private CategoryFollow getAndValidateCategoryFollow(String publicId, Long categoryId, Long followId) {
+    private CategoryFollow getAndValidateCategoryFollow(String publicId, Long categoryId) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
 
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
-        CategoryFollow categoryFollow = categoryFollowRepository.findById(followId).orElseThrow(() ->
-                new CategoryFollowNotFoundException("Category follow with id=%d not found".formatted(followId)));
-
-        if (!categoryFollow.getUser().equals(user) || !categoryFollow.getCategory().equals(category)) {
-            throw new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId));
-        }
-
-        return categoryFollow;
+        return categoryFollowRepository.findByUserAndCategory(user, category).orElseThrow(() ->
+                new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId)));
     }
 }
