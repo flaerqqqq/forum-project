@@ -38,10 +38,4 @@ public class Category {
 
     @Field(type = FieldType.Long, name = "followers_count")
     private Long followersCount = 0L;
-
-    @Field(type = FieldType.Date, name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Field(type = FieldType.Date, name = "updated_at")
-    private LocalDateTime updatedAt;
 }
