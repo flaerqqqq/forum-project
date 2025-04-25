@@ -2,8 +2,10 @@ package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
+import com.example.backend.models.CategoryModerator;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CategoryFollowService;
+import com.example.backend.services.CategoryModeratorService;
 import com.example.backend.services.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class CategoryController {
     private final CategoryService categoryService;
     private final CategoryFollowService categoryFollowService;
     private final CategoryMapper categoryMapper;
+    private final CategoryModeratorService categoryModeratorService;
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -83,8 +86,7 @@ public class CategoryController {
     public ResponseEntity<CategoryFollowDto> follow(@PathVariable Long categoryId,
                                                     @AuthenticationPrincipal CustomUserDetails userDetails) {
         CategoryFollowDto response = categoryFollowService.follow(userDetails.getPublicId(), categoryId);
-        URI uri = URI.create("/api/v1/categories/%d/follows/%d".formatted(categoryId, response.getId()));
-        return ResponseEntity.created(uri).body(response);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{categoryId}/follows")
@@ -113,4 +115,19 @@ public class CategoryController {
         CategoryFollowDto categoryFollowDto = categoryFollowService.updateFollow(userDetails.getPublicId(), categoryId, request);
         return ResponseEntity.ok(categoryFollowDto);
     }
+
+
+    // add category moderator
+    @PostMapping("/{categoryId}/moderators")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<CategoryModeratorDto> addModerator(@PathVariable Long categoryId,
+                                                             @RequestBody @Valid CategoryModeratorCreateRequestDto request,
+                                                             @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CategoryModeratorDto response = categoryModeratorService.addModerator(userDetails.getPublicId(), request.getPublicId(), categoryId);
+        URI uri = URI.create("/api/v1/categories/%d/moderators/%d".formatted(categoryId, response.getId()));
+        return ResponseEntity.created(uri).body(response);
+    }
+    // delete category moderator
+    // get all category moderators
+    // get category moderator by id
 }

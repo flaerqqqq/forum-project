@@ -16,4 +16,12 @@ public interface CategoryModeratorRepository extends JpaRepository<CategoryModer
     AND (m.role = "OWNER")
     """)
     boolean isCategoryOwner(@Param("user") User user, @Param("category") Category category);
+
+    @Query("""
+    SELECT count(m) > 0 FROM CategoryModerator m
+    WHERE (m.user = :user)
+    AND (m.category = :category)  
+    AND (m.role = "MODERATOR")
+    """)
+    boolean isCategoryModerator(User user, Category category);
 }
