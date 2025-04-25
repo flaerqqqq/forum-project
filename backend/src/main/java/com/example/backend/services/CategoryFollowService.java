@@ -1,6 +1,7 @@
 package com.example.backend.services;
 
 import com.example.backend.dto.CategoryFollowDto;
+import com.example.backend.dto.CategoryFollowUpdateRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,4 +14,6 @@ public interface CategoryFollowService {
     Page<CategoryFollowDto> getCategoryFollowersPage(Long categoryId, Pageable pageable);
 
     Page<CategoryFollowDto> getUserFollows(String publicId, Pageable pageable);
+
+    CategoryFollowDto updateFollow(String publicId, Long categoryId, Long followId, CategoryFollowUpdateRequestDto request);
 }

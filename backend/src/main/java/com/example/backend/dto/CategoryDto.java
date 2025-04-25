@@ -1,6 +1,5 @@
 package com.example.backend.dto;
 
-import com.example.backend.models.CategoryModerator;
 import com.example.backend.models.enums.PostPermission;
 import com.example.backend.models.enums.Visibility;
 import lombok.AllArgsConstructor;

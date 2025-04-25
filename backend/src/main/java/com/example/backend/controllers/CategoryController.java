@@ -105,4 +105,14 @@ public class CategoryController {
         }
         return ResponseEntity.ok(followersPage);
     }
+
+    @PutMapping("/{categoryId}/follows/{followId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<CategoryFollowDto> update(@PathVariable Long categoryId,
+                                         @PathVariable Long followId,
+                                         @RequestBody CategoryFollowUpdateRequestDto request,
+                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CategoryFollowDto categoryFollowDto = categoryFollowService.updateFollow(userDetails.getPublicId(), categoryId, followId, request);
+        return ResponseEntity.ok(categoryFollowDto);
+    }
 }

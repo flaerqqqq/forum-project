@@ -1,6 +1,7 @@
 package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryFollowDto;
+import com.example.backend.dto.CategoryFollowUpdateRequestDto;
 import com.example.backend.exceptions.*;
 import com.example.backend.mappers.CategoryFollowMapper;
 import com.example.backend.models.Category;
@@ -43,6 +44,7 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
                 .category(category)
                 .notificationEnabled(true)
                 .build();
+        category.setFollowersCount(category.getFollowersCount() + 1L);
         CategoryFollow savedCategoryFollow = categoryFollowRepository.save(categoryFollow);
 
         return categoryFollowMapper.toDto(savedCategoryFollow);
@@ -51,18 +53,9 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
     @Override
     @Transactional
     public void deleteFollow(String publicId, Long categoryId, Long followId) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
-
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
-
-        CategoryFollow categoryFollow = categoryFollowRepository.findById(followId).orElseThrow(() ->
-                new CategoryFollowNotFoundException("Category follow with id=%d not found".formatted(followId)));
-
-        if (!categoryFollow.getUser().equals(user) || !categoryFollow.getCategory().equals(category)) {
-            throw new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId));
-        }
+        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId, followId);
+        Category category = categoryFollow.getCategory();
+        category.setFollowersCount(category.getFollowersCount() - 1);
 
         categoryFollowRepository.delete(categoryFollow);
     }
@@ -79,5 +72,32 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
         return categoryFollowRepository.findAllByUser(user, pageable).map(categoryFollowMapper::toDto);
+    }
+
+    @Override
+    public CategoryFollowDto updateFollow(String publicId, Long categoryId, Long followId, CategoryFollowUpdateRequestDto request) {
+        final CategoryFollow categoryFollow = getAndValidateCategoryFollow(publicId, categoryId, followId);
+
+        categoryFollow.setNotificationEnabled(request.getNotificationEnabled());
+        CategoryFollow savedCategoryFollow = categoryFollowRepository.save(categoryFollow);
+
+        return categoryFollowMapper.toDto(savedCategoryFollow);
+    }
+
+    private CategoryFollow getAndValidateCategoryFollow(String publicId, Long categoryId, Long followId) {
+        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+
+        CategoryFollow categoryFollow = categoryFollowRepository.findById(followId).orElseThrow(() ->
+                new CategoryFollowNotFoundException("Category follow with id=%d not found".formatted(followId)));
+
+        if (!categoryFollow.getUser().equals(user) || !categoryFollow.getCategory().equals(category)) {
+            throw new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId));
+        }
+
+        return categoryFollow;
     }
 }
