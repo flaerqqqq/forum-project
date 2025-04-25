@@ -47,3 +47,9 @@ aws:
 api:
   front-end:
     host: ${FRONT_END_HOST}
+
+elasticsearch:
+  host: ${ELASTIC_HOST}
+  port: ${ELASTIC_PORT}
+  username: ${ELASTIC_USERNAME}
+  password: ${ELASTIC_PASSWORD}

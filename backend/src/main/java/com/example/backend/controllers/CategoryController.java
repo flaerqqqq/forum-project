@@ -2,10 +2,10 @@ package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
-import com.example.backend.models.CategoryModerator;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CategoryFollowService;
 import com.example.backend.services.CategoryModeratorService;
+import com.example.backend.services.CategorySearchService;
 import com.example.backend.services.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,7 @@ public class CategoryController {
     private final CategoryFollowService categoryFollowService;
     private final CategoryMapper categoryMapper;
     private final CategoryModeratorService categoryModeratorService;
+    private final CategorySearchService categorySearchService;
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -42,7 +43,7 @@ public class CategoryController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{categoryId}")
+    @PutMapping("/{categoryId:\\d+}")
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
     public ResponseEntity<CategoryResponseDto> update(@RequestPart("data") @Valid CategoryUpdateRequestDto request,
                                                       @PathVariable Long categoryId,
@@ -53,7 +54,7 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{categoryId}")
+    @GetMapping("/{categoryId:\\d+}")
     public ResponseEntity<CategoryResponseDto> getCategoryById(@PathVariable Long categoryId) {
         CategoryDto categoryDto = categoryService.findCategoryById(categoryId);
         return ResponseEntity.ok(categoryMapper.toResponseDto(categoryDto));
@@ -74,7 +75,7 @@ public class CategoryController {
         return ResponseEntity.ok(responsePage);
     }
 
-    @DeleteMapping("/{categoryId}")
+    @DeleteMapping("/{categoryId:\\d+}")
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MODERATOR')")
     public ResponseEntity<Void> deleteCategoryById(@PathVariable Long categoryId,
                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -82,7 +83,7 @@ public class CategoryController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @PostMapping("/{categoryId}/follows")
+    @PostMapping("/{categoryId:\\d+}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryFollowDto> follow(@PathVariable Long categoryId,
                                                     @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -90,7 +91,7 @@ public class CategoryController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/{categoryId}/follows")
+    @DeleteMapping("/{categoryId:\\d+}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Void> unfollow(@PathVariable Long categoryId,
                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -98,7 +99,7 @@ public class CategoryController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/{categoryId}/follows")
+    @GetMapping("/{categoryId:\\d+}/follows")
     public ResponseEntity<Page<CategoryFollowDto>> getCategoryFollows(@PathVariable Long categoryId,
                                                                       Pageable pageable) {
         Page<CategoryFollowDto> followersPage = categoryFollowService.getCategoryFollowersPage(categoryId, pageable);
@@ -108,7 +109,7 @@ public class CategoryController {
         return ResponseEntity.ok(followersPage);
     }
 
-    @PutMapping("/{categoryId}/follows")
+    @PutMapping("/{categoryId:\\d+}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryFollowDto> update(@PathVariable Long categoryId,
                                                     @RequestBody CategoryFollowUpdateRequestDto request,
@@ -117,7 +118,7 @@ public class CategoryController {
         return ResponseEntity.ok(categoryFollowDto);
     }
 
-    @PostMapping("/{categoryId}/moderators")
+    @PostMapping("/{categoryId:\\d+}/moderators")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryModeratorDto> addModerator(@PathVariable Long categoryId,
                                                              @RequestBody @Valid CategoryModeratorCreateRequestDto request,
@@ -127,7 +128,7 @@ public class CategoryController {
         return ResponseEntity.created(uri).body(response);
     }
 
-    @DeleteMapping("/{categoryId}/moderators/{moderatorPublicId}")
+    @DeleteMapping("/{categoryId:\\d+}/moderators/{moderatorPublicId}")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Void> deleteModerator(@PathVariable Long categoryId,
                                                 @PathVariable String moderatorPublicId,
@@ -136,7 +137,7 @@ public class CategoryController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/{categoryId}/moderators")
+    @GetMapping("/{categoryId:\\d+}/moderators")
     public ResponseEntity<Page<CategoryModeratorDto>> getCategoryModerators(@PathVariable Long categoryId,
                                                                             Pageable pageable) {
         Page<CategoryModeratorDto> pageOfModerators = categoryModeratorService.getCategoryModerators(categoryId, pageable);
@@ -146,17 +147,29 @@ public class CategoryController {
         return ResponseEntity.ok(pageOfModerators);
     }
 
-    @GetMapping("/{categoryId}/moderators/{moderatorPublicId}")
+    @GetMapping("/{categoryId:\\d+}/moderators/{moderatorPublicId}")
     public ResponseEntity<List<CategoryModeratorDto>> getModeratorById(@PathVariable Long categoryId,
                                                                        @PathVariable String moderatorPublicId) {
         List<CategoryModeratorDto> response = categoryModeratorService.getModeratorByPublicId(moderatorPublicId, categoryId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{categoryId}/moderators/{moderatorPublicId}/roles")
+    @GetMapping("/{categoryId:\\d+}/moderators/{moderatorPublicId}/roles")
     public ResponseEntity<ModeratorRoleInfoDto> getModeratorRoles(@PathVariable Long categoryId,
                                                                   @PathVariable String moderatorPublicId) {
         ModeratorRoleInfoDto response = categoryModeratorService.getModeratorRoles(moderatorPublicId, categoryId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<CategoryResponseDto>> searchCategory(@RequestParam("query") String rawQuery) {
+        List<CategoryDto> listOfCategories = categorySearchService.searchCategoriesBySlugOrName(rawQuery);
+        if (listOfCategories.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(listOfCategories.stream()
+                .map(categoryMapper::toResponseDto)
+                .toList()
+        );
     }
 }

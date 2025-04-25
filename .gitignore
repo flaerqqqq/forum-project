@@ -9,4 +9,6 @@
 ### VS Code ###
 .vscode/
 
+certs
+
 node_modules
