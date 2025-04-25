@@ -20,6 +20,10 @@ spring:
       max-file-size: 4MB
       max-request-size: 4MB
       resolve-lazily: true
+  elasticsearch:
+    uris: ${ELASTIC_HOST}
+    username: ${ELASTIC_USERNAME}
+    password: ${ELASTIC_PASSWORD}
 
 server:
   tomcat:
