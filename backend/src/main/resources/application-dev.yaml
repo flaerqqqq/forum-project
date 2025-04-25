@@ -39,6 +39,10 @@ aws:
   region: ${AWS_REGION}
   user-avatars-bucket:
     name: ${USER_AVATARS_BUCKET_NAME}
+  category-banners:
+    name: ${CATEGORY_BANNERS_BUCKER_NAME}
+  category-icons:
+    name: ${CATEGORY_ICONS_BUCKER_NAME}
 
 api:
   front-end:

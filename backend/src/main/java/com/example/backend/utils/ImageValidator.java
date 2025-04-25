@@ -22,46 +22,71 @@ import java.util.stream.Collectors;
 public class ImageValidator {
 
     private static final float MIN_CONFIDENCE = 75F;
-    private static final int MIN_HEIGHT = 250;
-    private static final int MAX_HEIGHT = 2000;
-    private static final int MIN_WIDTH = 250;
-    private static final int MAX_WIDTH = 2000;
-    private static final double MIN_ASPECT_RATIO = 0.5;
-    private static final double MAX_ASPECT_RATIO = 2;
+    private static final int ICON_MIN_HEIGHT = 64;
+    private static final int ICON_MAX_HEIGHT = 2048;
+    private static final int ICON_MIN_WIDTH = 64;
+    private static final int ICON_MAX_WIDTH = 2048;
+    private static final double ICON_MIN_ASPECT_RATIO = 0.5;
+    private static final double ICON_MAX_ASPECT_RATIO = 2;
+
+    private static final int BANNER_MIN_HEIGHT = 256;
+    private static final int BANNER_MAX_HEIGHT = 4096;
+    private static final int BANNER_MIN_WIDTH = 256;
+    private static final int BANNER_MAX_WIDTH = 4096;
+    private static final double BANNER_MIN_ASPECT_RATIO = 0.25;
+    private static final double BANNER_MAX_ASPECT_RATIO = 4;
 
     private final AmazonRekognition rekognitionClient;
 
-    public void validateAvatar(MultipartFile file) {
+    public void validateBannerFormatImage(MultipartFile file) {
         try {
             validateFileType(file);
-            validateImageDimensions(file);
+            validateBannerDimensions(file);
             validateImageContentModeration(file);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ImageValidationException(e);
+        }
+    }
+
+    public void validateIconFormatImage(MultipartFile file) {
+        try {
+            validateFileType(file);
+            validateIconDimensions(file);
+            validateImageContentModeration(file);
+        } catch (Exception e) {
+            throw new ImageValidationException(e);
+        }
+    }
+
+    private void validateIconDimensions(MultipartFile file) throws IOException {
+        validateDimensions(file, ICON_MIN_HEIGHT, ICON_MIN_WIDTH, ICON_MAX_HEIGHT, ICON_MAX_WIDTH, ICON_MIN_ASPECT_RATIO, ICON_MAX_ASPECT_RATIO);
+    }
+
+    private void validateBannerDimensions(MultipartFile file) throws IOException {
+        validateDimensions(file, BANNER_MIN_HEIGHT, BANNER_MIN_WIDTH, BANNER_MAX_HEIGHT, BANNER_MAX_WIDTH, BANNER_MIN_ASPECT_RATIO, BANNER_MAX_ASPECT_RATIO);
+    }
+
+    private void validateDimensions(MultipartFile file, int minHeight, int minWidth, int maxHeight, int maxWidth, double minAspectRatio, double maxAspectRatio) throws IOException {
+        BufferedImage image = ImageIO.read(file.getInputStream());
+        int height = image.getHeight();
+        int width = image.getWidth();
+        double aspectRatio = (double) width / height;
+
+        if (height < minHeight || width < minWidth) {
+            throw new ImageValidationException("Minimum image size is %dx%d, but given is %dx%d".formatted(minWidth, minHeight, width, height));
+        } else if (height > maxHeight || width > maxWidth) {
+            throw new ImageValidationException("Maximum image size is %dx%d, but given is %dx%d".formatted(maxWidth, maxHeight, width, height));
+        } else if (aspectRatio < minAspectRatio) {
+            throw new ImageValidationException("Minimum aspect ratio is %s, but given is %s".formatted(minAspectRatio, aspectRatio));
+        } else if (aspectRatio > maxAspectRatio) {
+            throw new ImageValidationException("Maximum aspect ratio is %s, but given is %s".formatted(maxAspectRatio, aspectRatio));
         }
     }
 
     private void validateFileType(MultipartFile file) {
         String contentType = file.getContentType();
-        if (contentType.equals("image/jpg") || contentType.equals("image/png")) {
+        if ( contentType != null && !contentType.equals("image/jpeg") && !contentType.equals("image/png")) {
             throw new ImageValidationException("The file must be either in a .jpg or a .png format");
-        }
-    }
-
-    private void validateImageDimensions(MultipartFile file) throws IOException {
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        int height = image.getHeight();
-        int width = image.getWidth();
-        double aspectRatio = (double)width / height;
-
-        if (height < MIN_HEIGHT || width < MIN_WIDTH) {
-            throw new ImageValidationException("Minimum image size is %dx%d, but given is %dx%d".formatted(MIN_WIDTH, MIN_HEIGHT, width, height));
-        } else if (height > MAX_HEIGHT || width > MAX_WIDTH) {
-            throw new ImageValidationException("Maximum image size is %dx%d, but given is %dx%d".formatted(MAX_WIDTH, MAX_HEIGHT, width, height));
-        } else if (aspectRatio < MIN_ASPECT_RATIO) {
-            throw new ImageValidationException("Minimum aspect ratio is %s, but given is %s".formatted(MIN_ASPECT_RATIO, aspectRatio));
-        } else if (aspectRatio > MAX_ASPECT_RATIO) {
-            throw new ImageValidationException("Maximum aspect ratio is %s, but given is %s".formatted(MAX_ASPECT_RATIO, aspectRatio));
         }
     }
 

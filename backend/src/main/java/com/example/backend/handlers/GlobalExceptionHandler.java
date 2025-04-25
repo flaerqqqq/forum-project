@@ -31,18 +31,28 @@ public class GlobalExceptionHandler {
             EmailConfirmTokenNotFoundException.class,
             RoleNotFoundException.class,
             ReportNotFoundException.class,
-            ReactionNotFoundException.class
+            ReactionNotFoundException.class,
+            CategoryNotFoundException.class,
+            CategoryFollowNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
-        log.warn("User not found: {}", ex.getMessage());
+        log.warn("Not found: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.builder(ex, HttpStatus.NOT_FOUND, ex.getMessage()).build());
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-        log.warn("User already exists: {}", ex.getMessage());
+    @ExceptionHandler({
+            UserAlreadyExistsException.class,
+            CategoryAlreadyExistsException.class,
+            UserAlreadyFollowsCategoryException.class,
+            UserNotCategoryOwnerException.class,
+            UserAlreadyCategoryModeratorException.class,
+            UserNotCategoryModeratorException.class,
+            CannotRemoveYourselfAsOwnerException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAlreadyExistsException(RuntimeException ex) {
+        log.warn("Already exists: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.builder(ex, HttpStatus.CONFLICT, ex.getMessage()).build());
@@ -77,7 +87,8 @@ public class GlobalExceptionHandler {
             ImageValidationException.class,
             InappropriateReactionTypeException.class,
             SimilarReportException.class,
-            UserEmailNotVerifiedException.class
+            UserEmailNotVerifiedException.class,
+            UserNotFollowCategoryException.class
     })
     public ResponseEntity<ErrorResponse> handleBadRequestException(RuntimeException ex) {
         log.warn("Bad request exception: {}", ex.getMessage());

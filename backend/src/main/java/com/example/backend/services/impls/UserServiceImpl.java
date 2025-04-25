@@ -5,6 +5,7 @@ import com.example.backend.dto.UserDto;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.UserMapper;
 import com.example.backend.models.Avatar;
+import com.example.backend.models.Category;
 import com.example.backend.models.User;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.S3Service;
@@ -59,9 +60,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(String publicId) {
-        if (!userRepository.existsByPublicId(publicId)) {
-            throw new UserNotFoundException("User with such publicId=%s not found".formatted(publicId));
+        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException());
+
+        for (Category category : user.getCreatedCategories()) {
+            category.setCreatedBy(null);
+            userRepository.save(user);
         }
+
         userRepository.deleteByPublicId(publicId);
     }
 
@@ -70,7 +76,6 @@ public class UserServiceImpl implements UserService {
     public String addAvatar(String publicId, MultipartFile file) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
-        imageValidator.validateAvatar(file);
 
         String newAvatarUrl = s3Service.uploadAvatar(file);
 

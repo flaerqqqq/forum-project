@@ -2,9 +2,6 @@ package com.example.backend.dto;
 
 import com.example.backend.models.Avatar;
 import com.example.backend.models.Report;
-import com.example.backend.models.UserReaction;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,4 +53,10 @@ public class UserDto {
     private List<UserReactionDto> receivedUserReactions;
 
     private List<Report> sentReports;
+
+    private List<CategoryDto> createdCategories;
+
+    private List<CategoryFollowDto> followedCategories;
+
+    private List<CategoryModeratorDto> moderatedCategories;
 }

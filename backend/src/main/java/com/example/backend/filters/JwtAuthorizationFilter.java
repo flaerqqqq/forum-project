@@ -1,5 +1,6 @@
 package com.example.backend.filters;
 
+import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,6 +27,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private final static String AUTH_HEADER = "Authorization";
 
     private final JwtService jwtService;
+    private final UserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -44,8 +47,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token: username not found");
                 }
 
+                CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(username);
                 Authentication authToken = new UsernamePasswordAuthenticationToken(
-                        username,
+                        userDetails,
                         null,
                         authorities
                 );

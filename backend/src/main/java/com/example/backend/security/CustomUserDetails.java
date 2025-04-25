@@ -24,6 +24,10 @@ public class CustomUserDetails implements UserDetails {
                 .collect(Collectors.toList());
     }
 
+    public String getPublicId() {
+        return user.getPublicId();
+    }
+
     @Override
     public String getPassword() {
         return user.getPassword();
