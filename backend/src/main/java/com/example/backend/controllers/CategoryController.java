@@ -116,7 +116,6 @@ public class CategoryController {
         return ResponseEntity.ok(categoryFollowDto);
     }
 
-
     // add category moderator
     @PostMapping("/{categoryId}/moderators")
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -127,7 +126,16 @@ public class CategoryController {
         URI uri = URI.create("/api/v1/categories/%d/moderators/%d".formatted(categoryId, response.getId()));
         return ResponseEntity.created(uri).body(response);
     }
+
     // delete category moderator
+    @DeleteMapping("/{categoryId}/moderators/{moderatorPublicId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Void> deleteModerator(@PathVariable Long categoryId,
+                                                @PathVariable String moderatorPublicId,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+        categoryModeratorService.deleteModerator(userDetails.getPublicId(), moderatorPublicId, categoryId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
     // get all category moderators
     // get category moderator by id
 }

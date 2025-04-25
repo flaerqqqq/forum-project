@@ -24,4 +24,6 @@ public interface CategoryModeratorRepository extends JpaRepository<CategoryModer
     AND (m.role = "MODERATOR")
     """)
     boolean isCategoryModerator(User user, Category category);
+
+    void deleteByUserAndCategory(User user, Category category);
 }
