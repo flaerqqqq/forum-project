@@ -110,8 +110,8 @@ public class CategoryController {
     @PutMapping("/{categoryId}/follows")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<CategoryFollowDto> update(@PathVariable Long categoryId,
-                                         @RequestBody CategoryFollowUpdateRequestDto request,
-                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                                    @RequestBody CategoryFollowUpdateRequestDto request,
+                                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
         CategoryFollowDto categoryFollowDto = categoryFollowService.updateFollow(userDetails.getPublicId(), categoryId, request);
         return ResponseEntity.ok(categoryFollowDto);
     }
@@ -136,6 +136,17 @@ public class CategoryController {
         categoryModeratorService.deleteModerator(userDetails.getPublicId(), moderatorPublicId, categoryId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @GetMapping("/{categoryId}/moderators")
+    public ResponseEntity<Page<CategoryModeratorDto>> getCategoryModerators(@PathVariable Long categoryId,
+                                                                            Pageable pageable) {
+        Page<CategoryModeratorDto> pageOfModerators = categoryModeratorService.getCategoryModerators(categoryId, pageable);
+        if (pageOfModerators.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(pageOfModerators);
+    }
+
     // get all category moderators
     // get category moderator by id
 }

@@ -12,6 +12,8 @@ import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CategoryModeratorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,21 +55,33 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
 
     @Override
     @Transactional
-    public void deleteModerator(String ownerPublicId, String moderatorPublicId, Long categoryId) {
-        User owner = userRepository.findByPublicId(ownerPublicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(ownerPublicId)));
+    public void deleteModerator(String publicId, String moderatorPublicId, Long categoryId) {
+        User owner = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
         User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         if (!categoryModeratorRepository.isCategoryOwner(owner, category)) {
-            throw new UserNotCategoryOwnerException("User with a publicId=%s not an owner of category with id=%d".formatted(ownerPublicId, categoryId));
+            throw new UserNotCategoryOwnerException("User with a publicId=%s not an owner of category with id=%d".formatted(publicId, categoryId));
         }
+
+        if (publicId.equals(moderatorPublicId)) {
+            throw new CannotRemoveYourselfAsOwnerException("User with publicId=%s try to delete moderator roles from himself, but cannot remove yourself as the owner.");
+        }
+
         if (!categoryModeratorRepository.isCategoryModerator(moderator, category) ) {
             throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an id=%d".formatted(moderatorPublicId, categoryId));
         }
 
         categoryModeratorRepository.deleteByUserAndCategory(moderator, category);
+    }
+
+    @Override
+    public Page<CategoryModeratorDto> getCategoryModerators(Long categoryId, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        return categoryModeratorRepository.findAllByCategory(category, pageable).map(categoryModeratorMapper::toDto);
     }
 }

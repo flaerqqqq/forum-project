@@ -48,7 +48,8 @@ public class GlobalExceptionHandler {
             UserAlreadyFollowsCategoryException.class,
             UserNotCategoryOwnerException.class,
             UserAlreadyCategoryModeratorException.class,
-            UserNotCategoryModeratorException.class
+            UserNotCategoryModeratorException.class,
+            CannotRemoveYourselfAsOwnerException.class
     })
     public ResponseEntity<ErrorResponse> handleAlreadyExistsException(RuntimeException ex) {
         log.warn("Already exists: {}", ex.getMessage());
