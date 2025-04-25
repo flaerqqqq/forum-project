@@ -1,6 +1,7 @@
 package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryModeratorDto;
+import com.example.backend.dto.ModeratorRoleInfoDto;
 import com.example.backend.exceptions.*;
 import com.example.backend.mappers.CategoryModeratorMapper;
 import com.example.backend.models.Category;
@@ -98,5 +99,14 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
             throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an id=%d".formatted(moderatorPublicId, categoryId));
         }
         return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();
+    }
+
+    @Override
+    public ModeratorRoleInfoDto getModeratorRoles(String moderatorPublicId, Long categoryId) {
+        List<CategoryModeratorDto> categoryModeratorRoles = getModeratorByPublicId(moderatorPublicId, categoryId);
+
+        return ModeratorRoleInfoDto.builder()
+                .roles(categoryModeratorRoles.stream().map(CategoryModeratorDto::getRole).toList())
+                .build();
     }
 }
