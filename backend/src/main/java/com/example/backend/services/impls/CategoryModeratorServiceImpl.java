@@ -34,14 +34,17 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     public CategoryModeratorDto addModerator(String ownerPublicId, String newModPublicId, Long categoryId) {
         User owner = userRepository.findByPublicId(ownerPublicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(ownerPublicId)));
+
         User newMod = userRepository.findByPublicId(newModPublicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(newModPublicId)));
+
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         if (!categoryModeratorRepository.isCategoryOwner(owner, category)) {
             throw new UserNotCategoryOwnerException("User with a publicId=%s not an owner of category with id=%d".formatted(ownerPublicId, categoryId));
         }
+
         if (categoryModeratorRepository.isCategoryModerator(newMod, category) ) {
             throw new UserAlreadyCategoryModeratorException("User with a publicId=%s already a moderator of category with an id=%d".formatted(newModPublicId, categoryId));
         }
@@ -61,8 +64,10 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     public void deleteModerator(String publicId, String moderatorPublicId, Long categoryId) {
         User owner = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+
         User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
@@ -85,6 +90,7 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     public Page<CategoryModeratorDto> getCategoryModerators(Long categoryId, Pageable pageable) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+
         return categoryModeratorRepository.findAllByCategory(category, pageable).map(categoryModeratorMapper::toDto);
     }
 
@@ -92,12 +98,16 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     public List<CategoryModeratorDto> getModeratorByPublicId(String moderatorPublicId, Long categoryId) {
         User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+
         List<CategoryModerator> categoryModeratorsByUser = categoryModeratorRepository.findAllByUserAndCategory(moderator, category);
+
         if (categoryModeratorsByUser.isEmpty()) {
             throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an id=%d".formatted(moderatorPublicId, categoryId));
         }
+
         return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();
     }
 

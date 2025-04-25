@@ -129,6 +129,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto findCategoryById(Long categoryId) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with a such id=%s not found".formatted(categoryId)));
+
         return categoryMapper.toDto(category);
     }
 
@@ -136,6 +137,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto findCategoryBySlug(String categorySlug) {
         Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
                 new CategoryNotFoundException("Category with a such slug=%s not found".formatted(categorySlug)));
+
         return categoryMapper.toDto(category);
     }
 

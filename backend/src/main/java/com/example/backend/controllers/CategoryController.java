@@ -148,7 +148,7 @@ public class CategoryController {
 
     @GetMapping("/{categoryId}/moderators/{moderatorPublicId}")
     public ResponseEntity<List<CategoryModeratorDto>> getModeratorById(@PathVariable Long categoryId,
-                                                @PathVariable String moderatorPublicId) {
+                                                                       @PathVariable String moderatorPublicId) {
         List<CategoryModeratorDto> response = categoryModeratorService.getModeratorByPublicId(moderatorPublicId, categoryId);
         return ResponseEntity.ok(response);
     }
