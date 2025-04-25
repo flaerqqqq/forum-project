@@ -1,15 +1,13 @@
 package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
+import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.mappers.UserMapper;
 import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
 import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.security.CustomUserDetails;
-import com.example.backend.services.CategoryFollowService;
-import com.example.backend.services.ReactionService;
-import com.example.backend.services.ReportService;
-import com.example.backend.services.UserService;
+import com.example.backend.services.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,6 +30,8 @@ public class UserController {
     private final UserMapper userMapper;
     private final ReactionService reactionService;
     private final ReportService reportService;
+    private final CategoryService categoryService;
+    private final CategoryMapper categoryMapper;
 
     @GetMapping("/{userPublicId}")
     public ResponseEntity<UserResponseDto> getUserInfo(@PathVariable String userPublicId) {
@@ -110,5 +110,18 @@ public class UserController {
         }
 
         return ResponseEntity.ok(pageOfCategoryFollows);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/me/categories")
+    public ResponseEntity<Page<CategoryResponseDto>> findMyCategories(Pageable pageable,
+                                                              @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Page<CategoryDto> pageOfCategories = categoryService.getUserOwnedCategories(userDetails.getPublicId(), pageable);
+
+        if (pageOfCategories.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return ResponseEntity.ok(pageOfCategories.map(categoryMapper::toResponseDto));
     }
 }

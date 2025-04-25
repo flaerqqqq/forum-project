@@ -2,7 +2,6 @@ package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryCreateRequestDto;
 import com.example.backend.dto.CategoryDto;
-import com.example.backend.dto.CategoryFollowDto;
 import com.example.backend.dto.CategoryUpdateRequestDto;
 import com.example.backend.exceptions.CategoryAlreadyExistsException;
 import com.example.backend.exceptions.CategoryNotFoundException;
@@ -160,6 +159,14 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryRepository.delete(category);
+    }
+
+    @Override
+    public Page<CategoryDto> getUserOwnedCategories(String publicId, Pageable pageable) {
+        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+
+        return categoryRepository.findAllByCreatedBy(user, pageable).map(categoryMapper::toDto);
     }
 
     private boolean isUserAuthorizedToDelete(User user, Category category) {

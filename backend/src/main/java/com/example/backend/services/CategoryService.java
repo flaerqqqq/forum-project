@@ -2,12 +2,9 @@ package com.example.backend.services;
 
 import com.example.backend.dto.CategoryCreateRequestDto;
 import com.example.backend.dto.CategoryDto;
-import com.example.backend.dto.CategoryFollowDto;
 import com.example.backend.dto.CategoryUpdateRequestDto;
-import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface CategoryService {
@@ -29,4 +26,6 @@ public interface CategoryService {
     Page<CategoryDto> findCategoriesPage(Pageable pageable);
 
     void deleteCategoryById(String publicId, Long categoryId);
+
+    Page<CategoryDto> getUserOwnedCategories(String publicId, Pageable pageable);
 }
