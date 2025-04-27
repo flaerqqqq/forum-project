@@ -40,7 +40,7 @@ const AvatarMenu = () => {
                 src={user.avatarUrl || defaultAvatar}
                 alt="avatar"
                 className={`w-9 h-9 rounded-full cursor-pointer transition 
-                ${open ? 'ring-4 ring-gray-200' : 'ring-1 ring-gray-600 hover:ring-4 hover:ring-gray-200'}`}
+                ${open ? 'ring-4 ring-gray-200' : 'hover:ring-4 hover:ring-gray-200'}`}
                 onClick={toggleDropdown}
             />
             {!logoutTriggered && (

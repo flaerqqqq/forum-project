@@ -99,7 +99,7 @@ public class CategoryController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-    @GetMapping("/{categoryId:\\d+/follows/{publicId}")
+    @GetMapping("/{categoryId:\\d+}/follows/{publicId}")
     public ResponseEntity<CategoryFollowDto> getUserCategoryFollow(@PathVariable Long categoryId,
                                                                    @PathVariable String publicId) {
         CategoryFollowDto userCategoryFollow = categoryFollowService.getUserCategoryFollow(categoryId, publicId);

@@ -2,12 +2,17 @@ import { Link } from "react-router-dom";
 
 const UserNotFound = () => {
     return (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <h1>😕 User Not Found</h1>
-            <p>The user you're looking for doesn't exist.</p>
-            <Link to="/" style={{ color: "#007bff", textDecoration: "underline" }}>
-                Go back to Home
-            </Link>
+        <div className="h-[calc(100vh-5.5rem)] bg-gray-100 flex flex-col">
+            {/* Flex container for centering content below the fixed header */}
+            <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-3xl font-bold text-gray-700 mb-4">😕 User Not Found</h1>
+                    <p className="text-gray-500">The user you're looking for doesn't exist.</p>
+                    <Link to="/" className="text-blue-600 underline mt-4 block">
+                        Go back to Home
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 };
