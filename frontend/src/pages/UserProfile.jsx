@@ -105,7 +105,7 @@ const UserProfile = () => {
     const isOwnProfile = authenticatedUser?.username === profileUsername;
 
     return (
-        <div className="w-screen bg-gray-100 min-h-screen">
+        <div className="bg-gray-100 min-h-screen">
             <div className="bg-black h-32 w-full" />
 
             <div className="max-w-3xl mx-auto">

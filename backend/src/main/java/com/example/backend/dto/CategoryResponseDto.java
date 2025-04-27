@@ -37,5 +37,5 @@ public class CategoryResponseDto {
 
     private LocalDateTime updatedAt;
 
-    private Long creatorId;
+    private String creatorId;
 }

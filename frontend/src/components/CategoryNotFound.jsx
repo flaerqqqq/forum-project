@@ -1,0 +1,15 @@
+const CategoryNotFound = () => {
+    return (
+        <div className="h-[calc(100vh-5.5rem)] bg-gray-100 flex flex-col">
+            {/* Flex container for centering content below the fixed header */}
+            <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-3xl font-bold text-gray-700 mb-4">Category Not Found</h1>
+                    <p className="text-gray-500">The category you are looking for does not exist.</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default CategoryNotFound;
