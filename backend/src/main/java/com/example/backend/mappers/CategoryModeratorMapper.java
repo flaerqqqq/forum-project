@@ -24,13 +24,13 @@ public abstract class CategoryModeratorMapper {
 
     public abstract CategoryModerator toEntity(CategoryModeratorDto dto);
 
-    @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "user.publicId", target = "userId")
     @Mapping(source = "category.id", target = "categoryId")
     public abstract CategoryModeratorDto toDto(CategoryModerator entity);
 
-    public User resolverUser(Long userId) {
+    public User resolverUser(String userId) {
         if (userId == null) return null;
-        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException());
+        return userRepository.findByPublicId(userId).orElseThrow(() -> new UserNotFoundException());
     }
 
     public Category resolveCategory(Long categoryId) {

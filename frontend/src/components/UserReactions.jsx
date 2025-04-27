@@ -19,7 +19,9 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
 
     const fetchInitialReaction = async () => {
         try {
-            const userRes = await axios.get(`http://localhost:8080/api/v1/users/${targetPublicId}`);
+            const userRes = await axios.get(`http://localhost:8080/api/v1/users/${targetPublicId}`, {
+                headers
+            });
             setLikes(userRes.data.receivedLikesCount);
             setDislikes(userRes.data.receivedDislikesCount);
 
