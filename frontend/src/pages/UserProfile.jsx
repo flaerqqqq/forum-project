@@ -44,7 +44,7 @@ const UserProfile = () => {
                     return;
                 }
 
-                const res = await axios.get(`http://localhost:8080/api/v1/users/${profileUsername}`);
+                const res = await axios.get(`http://localhost:8080/api/v1/users/username/${profileUsername}`);
                 if (isMounted) {
                     setProfileUser(res.data);
                     setIsLoading(false);

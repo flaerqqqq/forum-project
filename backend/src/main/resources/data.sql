@@ -18,53 +18,68 @@ DELETE FROM categories WHERE TRUE;
 DELETE FROM users WHERE true;
 
 -- Reset sequences/identity columns if necessary (syntax varies by database, e.g., for PostgreSQL)
+-- Make sure sequences for users, roles, categories, and avatars are reset
 -- ALTER SEQUENCE users_id_seq RESTART WITH 1;
 -- ALTER SEQUENCE roles_id_seq RESTART WITH 1;
 -- ALTER SEQUENCE categories_id_seq RESTART WITH 1;
+-- ALTER SEQUENCE avatars_id_seq RESTART WITH 1;
 -- etc.
 
 -- Insert base roles
 INSERT INTO roles (id, name) VALUES (1, 'ROLE_USER');
 INSERT INTO roles (id, name) VALUES (2, 'ROLE_MODERATOR');
 
--- Insert initial users (IDs 1, 2, 3)
+-- Insert initial users (IDs 1, 2, 3) - REMOVED avatar_url column
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
-    registration_date, last_updated_at, is_email_verified, avatar_url
+    registration_date, last_updated_at, is_email_verified
 ) VALUES (
              1, 'user1_public_id', 'user1', 'User One', 'user1@example.com', 'password',
-             'Initial user 1 description', 0, 0, 0, 1, NOW(), NOW(), true, NULL
+             'Initial user 1 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
-    registration_date, last_updated_at, is_email_verified, avatar_url
+    registration_date, last_updated_at, is_email_verified
 ) VALUES (
              2, 'user2_public_id', 'user2', 'User Two', 'user2@example.com', 'password',
-             'Initial user 2 description', 0, 0, 0, 1, NOW(), NOW(), true, NULL
+             'Initial user 2 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
-    registration_date, last_updated_at, is_email_verified, avatar_url
+    registration_date, last_updated_at, is_email_verified
 ) VALUES (
              3, 'user3_public_id', 'user3', 'User Three', 'user3@example.com', 'password',
-             'Initial user 3 description', 0, 0, 0, 1, NOW(), NOW(), true, NULL
+             'Initial user 3 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 
--- Insert 10 more users (IDs 4 through 13) with specified avatars
-INSERT INTO users (id, public_id, username, display_name, email, password, description, posts_count, received_likes_count, received_dislikes_count, user_rating, registration_date, last_updated_at, is_email_verified, avatar_url) VALUES
-                                                                                                                                                                                                                                        (4, 'user4_public_id', 'user4', 'User Four', 'user4@example.com', 'password', 'User 4 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/67653e66-6a5f-4761-b761-035d5c13d503'),
-                                                                                                                                                                                                                                        (5, 'user5_public_id', 'user5', 'User Five', 'user5@example.com', 'password', 'User 5 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/maria-orlova-Q3Ea7QQQ6MA-unsplash.jpg'),
-                                                                                                                                                                                                                                        (6, 'user6_public_id', 'user6', 'User Six', 'user6@example.com', 'password', 'User 6 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/hannah-montez-05KFkDsxDjk-unsplash.jpg'),
-                                                                                                                                                                                                                                        (7, 'user7_public_id', 'user7', 'User Seven', 'user7@example.com', 'password', 'User 7 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-JehF_vdbUo4-unsplash.jpg'),
-                                                                                                                                                                                                                                        (8, 'user8_public_id', 'user8', 'User Eight', 'user8@example.com', 'password', 'User 8 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/pexels-pixabay-531880.jpg'),
-                                                                                                                                                                                                                                        (9, 'user9_public_id', 'user9', 'User Nine', 'user9@example.com', 'password', 'User 9 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/67653e66-6a5f-4761-b761-035d5c13d503'),
-                                                                                                                                                                                                                                        (10, 'user10_public_id', 'user10', 'User Ten', 'user10@example.com', 'password', 'User 10 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/maria-orlova-Q3Ea7QQQ6MA-unsplash.jpg'),
-                                                                                                                                                                                                                                        (11, 'user11_public_id', 'user11', 'User Eleven', 'user11@example.com', 'password', 'User 11 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/hannah-montez-05KFkDsxDjk-unsplash.jpg'),
-                                                                                                                                                                                                                                        (12, 'user12_public_id', 'user12', 'User Twelve', 'user12@example.com', 'password', 'User 12 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-JehF_vdbUo4-unsplash.jpg'),
-                                                                                                                                                                                                                                        (13, 'user13_public_id', 'user13', 'User Thirteen', 'user13@example.com', 'password', 'User 13 description', 0, 0, 0, 1, NOW(), NOW(), true, 'https://forum-category-banners.s3.us-east-1.amazonaws.com/pexels-pixabay-531880.jpg');
+-- Insert 10 more users (IDs 4 through 13) - REMOVED avatar_url column
+INSERT INTO users (id, public_id, username, display_name, email, password, description, posts_count, received_likes_count, received_dislikes_count, user_rating, registration_date, last_updated_at, is_email_verified) VALUES
+                                                                                                                                                                                                                            (4, 'user4_public_id', 'user4', 'User Four', 'user4@example.com', 'password', 'User 4 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (5, 'user5_public_id', 'user5', 'User Five', 'user5@example.com', 'password', 'User 5 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (6, 'user6_public_id', 'user6', 'User Six', 'user6@example.com', 'password', 'User 6 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (7, 'user7_public_id', 'user7', 'User Seven', 'user7@example.com', 'password', 'User 7 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (8, 'user8_public_id', 'user8', 'User Eight', 'user8@example.com', 'password', 'User 8 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (9, 'user9_public_id', 'user9', 'User Nine', 'user9@example.com', 'password', 'User 9 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (10, 'user10_public_id', 'user10', 'User Ten', 'user10@example.com', 'password', 'User 10 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (11, 'user11_public_id', 'user11', 'User Eleven', 'user11@example.com', 'password', 'User 11 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (12, 'user12_public_id', 'user12', 'User Twelve', 'user12@example.com', 'password', 'User 12 description', 0, 0, 0, 1, NOW(), NOW(), true),
+                                                                                                                                                                                                                            (13, 'user13_public_id', 'user13', 'User Thirteen', 'user13@example.com', 'password', 'User 13 description', 0, 0, 0, 1, NOW(), NOW(), true);
+
+-- Insert avatars for users 4 through 13 into the avatars table
+INSERT INTO avatars (url, user_id) VALUES
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/67653e66-6a5f-4761-b761-035d5c13d503', 4),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/maria-orlova-Q3Ea7QQQ6MA-unsplash.jpg', 5),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/hannah-montez-05KFkDsxDjk-unsplash.jpg', 6),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-JehF_vdbUo4-unsplash.jpg', 7),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/pexels-pixabay-531880.jpg', 8),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/67653e66-6a5f-4761-b761-035d5c13d503', 9),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/maria-orlova-Q3Ea7QQQ6MA-unsplash.jpg', 10),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/hannah-montez-05KFkDsxDjk-unsplash.jpg', 11),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-JehF_vdbUo4-unsplash.jpg', 12),
+                                       ('https://forum-category-banners.s3.us-east-1.amazonaws.com/pexels-pixabay-531880.jpg', 13);
 
 
 -- Assign roles to initial users
@@ -86,7 +101,7 @@ INSERT INTO users_roles (user_id, role_id) VALUES (12, 1);
 INSERT INTO users_roles (user_id, role_id) VALUES (13, 1);
 
 
--- Initial Categories with Updated Banner and Icon URLs
+-- Categories (IDs 1 through 12) - unchanged from previous script
 INSERT INTO categories (id, name, slug, visibility, post_permission, description, banner_url, icon_url, followers_count, created_by, created_at, updated_at)
 VALUES
     (1, 'Technology', 'technology', 'PUBLIC', 'EVERYONE', 'All things tech-related.', 'https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-rKv4HduvzIE-unsplash.jpg', 'https://forum-category-banners.s3.us-east-1.amazonaws.com/19444b9f-36ba-486a-bbc3-f98f1b88680c', 120, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -161,13 +176,13 @@ INSERT INTO category_moderators (user_id, category_id, role, assigned_at) VALUES
 
 -- Add category_moderators entries (ROLE_MODERATOR) for the 10 new users (IDs 4-13)
 INSERT INTO category_moderators (user_id, category_id, role, assigned_at) VALUES
-                                                                              (4, 3, 'MODERATOR', CURRENT_TIMESTAMP),  -- user4 moderates Science
-                                                                              (5, 2, 'MODERATOR', CURRENT_TIMESTAMP),  -- user5 moderates Gaming
-                                                                              (6, 6, 'MODERATOR', CURRENT_TIMESTAMP),  -- user6 moderates Music
-                                                                              (7, 8, 'MODERATOR', CURRENT_TIMESTAMP),  -- user7 moderates Books
-                                                                              (8, 11, 'MODERATOR', CURRENT_TIMESTAMP), -- user8 moderates Sports
-                                                                              (9, 12, 'MODERATOR', CURRENT_TIMESTAMP), -- user9 moderates Health & Fitness
-                                                                              (10, 5, 'MODERATOR', CURRENT_TIMESTAMP), -- user10 moderates Art
-                                                                              (11, 7, 'MODERATOR', CURRENT_TIMESTAMP), -- user11 moderates Movies & TV
-                                                                              (12, 9, 'MODERATOR', CURRENT_TIMESTAMP), -- user12 moderates Food & Cooking
-                                                                              (13, 10, 'MODERATOR', CURRENT_TIMESTAMP); -- user13 moderates Travel
+                                                                              (4, 3, 'MODERATOR', CURRENT_TIMESTAMP),  -- user4 moderates Science (Category ID 3)
+                                                                              (5, 2, 'MODERATOR', CURRENT_TIMESTAMP),  -- user5 moderates Gaming (Category ID 2)
+                                                                              (6, 6, 'MODERATOR', CURRENT_TIMESTAMP),  -- user6 moderates Music (Category ID 6)
+                                                                              (7, 8, 'MODERATOR', CURRENT_TIMESTAMP),  -- user7 moderates Books (Category ID 8)
+                                                                              (8, 11, 'MODERATOR', CURRENT_TIMESTAMP), -- user8 moderates Sports (Category ID 11)
+                                                                              (9, 12, 'MODERATOR', CURRENT_TIMESTAMP), -- user9 moderates Health & Fitness (Category ID 12)
+                                                                              (10, 5, 'MODERATOR', CURRENT_TIMESTAMP), -- user10 moderates Art (Category ID 5)
+                                                                              (11, 7, 'MODERATOR', CURRENT_TIMESTAMP), -- user11 moderates Movies & TV (Category ID 7)
+                                                                              (12, 9, 'MODERATOR', CURRENT_TIMESTAMP), -- user12 moderates Food & Cooking (Category ID 9)
+                                                                              (13, 10, 'MODERATOR', CURRENT_TIMESTAMP); -- user13 moderates Travel (Category ID 10)

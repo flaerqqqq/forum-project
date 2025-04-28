@@ -19,7 +19,6 @@ const CategoryInfoSidebar = ({ category }) => {
                     setCreator(res.data);
                 } catch (error) {
                     console.error('Failed to fetch creator info:', error);
-                    toast.error('Failed to load category creator.');
                 }
             }
         };
@@ -33,13 +32,18 @@ const CategoryInfoSidebar = ({ category }) => {
                 setLoadingModerators(true);
                 try {
                     const res = await axios.get(
-                        `http://localhost:8080/api/v1/categories/${category.id}/moderators?page=0&size=11&sort=assignedAt,desc`
+                        `http://localhost:8080/api/v1/categories/${category.id}/moderators?page=0&size=20&sort=assignedAt,desc`
                     );
                     const moderatorsData = res.data.content;
-                    setModerators(moderatorsData.slice(1)); // Skipping first if needed
+
+                    const nonOwnerModerators = moderatorsData.filter(mod => mod.role !== 'OWNER');
+
+                    setModerators(nonOwnerModerators);
+
                 } catch (error) {
                     console.error('Failed to fetch moderators:', error);
                     toast.error('Failed to load moderators.');
+                    setModerators([]);
                 } finally {
                     setLoadingModerators(false);
                     setInitialLoading(false);
@@ -52,7 +56,7 @@ const CategoryInfoSidebar = ({ category }) => {
         fetchModerators();
     }, [category?.id]);
 
-    if (initialLoading) {
+    if (initialLoading && !category) {
         return (
             <div className="flex items-center justify-center min-h-[300px] bg-white border border-gray-200 rounded-md p-6">
                 <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
@@ -60,26 +64,20 @@ const CategoryInfoSidebar = ({ category }) => {
         );
     }
 
-    if (!category) {
-        return (
-            <div className="flex items-center justify-center min-h-[300px] bg-white border border-gray-200 rounded-md p-6">
-                <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
-            </div>
-        );
+    if (!category && !initialLoading) {
+        return <div>Error loading category information.</div>;
     }
 
     return (
         <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-md">
-            {/* Banner */}
             {category.bannerUrl && (
                 <img
                     src={category.bannerUrl}
-                    alt="Category Banner"
+                    alt={`${category.name} Banner`}
                     className="w-full h-20 object-cover"
                 />
             )}
 
-            {/* Content */}
             <div className="p-4 flex flex-col gap-4">
                 <h2 className="text-xl font-semibold text-gray-800">About Category</h2>
 
@@ -87,13 +85,11 @@ const CategoryInfoSidebar = ({ category }) => {
 
                 <hr className="my-2 border-gray-200" />
 
-                {/* Followers */}
                 <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Members</span>
                     <span className="font-semibold text-gray-900">{category.followersCount}</span>
                 </div>
 
-                {/* Created At */}
                 <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Created</span>
                     <span>{new Date(category.createdAt).toLocaleDateString(undefined, {
@@ -103,19 +99,16 @@ const CategoryInfoSidebar = ({ category }) => {
                     })}</span>
                 </div>
 
-                {/* Visibility */}
                 <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Visibility</span>
-                    <span className="capitalize">{category.visibility.toLowerCase()}</span>
+                    <span className="capitalize">{category.visibility.toLowerCase().replace('_', ' ')}</span>
                 </div>
 
-                {/* Post Permission */}
                 <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>Who can post</span>
-                    <span className="capitalize">{category.postPermission.toLowerCase()}</span>
+                    <span className="capitalize">{category.postPermission.toLowerCase().replace('_', ' ')}</span>
                 </div>
 
-                {/* Creator */}
                 {creator && (
                     <div className="text-sm text-gray-500">
                         Created by{" "}
@@ -128,7 +121,6 @@ const CategoryInfoSidebar = ({ category }) => {
                     </div>
                 )}
 
-                {/* Moderators */}
                 <div className="mt-6">
                     <h3 className="text-lg font-semibold text-gray-800">Moderators</h3>
 
@@ -143,38 +135,38 @@ const CategoryInfoSidebar = ({ category }) => {
                                     <li key={moderator.id} className="flex items-center space-x-3 p-3 rounded-md border border-gray-200 hover:bg-gray-100">
                                         <img
                                             src={moderator.userDto?.avatarUrl || defaultAvatar}
-                                            alt="Moderator Avatar"
+                                            alt={`${moderator.userDto?.username}'s Avatar`}
                                             className="w-10 h-10 rounded-full object-cover"
                                         />
                                         <div>
+                                            {/* Changed Link to a tag with target="_blank" */}
                                             <a
                                                 href={`/users/${moderator.userDto?.username}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline font-semibold"
                                             >
-                                                {moderator.userDto?.username}
+                                                {moderator.userDto?.displayName} ({moderator.userDto?.username})
                                             </a>
                                         </div>
                                     </li>
                                 ))
                             ) : (
-                                <li className="text-gray-500 text-center">No moderators found.</li>
+                                <li className="text-gray-500 text-center">No additional moderators found.</li>
                             )}
                         </ul>
                     )}
 
-                    {/* View All Moderators */}
-                    <div className="mt-4 text-center">
-                        <a
-                            href={`/categories/${category.slug}/moderators`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-block px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                        >
-                            View all moderators
-                        </a>
-                    </div>
+                    {category?.slug && (
+                        <div className="mt-4 text-center">
+                            <Link
+                                to={`/categories/${category.slug}/moderators`}
+                                className="inline-block px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                            >
+                                View all moderators
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

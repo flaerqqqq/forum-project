@@ -71,7 +71,7 @@ const CategoryModeratorsPage = () => {
 
             try {
                 const res = await axios.get(`http://localhost:8080/api/v1/categories/${category.id}/moderators`, {
-                    params: { page, size: PAGE_SIZE },
+                    params: { page, size: page === 0 ? 11 : PAGE_SIZE },
                 });
 
                 const moderatorsWithUserDto = res.data.content;
@@ -240,7 +240,6 @@ const CategoryModeratorsPage = () => {
                     onClose={() => setIsAddModeratorModalOpen(false)}
                     onModeratorAdded={() => {
                         // Trigger a refresh when a moderator is successfully added
-                        setPage(0); // Reset page state
                         setRefreshKey(prev => prev + 1); // Increment refresh key
                         setIsAddModeratorModalOpen(false);
                     }}
