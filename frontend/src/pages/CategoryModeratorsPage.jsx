@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import defaultAvatar from "../assets/images/default-avatar.png";
 import { Oval } from "react-loader-spinner";
+import AddModeratorModal from "../components/AddModeratorModal"; // <-- import your modal
 
 const PAGE_SIZE = 10;
 
@@ -19,6 +20,7 @@ const CategoryModeratorsPage = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [isAddModeratorModalOpen, setIsAddModeratorModalOpen] = useState(false);
     const navigate = useNavigate();
     const observer = useRef();
 
@@ -36,11 +38,6 @@ const CategoryModeratorsPage = () => {
     useEffect(() => {
         if (userLoading) return;
 
-        if (!user) {
-            navigate("/login");
-            return;
-        }
-
         const fetchCategory = async () => {
             try {
                 const categoryRes = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
@@ -52,7 +49,7 @@ const CategoryModeratorsPage = () => {
         };
 
         fetchCategory();
-    }, [categorySlug, user, userLoading, navigate]);
+    }, [categorySlug, userLoading]);
 
     useEffect(() => {
         if (!category) return;
@@ -87,24 +84,6 @@ const CategoryModeratorsPage = () => {
         setSearchQuery(event.target.value);
     };
 
-    const handleAddModerator = async (username) => {
-        const token = Cookies.get("token");
-        if (!username) return;
-
-        try {
-            await axios.post(
-                `http://localhost:8080/api/v1/categories/${category.id}/moderators`,
-                { username },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            toast.success(`Added ${username} as moderator!`);
-            setPage(0); // reset to reload
-        } catch (err) {
-            console.error(err);
-            toast.error(err.response?.data?.message || "Failed to add moderator.");
-        }
-    };
-
     const handleRemoveModerator = async (userId) => {
         const token = Cookies.get("token");
 
@@ -114,22 +93,38 @@ const CategoryModeratorsPage = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Moderator removed.");
-            setPage(0); // reset to reload
+            setPage(0); // reload moderators
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to remove moderator.");
         }
     };
 
-    if (initialLoading && !category) return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
-        </div>
-    );
+    if (initialLoading && !category) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+            </div>
+        );
+    }
 
-    const isOwner = user.publicId === category?.creatorId;
+    const isOwner = user && user.publicId === category?.creatorId;
 
-    const filteredModerators = moderators.filter((mod) =>
+    const uniqueModeratorsMap = new Map();
+    moderators.forEach((mod) => {
+        const userId = mod.userDto.publicId;
+        if (!uniqueModeratorsMap.has(userId)) {
+            uniqueModeratorsMap.set(userId, mod);
+        } else {
+            const existing = uniqueModeratorsMap.get(userId);
+            if (mod.role === "OWNER" && existing.role !== "OWNER") {
+                uniqueModeratorsMap.set(userId, mod);
+            }
+        }
+    });
+
+    const uniqueModerators = Array.from(uniqueModeratorsMap.values());
+    const filteredModerators = uniqueModerators.filter((mod) =>
         mod.userDto?.username?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -150,10 +145,7 @@ const CategoryModeratorsPage = () => {
             {isOwner && (
                 <div className="mb-6">
                     <button
-                        onClick={() => {
-                            const username = prompt("Enter username to add:");
-                            if (username) handleAddModerator(username);
-                        }}
+                        onClick={() => setIsAddModeratorModalOpen(true)}
                         className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                     >
                         Add Moderator
@@ -168,22 +160,34 @@ const CategoryModeratorsPage = () => {
                         <li
                             key={moderator.id}
                             ref={index === filteredModerators.length - 1 ? lastModeratorRef : null}
-                            className="flex items-center justify-between p-4 border rounded-md"
+                            className="flex items-center justify-between p-4 border rounded-md hover:bg-gray-100 transition duration-300 group"
                         >
                             <div className="flex items-center gap-4">
-                                <img
-                                    src={moderator.userDto?.avatarUrl || defaultAvatar}
-                                    alt={moderator.userDto?.username}
-                                    className="w-12 h-12 rounded-full object-cover"
-                                />
-                                <span className="text-lg font-medium">{moderator.userDto?.username}</span>
+                                <a href={`/users/${moderator.userDto?.username}`} target="_blank" rel="noopener noreferrer">
+                                    <img
+                                        src={moderator.userDto?.avatarUrl || defaultAvatar}
+                                        alt={moderator.userDto?.username}
+                                        className="w-12 h-12 rounded-full object-cover"
+                                    />
+                                </a>
+                                <div className="flex flex-col">
+                                    <a
+                                        href={`/users/${moderator.userDto?.username}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-lg font-medium text-blue-600 hover:underline"
+                                    >
+                                        {moderator.userDto?.username}
+                                    </a>
+                                    {moderator.role === "OWNER" && (
+                                        <span className="text-xs font-semibold text-orange-600">Owner</span>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Remove button */}
-                            {isOwner && moderator.userDto?.publicId !== user.publicId && (
+                            {isOwner && moderator.userDto?.publicId !== user?.publicId && (
                                 <button
-                                    onClick={() => handleRemoveModerator(moderator.userDto?.publicId)} // Use publicId from userDto
-                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => handleRemoveModerator(moderator.userDto?.publicId)}
+                                    className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition duration-200"
                                 >
                                     Remove
                                 </button>
@@ -200,6 +204,18 @@ const CategoryModeratorsPage = () => {
                 <div className="flex justify-center mt-4">
                     <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
                 </div>
+            )}
+
+            {/* AddModerator Modal */}
+            {isAddModeratorModalOpen && (
+                <AddModeratorModal
+                    categoryId={category?.id}
+                    onClose={() => setIsAddModeratorModalOpen(false)}
+                    onModeratorAdded={() => {
+                        setPage(0);
+                        setIsAddModeratorModalOpen(false);
+                    }}
+                />
             )}
         </div>
     );

@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import defaultAvatar from '../assets/images/default-avatar.png';
 import axios from 'axios';
+import { Oval } from 'react-loader-spinner';
+import { toast } from 'react-toastify';
 
 const CategoryInfoSidebar = ({ category }) => {
     const [creator, setCreator] = useState(null);
     const [moderators, setModerators] = useState([]);
     const [loadingModerators, setLoadingModerators] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
         const fetchCreator = async () => {
@@ -16,6 +19,7 @@ const CategoryInfoSidebar = ({ category }) => {
                     setCreator(res.data);
                 } catch (error) {
                     console.error('Failed to fetch creator info:', error);
+                    toast.error('Failed to load category creator.');
                 }
             }
         };
@@ -32,35 +36,34 @@ const CategoryInfoSidebar = ({ category }) => {
                         `http://localhost:8080/api/v1/categories/${category.id}/moderators?page=0&size=11&sort=assignedAt,desc`
                     );
                     const moderatorsData = res.data.content;
-
-                    const moderatorsWithDetails = await Promise.all(
-                        moderatorsData.map(async (moderator) => {
-                            try {
-                                const userRes = await axios.get(`http://localhost:8080/api/v1/users/${moderator.userId}`);
-                                return { ...moderator, user: userRes.data };
-                            } catch (error) {
-                                console.error('Failed to fetch moderator user info:', error);
-                                return moderator;
-                            }
-                        })
-                    );
-
-                    setModerators(moderatorsWithDetails.slice(1));
+                    setModerators(moderatorsData.slice(1)); // Skipping first if needed
                 } catch (error) {
                     console.error('Failed to fetch moderators:', error);
+                    toast.error('Failed to load moderators.');
                 } finally {
                     setLoadingModerators(false);
+                    setInitialLoading(false);
                 }
+            } else {
+                setInitialLoading(false);
             }
         };
 
         fetchModerators();
     }, [category?.id]);
 
+    if (initialLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[300px] bg-white border border-gray-200 rounded-md p-6">
+                <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+            </div>
+        );
+    }
+
     if (!category) {
         return (
-            <div className="bg-white border border-gray-200 rounded-md p-4">
-                <p>Loading category info...</p>
+            <div className="flex items-center justify-center min-h-[300px] bg-white border border-gray-200 rounded-md p-6">
+                <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
             </div>
         );
     }
@@ -76,12 +79,10 @@ const CategoryInfoSidebar = ({ category }) => {
                 />
             )}
 
-            {/* Box content */}
+            {/* Content */}
             <div className="p-4 flex flex-col gap-4">
-                {/* Title */}
                 <h2 className="text-xl font-semibold text-gray-800">About Category</h2>
 
-                {/* Description */}
                 <p className="text-sm text-gray-700">{category.description || "No description provided."}</p>
 
                 <hr className="my-2 border-gray-200" />
@@ -127,48 +128,52 @@ const CategoryInfoSidebar = ({ category }) => {
                     </div>
                 )}
 
-                {/* Moderators List */}
+                {/* Moderators */}
                 <div className="mt-6">
                     <h3 className="text-lg font-semibold text-gray-800">Moderators</h3>
-                    <ul className="space-y-4 mt-4">
-                        {loadingModerators ? (
-                            <li className="text-gray-500">Loading moderators...</li>
-                        ) : (
-                            moderators.map((moderator) => (
-                                <li key={moderator.id} className="flex items-center space-x-3 p-3 rounded-md border border-gray-200 hover:bg-gray-100">
-                                    {/* Moderator Avatar */}
-                                    <img
-                                        src={moderator.user?.avatarUrl || defaultAvatar}
-                                        alt="Moderator Avatar"
-                                        className="w-10 h-10 rounded-full object-cover"
-                                    />
 
-                                    {/* Moderator Username with link opening in new tab */}
-                                    <div>
-                                        <span className="font-semibold">
+                    {loadingModerators ? (
+                        <div className="flex justify-center py-4">
+                            <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+                        </div>
+                    ) : (
+                        <ul className="space-y-4 mt-4">
+                            {moderators.length > 0 ? (
+                                moderators.map((moderator) => (
+                                    <li key={moderator.id} className="flex items-center space-x-3 p-3 rounded-md border border-gray-200 hover:bg-gray-100">
+                                        <img
+                                            src={moderator.userDto?.avatarUrl || defaultAvatar}
+                                            alt="Moderator Avatar"
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                        <div>
                                             <a
-                                                href={`/users/${moderator.user?.username}`}
+                                                href={`/users/${moderator.userDto?.username}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
+                                                className="text-blue-600 hover:underline font-semibold"
                                             >
-                                                {moderator.user?.username}
+                                                {moderator.userDto?.username}
                                             </a>
-                                        </span>
-                                    </div>
-                                </li>
-                            ))
-                        )}
-                    </ul>
+                                        </div>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="text-gray-500 text-center">No moderators found.</li>
+                            )}
+                        </ul>
+                    )}
 
-                    {/* View all moderators link */}
+                    {/* View All Moderators */}
                     <div className="mt-4 text-center">
-                        <Link
-                            to={`/categories/${category.slug}/moderators`}
+                        <a
+                            href={`/categories/${category.slug}/moderators`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-block px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                         >
                             View all moderators
-                        </Link>
+                        </a>
                     </div>
                 </div>
             </div>
