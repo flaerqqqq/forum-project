@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import Cookies from 'js-cookie';
@@ -16,6 +16,7 @@ const UserCategories = ({ userPublicId }) => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(false); // State for toggling between created and followed
 
     const token = Cookies.get('token');
     const observer = useRef();
@@ -31,6 +32,18 @@ const UserCategories = ({ userPublicId }) => {
         if (node) observer.current.observe(node);
     }, [loading, initialLoading, hasMore, isSearching]);
 
+    const fetchCategoryDetails = async (categoryId) => {
+        try {
+            const res = await axios.get(`http://localhost:8080/api/v1/categories/${categoryId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            return res.data;
+        } catch (err) {
+            toast.error('Failed to load category details');
+            return null;
+        }
+    };
+
     const fetchCategories = useCallback(async () => {
         if (!userPublicId) return;
 
@@ -42,7 +55,11 @@ const UserCategories = ({ userPublicId }) => {
 
         const startTime = Date.now();
         try {
-            const res = await axios.get(`http://localhost:8080/api/v1/users/me/categories`, {
+            const url = isFollowing
+                ? `http://localhost:8080/api/v1/users/me/follows` // Fetch followed categories
+                : `http://localhost:8080/api/v1/users/me/categories`; // Fetch created categories
+
+            const res = await axios.get(url, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: {
                     page,
@@ -50,8 +67,21 @@ const UserCategories = ({ userPublicId }) => {
                 },
             });
 
-            const fetchedCategories = res.data.content || [];
+            const categoryIds = res.data.content || [];
             const isLast = res.data.last;
+
+            // If it's followed categories, fetch the detailed data
+            let fetchedCategories = [];
+            if (isFollowing) {
+                fetchedCategories = await Promise.all(
+                    categoryIds.map(async (category) => {
+                        const categoryDetails = await fetchCategoryDetails(category.categoryId);
+                        return categoryDetails;
+                    })
+                );
+            } else {
+                fetchedCategories = categoryIds; // For created categories, use the basic data
+            }
 
             const elapsedTime = Date.now() - startTime;
             const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
@@ -72,7 +102,7 @@ const UserCategories = ({ userPublicId }) => {
             setLoading(false);
             setHasMore(false);
         }
-    }, [page, token, userPublicId]);
+    }, [page, token, userPublicId, isFollowing]);
 
     const searchCategories = useCallback(async (query) => {
         if (!query.trim()) {
@@ -122,6 +152,12 @@ const UserCategories = ({ userPublicId }) => {
         setSearchQuery(e.target.value);
     };
 
+    const toggleCategoryView = () => {
+        setIsFollowing(prev => !prev); // Toggle between following and created categories
+        setPage(0); // Reset page on toggle
+        setCategories([]); // Reset categories on toggle
+    };
+
     return (
         <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
             <h2 className="text-xl font-bold mb-4 border-b pb-2">📚 My Categories</h2>
@@ -134,6 +170,15 @@ const UserCategories = ({ userPublicId }) => {
                     onChange={handleSearchChange}
                     className="px-4 py-2 rounded-md border w-full"
                 />
+            </div>
+
+            <div className="mb-4">
+                <button
+                    onClick={toggleCategoryView}
+                    className="px-4 py-2 rounded-md text-white bg-blue-500 hover:bg-blue-600"
+                >
+                    {isFollowing ? 'Show Created Categories' : 'Show Followed Categories'}
+                </button>
             </div>
 
             {initialLoading && categories.length === 0 ? (
