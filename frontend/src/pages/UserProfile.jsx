@@ -5,11 +5,12 @@ import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
 import defaultAvatar from '../assets/images/default-avatar.png';
 import UserNotFound from "../components/UserNotFound.jsx";
-import ReportUserModal from '../components/ReportUserModal';  // Import the modal
-import UserReports from '../components/UserReports'; // Import the UserReports component
-import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
+import ReportUserModal from '../components/ReportUserModal';
+import UserReports from '../components/UserReports';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {isModerator} from "../utils/Auth.js"; // Import React-Toastify CSS
+import { isModerator } from "../utils/Auth.js";
+import UserCategories from "../components/UserCategories.jsx";
 
 const UserProfile = () => {
     const rawParams = useParams();
@@ -20,8 +21,8 @@ const UserProfile = () => {
     const [retryCount, setRetryCount] = useState(0);
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [notFound, setNotFound] = useState(false);
-    const [showReportModal, setShowReportModal] = useState(false);  // State to control the modal
-    const [showReportsSection, setShowReportsSection] = useState(false); // State to toggle reports section
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [activeSection, setActiveSection] = useState(null); // 'categories' | 'reports' | null
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 2000;
     const navigate = useNavigate();
@@ -85,7 +86,7 @@ const UserProfile = () => {
 
     if (authLoading || isLoading) {
         return (
-            <div className="fixed inset-0 flex items-center justify-center bg-gray-100" style={{ marginLeft: '250px' }}> {/* Adjust for the side panel width */}
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-100" style={{ marginLeft: '250px' }}>
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     {retryCount > 0 && (
@@ -163,6 +164,14 @@ const UserProfile = () => {
 
                 <div className="mt-6 bg-white rounded-lg shadow p-4 text-gray-700 text-sm">
                     <div className="flex justify-around flex-wrap gap-4">
+                        <button
+                            className="flex items-center space-x-2"
+                            onClick={() => setActiveSection(activeSection === 'categories' ? null : 'categories')}
+                        >
+                            <span>📂</span>
+                            <span>Categories</span>
+                        </button>
+
                         <button className="flex items-center space-x-2">
                             <span>📰</span>
                             <span>Posts</span>
@@ -173,32 +182,24 @@ const UserProfile = () => {
                             <span>Comments</span>
                         </button>
 
-                        <button className="flex items-center space-x-2">
-                            <span>❤️</span>
-                            <span>Likes</span>
-                        </button>
-
-                        <button className="flex items-center space-x-2">
-                            <span>👎</span>
-                            <span>Dislikes</span>
-                        </button>
-
                         {isOwnProfile && !isModerator() && (
-                            <div className="relative">
-                                <button
-                                    className="flex items-center space-x-2"
-                                    onClick={() => setShowReportsSection(!showReportsSection)} // Toggle reports section visibility
-                                >
-                                    <span>🚨</span>
-                                    <span>Reports</span>
-                                </button>
-                            </div>
+                            <button
+                                className="flex items-center space-x-2"
+                                onClick={() => setActiveSection(activeSection === 'reports' ? null : 'reports')}
+                            >
+                                <span>🚨</span>
+                                <span>Reports</span>
+                            </button>
                         )}
                     </div>
                 </div>
 
-                {/* Style the UserReports like the profile container */}
-                {showReportsSection && (
+                {/* Conditionally render sections based on activeSection */}
+                {activeSection === 'categories' && (
+                    <UserCategories userPublicId={profileUser.publicId} />
+                )}
+
+                {activeSection === 'reports' && (
                     <UserReports userId={profileUser.publicId} />
                 )}
             </div>
