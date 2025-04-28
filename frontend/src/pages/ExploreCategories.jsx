@@ -1,208 +1,143 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useUser } from "../contexts/UserContext";
-import axios from "axios";
-import Cookies from "js-cookie";
-import { toast } from "react-toastify";
-import defaultAvatar from "../assets/images/default-avatar.png";
-import { Oval } from "react-loader-spinner";
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { Oval } from 'react-loader-spinner';
+import CategoryView from "../components/CategoryView.jsx";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 9; // 3 categories per row
 
-const CategoryModeratorsPage = () => {
-    const { categorySlug } = useParams();
-    const { user, loading: userLoading } = useUser();
-    const [category, setCategory] = useState(null);
-    const [moderators, setModerators] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
+const ExploreCategories = () => {
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [inputValue, setInputValue] = useState('');
+
     const observer = useRef();
 
-    const lastModeratorRef = useCallback((node) => {
+    const lastCategoryRef = useCallback(node => {
         if (loading || initialLoading) return;
         if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasMore) {
-                setPage((prev) => prev + 1);
-            }
-        });
-        if (node) observer.current.observe(node);
-    }, [loading, initialLoading, hasMore]);
+        if (!query) { // Only observe when NOT searching
+            observer.current = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && hasMore) {
+                    setPage(prev => prev + 1);
+                }
+            });
+            if (node) observer.current.observe(node);
+        }
+    }, [loading, initialLoading, hasMore, query]);
 
-    useEffect(() => {
-        if (userLoading) return;
-
-        if (!user) {
-            navigate("/login");
-            return;
+    const fetchCategories = useCallback(async () => {
+        if (page === 0) {
+            setInitialLoading(true);
+        } else {
+            setLoading(true);
         }
 
-        const fetchCategory = async () => {
-            try {
-                const categoryRes = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
-                setCategory(categoryRes.data);
-            } catch (err) {
-                console.error(err);
-                toast.error("Failed to load category.");
-            }
-        };
-
-        fetchCategory();
-    }, [categorySlug, user, userLoading, navigate]);
-
-    useEffect(() => {
-        if (!category) return;
-
-        const fetchModerators = async () => {
-            if (page === 0) setInitialLoading(true);
-            else setLoading(true);
-
-            try {
-                const res = await axios.get(`http://localhost:8080/api/v1/categories/${category.id}/moderators`, {
+        try {
+            if (query) {
+                // Search mode: no pagination
+                const response = await axios.get('http://localhost:8080/api/v1/categories/search', {
+                    params: { query },
+                });
+                setCategories(response.data || []);
+                setHasMore(false); // No further loading when searching
+            } else {
+                // Normal Browse with pagination
+                const response = await axios.get('http://localhost:8080/api/v1/categories', {
                     params: { page, size: PAGE_SIZE },
                 });
+                const fetchedCategories = response.data.content || [];
+                setCategories(prev => (page === 0 ? fetchedCategories : [...prev, ...fetchedCategories]));
 
-                const moderatorsWithUserDto = res.data.content;
+                // Original logic for hasMore
+                let morePages = !response.data.last;
 
-                setModerators((prev) => (page === 0 ? moderatorsWithUserDto : [...prev, ...moderatorsWithUserDto]));
-                setHasMore(!res.data.last);
-            } catch (err) {
-                console.error(err);
-                toast.error("Failed to load moderators.");
-                setHasMore(false);
-            } finally {
-                if (page === 0) setInitialLoading(false);
-                else setLoading(false);
+                // *** START OF REQUESTED ADDITION ***
+                // Frontend Safeguard: If we received an empty array on any page AFTER the first page (page > 0),
+                // assume there are no more categories, even if backend 'last' is incorrect.
+                if (fetchedCategories.length === 0 && page > 0) {
+                    morePages = false;
+                    console.log('Frontend: Detected end of results via empty page response.'); // Optional log
+                }
+                // *** END OF REQUESTED ADDITION ***
+
+                setHasMore(morePages); // Use the potentially updated value
             }
-        };
-
-        fetchModerators();
-    }, [category, page]);
-
-    const handleSearch = (event) => {
-        setSearchQuery(event.target.value);
-    };
-
-    const handleAddModerator = async (username) => {
-        const token = Cookies.get("token");
-        if (!username) return;
-
-        try {
-            await axios.post(
-                `http://localhost:8080/api/v1/categories/${category.id}/moderators`,
-                { username },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            toast.success(`Added ${username} as moderator!`);
-            setPage(0); // reset to reload
-        } catch (err) {
-            console.error(err);
-            toast.error(err.response?.data?.message || "Failed to add moderator.");
+        } catch (error) {
+            toast.error('Failed to load categories');
+            // Also set hasMore to false on error to prevent infinite loop attempts
+            setHasMore(false);
+        } finally {
+            setInitialLoading(false);
+            setLoading(false);
         }
+    }, [page, query]);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [page, fetchCategories]);
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        setPage(0);
+        setCategories([]);
+        setHasMore(true);
+        setQuery(inputValue.trim());
     };
-
-    const handleRemoveModerator = async (userId) => {
-        const token = Cookies.get("token");
-
-        try {
-            await axios.delete(
-                `http://localhost:8080/api/v1/categories/${category.id}/moderators/${userId}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            toast.success("Moderator removed.");
-            setPage(0); // reset to reload
-        } catch (err) {
-            console.error(err);
-            toast.error(err.response?.data?.message || "Failed to remove moderator.");
-        }
-    };
-
-    if (initialLoading && !category) return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
-        </div>
-    );
-
-    const isOwner = user.publicId === category?.creatorId;
-
-    const filteredModerators = moderators.filter((mod) =>
-        mod.userDto?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
-        <div className="max-w-5xl mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6">Moderators of {category?.name}</h1>
+        <div className="container mx-auto p-6">
+            <h1 className="text-3xl font-bold mb-6">Explore Categories</h1>
 
             {/* Search Bar */}
-            <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearch}
-                placeholder="Search moderators..."
-                className="w-full border p-2 rounded-md mb-6"
-            />
+            <form onSubmit={handleSearchSubmit} className="mb-6 flex justify-center">
+                <input
+                    type="text"
+                    placeholder="Search categories..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    className="border border-gray-300 p-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/3"
+                />
+                <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 rounded-r-md hover:bg-blue-600 transition"
+                >
+                    Search
+                </button>
+            </form>
 
-            {/* Add Moderator */}
-            {isOwner && (
-                <div className="mb-6">
-                    <button
-                        onClick={() => {
-                            const username = prompt("Enter username to add:");
-                            if (username) handleAddModerator(username);
-                        }}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            <div className="grid grid-cols-3 gap-6">
+                {categories.map((category, index) => (
+                    <div
+                        key={category.id}
+                        ref={!query && index === categories.length - 1 ? lastCategoryRef : null} // ref only in normal mode
                     >
-                        Add Moderator
-                    </button>
+                        <CategoryView category={category} />
+                    </div>
+                ))}
+            </div>
+
+            {initialLoading && (
+                <div className="flex justify-center mt-4">
+                    <Oval height={40} width={40} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
                 </div>
             )}
 
-            {/* Moderators List */}
-            <ul className="space-y-4">
-                {filteredModerators.length > 0 ? (
-                    filteredModerators.map((moderator, index) => (
-                        <li
-                            key={moderator.id}
-                            ref={index === filteredModerators.length - 1 ? lastModeratorRef : null}
-                            className="flex items-center justify-between p-4 border rounded-md"
-                        >
-                            <div className="flex items-center gap-4">
-                                <img
-                                    src={moderator.userDto?.avatarUrl || defaultAvatar}
-                                    alt={moderator.userDto?.username}
-                                    className="w-12 h-12 rounded-full object-cover"
-                                />
-                                <span className="text-lg font-medium">{moderator.userDto?.username}</span>
-                            </div>
-
-                            {/* Remove button */}
-                            {isOwner && moderator.userDto?.publicId !== user.publicId && (
-                                <button
-                                    onClick={() => handleRemoveModerator(moderator.userDto?.publicId)} // Use publicId from userDto
-                                    className="text-red-500 hover:text-red-700"
-                                >
-                                    Remove
-                                </button>
-                            )}
-                        </li>
-                    ))
-                ) : (
-                    <div>No moderators found.</div>
-                )}
-            </ul>
-
-            {/* Pagination Spinner */}
-            {loading && (
+            {loading && !initialLoading && (
                 <div className="flex justify-center mt-4">
-                    <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+                    <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={3} visible={true} />
                 </div>
+            )}
+
+            {!loading && hasMore && categories.length > 0 && !initialLoading && !query && (
+                <p className="text-gray-500 mt-4 text-center">Scroll down to load more categories...</p>
             )}
         </div>
     );
 };
 
-export default CategoryModeratorsPage;
+export default ExploreCategories;
