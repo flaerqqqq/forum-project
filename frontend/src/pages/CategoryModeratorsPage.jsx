@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { toast } from "react-toastify";
 import defaultAvatar from "../assets/images/default-avatar.png";
 import { Oval } from "react-loader-spinner";
-import AddModeratorModal from "../components/AddModeratorModal"; // <-- import your modal
+import AddModeratorModal from "../components/AddModeratorModal";
 
 const PAGE_SIZE = 10;
 
@@ -21,11 +21,14 @@ const CategoryModeratorsPage = () => {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isAddModeratorModalOpen, setIsAddModeratorModalOpen] = useState(false);
+    // Add a state variable to explicitly trigger a refresh
+    const [refreshKey, setRefreshKey] = useState(0);
     const navigate = useNavigate();
     const observer = useRef();
 
     const lastModeratorRef = useCallback((node) => {
-        if (loading || initialLoading) return;
+        // Only set up observer for initial load and subsequent pages, not when a refresh is pending
+        if (loading || initialLoading || refreshKey > 0 && page === 0) return; // Prevent observing while initial data for refresh loads
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasMore) {
@@ -33,8 +36,9 @@ const CategoryModeratorsPage = () => {
             }
         });
         if (node) observer.current.observe(node);
-    }, [loading, initialLoading, hasMore]);
+    }, [loading, initialLoading, hasMore, refreshKey, page]); // Include refreshKey and page in dependencies
 
+    // Effect to fetch category details
     useEffect(() => {
         if (userLoading) return;
 
@@ -51,12 +55,19 @@ const CategoryModeratorsPage = () => {
         fetchCategory();
     }, [categorySlug, userLoading]);
 
+    // Effect to fetch moderators
     useEffect(() => {
         if (!category) return;
 
         const fetchModerators = async () => {
-            if (page === 0) setInitialLoading(true);
-            else setLoading(true);
+            // If refreshKey changed and we are on page 0, treat it as initial loading for this refresh cycle
+            if (page === 0) {
+                setInitialLoading(true);
+                setModerators([]); // Clear existing data when starting a new fetch from page 0
+            } else {
+                setLoading(true);
+            }
+
 
             try {
                 const res = await axios.get(`http://localhost:8080/api/v1/categories/${category.id}/moderators`, {
@@ -65,12 +76,18 @@ const CategoryModeratorsPage = () => {
 
                 const moderatorsWithUserDto = res.data.content;
 
+                // Always replace data if page is 0 (initial load or refresh), otherwise append
                 setModerators((prev) => (page === 0 ? moderatorsWithUserDto : [...prev, ...moderatorsWithUserDto]));
+
                 setHasMore(!res.data.last);
             } catch (err) {
                 console.error(err);
                 toast.error("Failed to load moderators.");
                 setHasMore(false);
+                // Clear moderators array on error if it was a page 0 fetch
+                if (page === 0) {
+                    setModerators([]);
+                }
             } finally {
                 if (page === 0) setInitialLoading(false);
                 else setLoading(false);
@@ -78,7 +95,7 @@ const CategoryModeratorsPage = () => {
         };
 
         fetchModerators();
-    }, [category, page]);
+    }, [category, page, refreshKey]); // Add refreshKey to dependencies
 
     const handleSearch = (event) => {
         setSearchQuery(event.target.value);
@@ -93,14 +110,17 @@ const CategoryModeratorsPage = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Moderator removed.");
-            setPage(0); // reload moderators
+            // Trigger a refresh instead of just setting page to 0
+            setPage(0); // Reset page state
+            setRefreshKey(prev => prev + 1); // Increment refresh key
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to remove moderator.");
         }
     };
 
-    if (initialLoading && !category) {
+    // This initial loading check should probably also consider if category is null
+    if (initialLoading && !category && page === 0 && refreshKey === 0) {
         return (
             <div className="flex justify-center items-center h-64">
                 <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
@@ -108,8 +128,10 @@ const CategoryModeratorsPage = () => {
         );
     }
 
+
     const isOwner = user && user.publicId === category?.creatorId;
 
+    // The unique moderators logic remains the same
     const uniqueModeratorsMap = new Map();
     moderators.forEach((mod) => {
         const userId = mod.userDto.publicId;
@@ -155,10 +177,15 @@ const CategoryModeratorsPage = () => {
 
             {/* Moderators List */}
             <ul className="space-y-4">
-                {filteredModerators.length > 0 ? (
+                {/* Conditional rendering for loading state after initial fetch */}
+                {(initialLoading && page === 0) ? (
+                    <div className="flex justify-center items-center h-32">
+                        <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+                    </div>
+                ) : filteredModerators.length > 0 ? (
                     filteredModerators.map((moderator, index) => (
                         <li
-                            key={moderator.id}
+                            key={moderator.id || moderator.userDto?.publicId} // Use ID or publicId as key
                             ref={index === filteredModerators.length - 1 ? lastModeratorRef : null}
                             className="flex items-center justify-between p-4 border rounded-md hover:bg-gray-100 transition duration-300 group"
                         >
@@ -195,12 +222,12 @@ const CategoryModeratorsPage = () => {
                         </li>
                     ))
                 ) : (
-                    <div>No moderators found.</div>
+                    !initialLoading && <div>No moderators found.</div>
                 )}
             </ul>
 
-            {/* Pagination Spinner */}
-            {loading && (
+            {/* Pagination Spinner (only show if loading and not initial loading for a refresh) */}
+            {loading && !(initialLoading && page === 0) && (
                 <div className="flex justify-center mt-4">
                     <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
                 </div>
@@ -212,7 +239,9 @@ const CategoryModeratorsPage = () => {
                     categoryId={category?.id}
                     onClose={() => setIsAddModeratorModalOpen(false)}
                     onModeratorAdded={() => {
-                        setPage(0);
+                        // Trigger a refresh when a moderator is successfully added
+                        setPage(0); // Reset page state
+                        setRefreshKey(prev => prev + 1); // Increment refresh key
                         setIsAddModeratorModalOpen(false);
                     }}
                 />

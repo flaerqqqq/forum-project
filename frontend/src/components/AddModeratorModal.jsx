@@ -42,14 +42,14 @@ const AddModeratorModal = ({ categoryId, onClose, onModeratorAdded }) => {
         try {
             await axios.post(
                 `http://localhost:8080/api/v1/categories/${categoryId}/moderators`,
-                { username: userFound.username },
+                { publicId: userFound.publicId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success(`Added ${userFound.username} as moderator!`);
             onModeratorAdded();
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.message || "Failed to add moderator.");
+            toast.error(err.response?.data?.body?.detail || "Failed to add moderator.");
         }
     };
 
