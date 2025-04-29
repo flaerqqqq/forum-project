@@ -17,6 +17,15 @@ DELETE FROM roles WHERE true;
 DELETE FROM categories WHERE TRUE;
 DELETE FROM users WHERE true;
 
+SELECT setval('users_seq', 1000, true);
+SELECT setval('categories_id_seq', 1000, true);
+SELECT setval('user_reactions_id_seq', 1000, true);
+SELECT setval('reports_id_seq', 1000, true);
+SELECT setval('category_follows_id_seq', 1000, true);
+SELECT setval('category_moderators_id_seq', 1000, true);
+SELECT setval('avatars_id_seq', 1000, true);
+
+
 -- Reset sequences/identity columns if necessary (syntax varies by database, e.g., for PostgreSQL)
 -- Make sure sequences for users, roles, categories, and avatars are reset
 -- ALTER SEQUENCE users_id_seq RESTART WITH 1;

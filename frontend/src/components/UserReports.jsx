@@ -16,15 +16,14 @@ const SORT_OPTIONS = [
     { label: 'Status (A-Z)', value: 'status,ASC' },
     { label: 'Status (Z-A)', value: 'status,DESC' },
 ];
-
 const PAGE_SIZE = 8;
 const MIN_LOADING_TIME = 300;
 
 const UserReports = () => {
     const { user } = useUser();
     const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(false); // Used for pagination loading state
-    const [initialLoading, setInitialLoading] = useState(true); // Used for initial load or new filter load state
+    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [reportId, setReportId] = useState('');
@@ -38,23 +37,23 @@ const UserReports = () => {
     const observer = useRef();
     const isModer = isModerator();
 
-    const lastReportRef = useCallback(node => {
-        if (loading || initialLoading) return; // Prevent triggering while any loading is happening
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore) {
-                setPage(prev => prev + 1);
-            }
-        });
-        if (node) observer.current.observe(node);
-    }, [loading, initialLoading, hasMore]); // Include initialLoading in dependencies
+    const lastReportRef = useCallback(
+        node => {
+            if (loading || initialLoading) return;
+            if (observer.current) observer.current.disconnect();
+            observer.current = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && hasMore) {
+                    setPage(prev => prev + 1);
+                }
+            });
+            if (node) observer.current.observe(node);
+        },
+        [loading, initialLoading, hasMore]
+    );
 
     const fetchReports = useCallback(async () => {
-        if (page === 0) {
-            setInitialLoading(true); // Set initial loading for the first page (new query)
-        } else {
-            setLoading(true); // Set loading for subsequent pages (pagination)
-        }
+        if (page === 0) setInitialLoading(true);
+        else setLoading(true);
 
         const startTime = Date.now();
         let fetchedReports = [];
@@ -63,7 +62,7 @@ const UserReports = () => {
         try {
             if (reportId.trim()) {
                 const res = await axios.get(`http://localhost:8080/api/v1/reports/${reportId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 fetchedReports = [res.data];
                 isLast = true;
@@ -71,7 +70,6 @@ const UserReports = () => {
                 const url = isModer
                     ? 'http://localhost:8080/api/v1/reports'
                     : 'http://localhost:8080/api/v1/users/me/reports';
-
                 const res = await axios.get(url, {
                     headers: { Authorization: `Bearer ${token}` },
                     params: {
@@ -83,94 +81,81 @@ const UserReports = () => {
                         size: PAGE_SIZE,
                     },
                 });
-
                 fetchedReports = res.data.content || [];
                 isLast = res.data.last;
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail?.split(':')[1] || 'Failed to load reports. Please try again.';
-            if (err.response?.status !== 404 && err.response?.status !== 500) {
+            const errorMessage =
+                err.response?.data?.body?.detail?.split(':')[1]?.trim() || 'Failed to load reports.';
+            if (err.response?.status === 404 && reportId.trim()) {
+                // Do nothing
+            } else if (err.response?.status !== 404 && err.response?.status !== 500) {
                 toast.error(errorMessage);
             }
             fetchedReports = [];
-            isLast = true; // Treat errors as the end of data for current query
+            isLast = true;
         } finally {
             const elapsedTime = Date.now() - startTime;
             const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
             setTimeout(() => {
-                // Append reports for pagination, replace for new searches/filters
                 setReports(prev => (page === 0 ? fetchedReports : [...prev, ...fetchedReports]));
                 setHasMore(!isLast);
-                if (page === 0) {
-                    setInitialLoading(false); // End of initial/new query load
-                } else {
-                    setLoading(false); // End of pagination load
-                }
+                if (page === 0) setInitialLoading(false);
+                else setLoading(false);
             }, remainingTime);
         }
-    }, [token, isModer, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page]);
+    }, [
+        token,
+        isModer,
+        reportId,
+        selectedStatus,
+        selectedReason,
+        selectedTargetType,
+        sortOption,
+        page,
+    ]);
 
-    // Effect to trigger data fetching when relevant state changes
     useEffect(() => {
         if (!user) return;
-
-        // Use a timeout to debounce rapid state changes (e.g., multiple filter changes)
-        // and to allow setPage(0) from handlers to take effect before fetching.
-        const delay = page === 0 ? 100 : 0; // Debounce first page fetches
-
+        const delay = page === 0 ? 100 : 0;
         const handler = setTimeout(() => {
-            // State (page, filters, sort, reportId) is in desired state here.
-            // fetchReports will fetch based on this state and manage its own loading state.
             fetchReports();
         }, delay);
-
         return () => clearTimeout(handler);
+    }, [user, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page, fetchReports]);
 
-    }, [user, reportId, selectedStatus, selectedReason, selectedTargetType, sortOption, page, fetchReports]); // Dependencies
-
-    // Handlers to update state and reset page on filter/sort/reportId changes
-    const handleStatusChange = useCallback((e) => {
+    const handleStatusChange = e => {
         setSelectedStatus(e.target.value);
-        setPage(0); // Reset page on filter change
-    }, []);
-
-    const handleReasonChange = useCallback((e) => {
+        setPage(0);
+    };
+    const handleReasonChange = e => {
         setSelectedReason(e.target.value);
-        setPage(0); // Reset page on filter change
-    }, []);
-
-    const handleTargetTypeChange = useCallback((e) => {
+        setPage(0);
+    };
+    const handleTargetTypeChange = e => {
         setSelectedTargetType(e.target.value);
-        setPage(0); // Reset page on filter change
-    }, []);
-
-    const handleSortChange = useCallback((e) => {
+        setPage(0);
+    };
+    const handleSortChange = e => {
         const selectedLabel = e.target.value;
         const selectedValue = SORT_OPTIONS.find(o => o.label === selectedLabel)?.value || 'reportedAt,DESC';
         setSortOption(selectedValue);
-        setPage(0); // Reset page on sort change
-    }, []);
-
-    const handleReportIdChange = useCallback((e) => {
+        setPage(0);
+    };
+    const handleReportIdChange = e => {
         setReportId(e.target.value);
-        setPage(0); // Reset page on report ID change
-    }, []);
-
+        setPage(0);
+    };
 
     return (
-        <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
-            <h2 className="text-xl font-bold mb-4 border-b pb-2">{isModer ? '🛡️ Moderator Reports' : '🚨 My Reports'}</h2>
-
-            <div className="flex gap-4 mb-4 flex-wrap">
+        <div className="mx-auto font-sans text-gray-900">
+            <div className="flex flex-wrap gap-x-8 gap-y-6 mb-10">
                 {isModer && (
                     <div className="flex flex-col">
-                        <label htmlFor="reportId" className="text-sm font-semibold mb-1 text-gray-600">
-                            Report ID
-                        </label>
+                        <label className="text-xs font-medium text-gray-500 mb-1 uppercase">Report ID</label>
                         <input
-                            id="reportId"
                             type="text"
-                            className="px-4 py-2 rounded-md border"
+                            className="bg-transparent border-b border-gray-300 focus:outline-none focus:border-black py-1 text-sm text-gray-800 placeholder-gray-400"
                             placeholder="Enter Report ID"
                             value={reportId}
                             onChange={handleReportIdChange}
@@ -178,91 +163,63 @@ const UserReports = () => {
                     </div>
                 )}
 
-                {[['Status', STATUSES, selectedStatus, handleStatusChange, 'status'],
-                    ['Reason', REASONS, selectedReason, handleReasonChange, 'reason'],
-                    ['Target Type', TARGET_TYPES, selectedTargetType, handleTargetTypeChange, 'targetType'],
-                    ['Sort by', SORT_OPTIONS.map(opt => opt.label),
-                        sortOption, // Use the value from state
-                        handleSortChange, // Use the specific handler
-                        'sortBy'
-                    ]
-                ].map(([label, options, value, onChange, id], i) => {
-                    // For display in the select, find the label corresponding to the current value
-                    const displayValue = label === 'Sort by'
-                        ? SORT_OPTIONS.find(o => o.value === value)?.label
-                        : value;
+                {[
+                    ['Status', STATUSES, selectedStatus, handleStatusChange],
+                    ['Reason', REASONS, selectedReason, handleReasonChange],
+                    ['Target Type', TARGET_TYPES, selectedTargetType, handleTargetTypeChange],
+                    ['Sort by', SORT_OPTIONS.map(o => o.label), sortOption, handleSortChange],
+                ].map(([label, options, value, onChange], index) => {
+                    const id = `filter-${index}`;
+                    const displayValue =
+                        label === 'Sort by' ? SORT_OPTIONS.find(o => o.value === value)?.label : value;
 
                     return (
-                        <div className="flex flex-col" key={id}> {/* Use id as key */}
-                            <label htmlFor={id} className="text-sm font-semibold mb-1 text-gray-600">
-                                {label}
-                            </label>
+                        <div key={id} className="flex flex-col">
+                            <label className="text-xs font-medium text-gray-500 mb-1 uppercase">{label}</label>
                             <select
-                                id={id}
-                                className="px-4 py-2 rounded-md border"
-                                value={displayValue} // Select element uses the display value (label)
-                                onChange={onChange} // Use the appropriate handler
+                                className="bg-transparent border-b border-gray-300 focus:outline-none focus:border-black py-1 text-sm text-gray-800"
+                                value={displayValue}
+                                onChange={onChange}
                             >
-                                {options.map(opt => {
-                                    // For sort options, the value of the option should be the label for the select element
-                                    // For others, the option value is the status/reason/type string itself
-                                    const optionValue = label === 'Sort by' ? opt : opt;
-
-                                    return (
-                                        <option key={optionValue} value={optionValue}>{opt}</option>
-                                    );
-                                })}
+                                {options.map(opt => (
+                                    <option key={opt} value={opt}>
+                                        {opt}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Conditional Rendering for Initial/New Query Loading, No Results, or Reports List */}
-            {initialLoading && reports.length === 0 ? ( // Show initial spinner only if initial loading and no reports loaded yet
-                <div className="flex justify-center mt-4">
-                    <Oval
-                        height={40}
-                        width={40}
-                        color="#3b82f6"
-                        secondaryColor="#dbeafe"
-                        strokeWidth={4}
-                        visible={true}
-                    />
+            {initialLoading && reports.length === 0 ? (
+                <div className="flex justify-center py-12">
+                    <Oval height={36} width={36} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={4} visible />
                 </div>
-            ) : reports.length === 0 && !initialLoading ? ( // Show "No reports found" if reports is empty and initial loading is done
-                <p className="text-gray-500">No reports found.</p>
+            ) : reports.length === 0 && !initialLoading ? (
+                <p className="text-center text-gray-500 py-10 text-base">
+                    {reportId.trim()
+                        ? `Report with ID "${reportId}" not found.`
+                        : 'No reports found matching your criteria.'}
+                </p>
             ) : (
-                // Reports list (only show if reports.length > 0)
-                reports.length > 0 && (
-                    <div className="space-y-4">
-                        {reports.map((report, i) => (
-                            // Use report.id for key, and ref the last element
-                            <div key={report.id} ref={i === reports.length - 1 ? lastReportRef : null}>
-                                <SingleReport report={report} reportedEntityName={report.targetId} />
-                            </div>
-                        ))}
-                    </div>
-                )
-            )}
-
-            {/* Pagination Spinner */}
-            {loading && reports.length > 0 && ( // Show pagination spinner if loading AND there are already reports
-                <div className="flex justify-center mt-4">
-                    <Oval
-                        height={30}
-                        width={30}
-                        color="#3b82f6"
-                        secondaryColor="#dbeafe"
-                        strokeWidth={3}
-                        visible={true}
-                    />
+                <div className="space-y-6">
+                    {reports.map((report, i) => (
+                        <div key={report.id} ref={i === reports.length - 1 ? lastReportRef : null}>
+                            <SingleReport report={report} reportedEntityName={report.targetId} />
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* "Scroll to load" message */}
-            {!loading && hasMore && reports.length > 0 && !initialLoading && ( // Show message if not loading pagination, has more, reports exist, and initial load is done
-                <p className="text-gray-500 mt-4 text-center">Scroll down to load more reports...</p>
+            {loading && reports.length > 0 && (
+                <div className="flex justify-center py-6">
+                    <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} visible />
+                </div>
+            )}
+
+            {!loading && hasMore && reports.length > 0 && !initialLoading && (
+                <p className="text-center text-gray-400 text-sm mt-8 pb-4">Scroll down for more reports</p>
             )}
         </div>
     );

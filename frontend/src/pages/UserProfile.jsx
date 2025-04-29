@@ -149,30 +149,47 @@ const UserProfile = () => {
         const usernameToCopy = profileUser.username;
         try {
             await navigator.clipboard.writeText(usernameToCopy);
-            toast.success(`Username "@${usernameToCopy}" copied!`); // Show success toast
+            toast.success(`Username "@${usernameToCopy}" copied!`);
         } catch (err) {
             console.error('Failed to copy username: ', err);
-            toast.error('Failed to copy username.'); // Show error toast
+            toast.error('Failed to copy username.');
         }
+    };
+
+    const getAvatarColorClass = (username) => {
+        if (!username) return 'bg-gray-medium';
+        const firstLetter = username.charAt(0).toUpperCase();
+        const asciiCode = firstLetter.charCodeAt(0);
+        const colorIndex = asciiCode % 10;
+
+        const avatarColors = [
+            'bg-accent-green',
+            'bg-gray-darker',
+            'bg-indigo-600',
+            'bg-blue-600',
+            'bg-purple-600',
+            'bg-pink-600',
+            'bg-teal-600',
+            'bg-orange-600',
+            'bg-red-600',
+            'bg-gray-medium',
+        ];
+
+        return avatarColors[colorIndex];
     };
 
 
     return (
         <div className="bg-background-light-gray min-h-screen font-sans text-black">
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
 
-                {/* Main Profile Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 mb-6 border-b border-border">
-                    {/* Left side: Name and Tabs */}
                     <div className="flex flex-col flex-grow border-r border-border pr-6">
-                        {/* Container for Name and Dropdown Button */}
                         <div className="flex items-center mb-4">
                             <h1 className="text-3xl sm:text-4xl font-heading text-black mr-4 flex-grow">
                                 {profileUser.displayName}
                             </h1>
-                            {/* Relative container for Button and Dropdown */}
                             <div className="relative flex-shrink-0">
-                                {/* Dropdown Button */}
                                 <button
                                     ref={buttonRef}
                                     className="flex items-center justify-center w-8 h-8 text-gray-medium hover:text-black text-2xl font-bold rounded-full transition-colors"
@@ -206,7 +223,6 @@ const UserProfile = () => {
                             </div>
                         </div>
 
-                        {/* Navigation Tabs */}
                         <div className="flex space-x-6 font-medium text-gray-darker">
                             <button
                                 className={`pb-2 border-b-2 ${activeSection === 'posts' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
@@ -214,12 +230,14 @@ const UserProfile = () => {
                             >
                                 Posts
                             </button>
-                            <button
-                                className={`pb-2 border-b-2 ${activeSection === 'categories' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
-                                onClick={() => setActiveSection('categories')}
-                            >
-                                Categories
-                            </button>
+                            {isOwnProfile && (
+                                <button
+                                    className={`pb-2 border-b-2 ${activeSection === 'categories' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
+                                    onClick={() => setActiveSection('categories')}
+                                >
+                                    Categories
+                                </button>
+                            )}
                             <button
                                 className={`pb-2 border-b-2 ${activeSection === 'comments' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
                                 onClick={() => setActiveSection('comments')}
@@ -237,17 +255,15 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    {/* Right side: Avatar, Username, and Reactions */}
-                    {/* Removed sm:items-end to center items horizontally */}
                     <div className="flex flex-col items-center flex-shrink-0 mt-6 sm:mt-0 pl-6">
-                        <div className="w-16 h-16 rounded-full bg-accent-green flex items-center justify-center text-white text-2xl font-bold mb-2 overflow-hidden">
+                        {/* Dynamically set background color */}
+                        <div className={`w-16 h-16 rounded-full ${profileUser.username ? getAvatarColorClass(profileUser.username) : 'bg-gray-medium'} flex items-center justify-center text-white text-2xl font-bold mb-2 overflow-hidden`}>
                             {profileUser.avatarUrl ? (
                                 <img src={profileUser.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                             ) : (
                                 <span>{getInitials(profileUser.displayName)}</span>
                             )}
                         </div>
-                        {/* Removed mb-2 from username, will add spacing below reactions */}
                         <p
                             className="text-gray-darker text-sm font-semibold cursor-pointer hover:underline"
                             onClick={handleCopyUsername}
@@ -255,26 +271,28 @@ const UserProfile = () => {
                         >
                             @{profileUser.username}
                         </p>
-                        {/* User Reactions (Re-added here, directly below username) */}
                         {profileUser.publicId && (
-                            <div className="mt-4"> {/* Added top margin for spacing from username */}
+                            <div className="mt-4">
                                 <UserReactions
                                     targetPublicId={profileUser.publicId}
                                     readOnly={isOwnProfile}
-                                    // Add styling classes to UserReactions internally or via props if needed
                                 />
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Profile Content Area (Conditionally rendered sections) */}
-                {/* This div now follows the main header div */}
                 <div className="mt-8">
                     {activeSection === 'posts' && (
                         <div>
                             <h2 className="text-2xl font-heading text-black mb-4">Posts</h2>
                             <div className="text-gray-medium">No posts found.</div>
+                        </div>
+                    )}
+                    {activeSection === 'comments' && (
+                        <div>
+                            <h2 className="text-2xl font-heading text-black mb-4">Comments</h2>
+                            <div className="text-gray-medium">No comments found.</div>
                         </div>
                     )}
 
@@ -285,21 +303,13 @@ const UserProfile = () => {
                     {activeSection === 'reports' && (
                         <UserReports userId={profileUser.publicId} />
                     )}
-                    {/* Add containers for 'comments' section when implemented */}
-                    {/* {activeSection === 'comments' && (
-                          <div>
-                             <h2 className="text-2xl font-heading text-black mb-4">Comments</h2>
-                             <UserComments userPublicId={profileUser.publicId} /> // Example component
-                         </div>
-                     )} */}
                 </div>
-
 
             </div>
 
             {showReportModal && (
                 <ReportUserModal
-                    targetUsername={profileUser.username}
+                    targetPublicId={profileUser.publicId}
                     onClose={() => setShowReportModal(false)}
                 />
             )}

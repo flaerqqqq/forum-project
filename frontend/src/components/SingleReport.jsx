@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import ModeratorReviewModal from './ModeratorReviewModal';
 import { isModerator } from '../utils/Auth';
-import Cookies from "js-cookie";
-import axios from "axios";
-import { toast } from "react-toastify";
+import Cookies from 'js-cookie';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const SingleReport = ({ report, reportedEntityName }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
-    const [localReport, setLocalReport] = useState(report); // Use local copy of report
+    const [localReport, setLocalReport] = useState(report);
 
     const toggleExpanded = () => setIsExpanded(!isExpanded);
 
@@ -18,80 +18,83 @@ const SingleReport = ({ report, reportedEntityName }) => {
             const res = await axios.get(`http://localhost:8080/api/v1/reports/${report.id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setLocalReport(res.data); // Update local report data
+            setLocalReport(res.data);
         } catch (e) {
             toast.error('Failed to refresh report after review');
         }
     };
 
+    const statusColorMap = {
+        OPEN: 'text-blue-600',
+        UNDER_REVIEW: 'text-orange-500',
+        REJECTED: 'text-red-500',
+        RESOLVED: 'text-green-600',
+    };
+
     return (
-        <div className="bg-white rounded-lg shadow-md p-4 mb-4 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-center cursor-pointer" onClick={toggleExpanded}>
-                <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Reported:</p>
-                    <p className="text-lg font-semibold text-gray-800">
-                        {reportedEntityName || localReport.targetId}
+        <div className="border-b border-gray-200 py-5 text-sm font-sans text-gray-800">
+            <div
+                className="flex justify-between items-start cursor-pointer"
+                onClick={toggleExpanded}
+            >
+                <div className="space-y-1 pr-4">
+                    <p className="text-gray-500">Report ID: <span className="text-black font-medium">#{localReport.id}</span></p>
+                    <p className="text-gray-500">Reason: <span className="text-black font-medium">{localReport.reason}</span></p>
+                    <p className="text-gray-500">
+                        Reported Entity: <span className="text-black font-medium">{reportedEntityName || localReport.targetId}</span>
                     </p>
-                    <p className="text-sm text-gray-500">Report ID: #{localReport.id}</p>
-                    <p className="text-sm text-gray-600">Reason: {localReport.reason}</p>
                 </div>
 
-                <div className="text-right">
-                    <p
-                        className={`font-medium 
-                            ${localReport.status === 'OPEN' ? 'text-blue-600' : ''} 
-                            ${localReport.status === 'UNDER_REVIEW' ? 'text-yellow-600' : ''} 
-                            ${localReport.status === 'REJECTED' ? 'text-red-600' : ''} 
-                            ${localReport.status === 'RESOLVED' ? 'text-green-600' : ''}`}
-                    >
-                        {localReport.status}
+                <div className="text-right flex-shrink-0 pl-4">
+                    <p className={`font-semibold ${statusColorMap[localReport.status]}`}>
+                        {localReport.status.replace('_', ' ')}
                     </p>
-                    <button className="text-sm text-blue-500 hover:underline mt-2">
+                    <button className="text-xs text-gray-500 hover:underline mt-1 focus:outline-none">
                         {isExpanded ? 'Hide details ▲' : 'Show details ▼'}
                     </button>
                 </div>
             </div>
 
             {isExpanded && (
-                <div className="mt-4 space-y-3 text-sm text-gray-700">
+                <div className="mt-4 space-y-3 border-t border-gray-100 pt-4 text-sm">
                     <div>
-                        <span className="font-medium text-gray-600">Description:</span>
-                        <p className="mt-1">{localReport.description}</p>
+                        <p className="font-medium text-gray-700">Description</p>
+                        <p className="text-gray-600 mt-1">{localReport.description || 'No description provided.'}</p>
                     </div>
 
                     <div>
-                        <span className="font-medium text-gray-600">Reported at:</span>
-                        <p>{new Date(localReport.reportedAt).toLocaleString()}</p>
+                        <p className="font-medium text-gray-700">Reported at</p>
+                        <p className="text-gray-600">{new Date(localReport.reportedAt).toLocaleString()}</p>
                     </div>
 
                     {localReport.moderatorId && (
                         <>
                             <div>
-                                <span className="font-medium text-gray-600">Reviewed by Moderator:</span>
-                                <p>{localReport.moderatorId}</p>
+                                <p className="font-medium text-gray-700">Reviewed by Moderator ID</p>
+                                <p className="text-gray-600">{localReport.moderatorId}</p>
                             </div>
 
                             {localReport.moderatorNote && (
                                 <div>
-                                    <span className="font-medium text-gray-600">Moderator Note:</span>
-                                    <p>{localReport.moderatorNote}</p>
+                                    <p className="font-medium text-gray-700">Moderator Note</p>
+                                    <p className="text-gray-600">{localReport.moderatorNote}</p>
                                 </div>
                             )}
 
                             {localReport.reviewedAt && (
                                 <div>
-                                    <span className="font-medium text-gray-600">Reviewed at:</span>
-                                    <p>{new Date(localReport.reviewedAt).toLocaleString()}</p>
+                                    <p className="font-medium text-gray-700">Reviewed at</p>
+                                    <p className="text-gray-600">{new Date(localReport.reviewedAt).toLocaleString()}</p>
                                 </div>
                             )}
                         </>
                     )}
 
-                    {isModerator() && (
+                    {isModerator() && ['OPEN', 'UNDER_REVIEW'].includes(localReport.status) && (
                         <div className="pt-4">
                             <button
                                 onClick={() => setModalOpen(true)}
-                                className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                className="px-3 py-1.5 text-sm rounded-md bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
                             >
                                 Review Report
                             </button>
@@ -100,7 +103,6 @@ const SingleReport = ({ report, reportedEntityName }) => {
                 </div>
             )}
 
-            {/* Modal */}
             <ModeratorReviewModal
                 reportId={report.id}
                 isOpen={modalOpen}

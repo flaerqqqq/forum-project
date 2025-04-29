@@ -11,7 +11,7 @@ const formatReason = (reason) => {
         .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase()); // Capitalize first letter of each word
 };
 
-const ReportUserModal = ({ targetUsername, onClose }) => {
+const ReportUserModal = ({ targetPublicId, onClose }) => {
     const [reasons, setReasons] = useState([]);
     const [selectedReason, setSelectedReason] = useState('');
     const [description, setDescription] = useState('');
@@ -47,7 +47,7 @@ const ReportUserModal = ({ targetUsername, onClose }) => {
                 `http://localhost:8080/api/v1/reports`,
                 {
                     targetType: 'USER', // Assuming the target type is 'USER'
-                    targetId: targetUsername,
+                    targetId: targetPublicId,
                     reason: selectedReason,
                     description,
                 },
@@ -100,7 +100,7 @@ const ReportUserModal = ({ targetUsername, onClose }) => {
                     </button>
                 </div>
 
-                <p className="text-sm text-gray-500 mt-2">Please select a reason for reporting {targetUsername}.</p>
+                <p className="text-sm text-gray-500 mt-2">Please select a reasong.</p>
 
                 <div className="mt-4">
                     <select

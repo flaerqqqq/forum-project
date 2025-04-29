@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import axios from "axios";
 import Cookies from "js-cookie";
@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import defaultAvatar from "../assets/images/default-avatar.png";
 import { Oval } from "react-loader-spinner";
 import AddModeratorModal from "../components/AddModeratorModal";
+import CategoryNotFound from "../components/CategoryNotFound";
 
 const PAGE_SIZE = 10;
 
@@ -21,14 +22,36 @@ const CategoryModeratorsPage = () => {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isAddModeratorModalOpen, setIsAddModeratorModalOpen] = useState(false);
-    // Add a state variable to explicitly trigger a refresh
     const [refreshKey, setRefreshKey] = useState(0);
+    const [categoryError, setCategoryError] = useState(null);
+    const [notFound, setNotFound] = useState(false);
     const navigate = useNavigate();
     const observer = useRef();
 
+    const getAvatarColorClass = (username) => {
+        if (!username) return 'bg-gray-medium';
+        const firstLetter = username.charAt(0).toUpperCase();
+        const asciiCode = firstLetter.charCodeAt(0);
+        const colorIndex = asciiCode % 10;
+        const avatarColors = [
+            'bg-accent-green', 'bg-gray-darker', 'bg-indigo-600', 'bg-blue-600', 'bg-purple-600',
+            'bg-pink-600', 'bg-teal-600', 'bg-orange-600', 'bg-red-600', 'bg-gray-medium',
+        ];
+        return avatarColors[colorIndex];
+    };
+
+    const getInitials = (name) => {
+        if (!name) return '';
+        const parts = name.split(' ');
+        if (parts.length === 1) {
+            return parts[0].charAt(0).toUpperCase();
+        }
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
+
     const lastModeratorRef = useCallback((node) => {
-        // Only set up observer for initial load and subsequent pages, not when a refresh is pending
-        if (loading || initialLoading || refreshKey > 0 && page === 0) return; // Prevent observing while initial data for refresh loads
+        if (loading || initialLoading || refreshKey > 0 && page === 0) return;
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasMore) {
@@ -36,38 +59,44 @@ const CategoryModeratorsPage = () => {
             }
         });
         if (node) observer.current.observe(node);
-    }, [loading, initialLoading, hasMore, refreshKey, page]); // Include refreshKey and page in dependencies
+    }, [loading, initialLoading, hasMore, refreshKey, page]);
 
-    // Effect to fetch category details
     useEffect(() => {
         if (userLoading) return;
 
         const fetchCategory = async () => {
+            setInitialLoading(true);
+            setCategoryError(null);
+            setNotFound(false);
+            setCategory(null);
+
             try {
                 const categoryRes = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
                 setCategory(categoryRes.data);
             } catch (err) {
-                console.error(err);
-                toast.error("Failed to load category.");
+                console.error("Failed to load category:", err);
+                if (err.response?.status === 404) {
+                    setNotFound(true);
+                } else {
+                    setCategoryError("Failed to load category details.");
+                    toast.error("Failed to load category details.");
+                }
+                setInitialLoading(false);
             }
         };
 
         fetchCategory();
     }, [categorySlug, userLoading]);
 
-    // Effect to fetch moderators
     useEffect(() => {
-        if (!category) return;
+        if (!category) {
+            if (!initialLoading && !notFound && !categoryError) {
+                console.warn("Moderator fetch effect ran before category was loaded without error/404 state.");
+            }
+            return;
+        }
 
         const fetchModerators = async () => {
-            // If refreshKey changed and we are on page 0, treat it as initial loading for this refresh cycle
-            if (page === 0) {
-                setInitialLoading(true);
-                setModerators([]); // Clear existing data when starting a new fetch from page 0
-            } else {
-                setLoading(true);
-            }
-
 
             try {
                 const res = await axios.get(`http://localhost:8080/api/v1/categories/${category.id}/moderators`, {
@@ -76,26 +105,26 @@ const CategoryModeratorsPage = () => {
 
                 const moderatorsWithUserDto = res.data.content;
 
-                // Always replace data if page is 0 (initial load or refresh), otherwise append
                 setModerators((prev) => (page === 0 ? moderatorsWithUserDto : [...prev, ...moderatorsWithUserDto]));
 
-                setHasMore(!res.data.last);
+                setHasMore(moderatorsWithUserDto.length === (page === 0 ? 11 : PAGE_SIZE));
+
+
             } catch (err) {
-                console.error(err);
+                console.error("Failed to load moderators:", err);
                 toast.error("Failed to load moderators.");
                 setHasMore(false);
-                // Clear moderators array on error if it was a page 0 fetch
                 if (page === 0) {
                     setModerators([]);
                 }
             } finally {
                 if (page === 0) setInitialLoading(false);
-                else setLoading(false);
+                setLoading(false);
             }
         };
 
         fetchModerators();
-    }, [category, page, refreshKey]); // Add refreshKey to dependencies
+    }, [category, page, refreshKey, initialLoading, notFound, categoryError]);
 
     const handleSearch = (event) => {
         setSearchQuery(event.target.value);
@@ -110,20 +139,36 @@ const CategoryModeratorsPage = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             toast.success("Moderator removed.");
-            // Trigger a refresh instead of just setting page to 0
-            setPage(0); // Reset page state
-            setRefreshKey(prev => prev + 1); // Increment refresh key
+            setPage(0);
+            setRefreshKey(prev => prev + 1);
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Failed to remove moderator.");
         }
     };
 
-    // This initial loading check should probably also consider if category is null
-    if (initialLoading && !category && page === 0 && refreshKey === 0) {
+
+    if (notFound) {
+        return <CategoryNotFound />;
+    }
+
+    if (initialLoading) {
         return (
-            <div className="flex justify-center items-center h-64">
-                <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
+                <div className="flex flex-col items-center gap-4">
+                    <Oval height={50} width={50} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible={true} />
+                    <p className="text-gray-medium">Loading category and moderators...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (categoryError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
+                <div className="text-red-600 text-center mt-8">
+                    <p>{categoryError}</p>
+                </div>
             </div>
         );
     }
@@ -131,7 +176,6 @@ const CategoryModeratorsPage = () => {
 
     const isOwner = user && user.publicId === category?.creatorId;
 
-    // The unique moderators logic remains the same
     const uniqueModeratorsMap = new Map();
     moderators.forEach((mod) => {
         const userId = mod.userDto.publicId;
@@ -151,96 +195,115 @@ const CategoryModeratorsPage = () => {
     );
 
     return (
-        <div className="max-w-5xl mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6">Moderators of {category?.name}</h1>
+        <div className="bg-background-light-gray font-sans text-black min-h-screen">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 className="text-3xl font-heading text-black mb-8">
+                    Moderators of {category?.name || 'Category'}
+                </h1>
 
-            {/* Search Bar */}
-            <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearch}
-                placeholder="Search moderators..."
-                className="w-full border p-2 rounded-md mb-6"
-            />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        placeholder="Search moderators..."
+                        className="flex-grow border border-border p-2 rounded-md focus:outline-none focus:border-black text-gray-darker"
+                    />
 
-            {/* Add Moderator */}
-            {isOwner && (
-                <div className="mb-6">
-                    <button
-                        onClick={() => setIsAddModeratorModalOpen(true)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                        Add Moderator
-                    </button>
-                </div>
-            )}
-
-            {/* Moderators List */}
-            <ul className="space-y-4">
-                {/* Conditional rendering for loading state after initial fetch */}
-                {(initialLoading && page === 0) ? (
-                    <div className="flex justify-center items-center h-32">
-                        <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
-                    </div>
-                ) : filteredModerators.length > 0 ? (
-                    filteredModerators.map((moderator, index) => (
-                        <li
-                            key={moderator.id || moderator.userDto?.publicId} // Use ID or publicId as key
-                            ref={index === filteredModerators.length - 1 ? lastModeratorRef : null}
-                            className="flex items-center justify-between p-4 border rounded-md hover:bg-gray-100 transition duration-300 group"
+                    {isOwner && (
+                        <button
+                            onClick={() => setIsAddModeratorModalOpen(true)}
+                            className="bg-accent-green text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex-shrink-0"
                         >
-                            <div className="flex items-center gap-4">
-                                <a href={`/users/${moderator.userDto?.username}`} target="_blank" rel="noopener noreferrer">
-                                    <img
-                                        src={moderator.userDto?.avatarUrl || defaultAvatar}
-                                        alt={moderator.userDto?.username}
-                                        className="w-12 h-12 rounded-full object-cover"
-                                    />
-                                </a>
-                                <div className="flex flex-col">
-                                    <a
-                                        href={`/users/${moderator.userDto?.username}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-lg font-medium text-blue-600 hover:underline"
-                                    >
-                                        {moderator.userDto?.username}
+                            Add Moderator
+                        </button>
+                    )}
+                </div>
+
+                {/* Header for Moderators List */}
+                <div className="flex items-center justify-between px-4 pb-2 mb-2 border-b border-border text-gray-darker text-sm font-semibold">
+                    <div className="flex-grow">Username</div>
+                    {/* Added pr-4 here to match the list item date padding */}
+                    <div className="w-40 text-right pr-4">Joined At</div>
+                    <div className="flex-shrink-0 ml-4 w-20"></div> {/* Placeholder column for Remove button */}
+                </div>
+
+                <ul className="space-y-2 mt-6">
+                    {filteredModerators.length > 0 ? (
+                        filteredModerators.map((moderator, index) => (
+                            <li
+                                key={moderator.id || moderator.userDto?.publicId}
+                                ref={index === filteredModerators.length - 1 ? lastModeratorRef : null}
+                                className="flex items-center justify-between p-4 border-none hover:bg-gray-lighter transition duration-300 group rounded-md"
+                            >
+                                <div className="flex items-center gap-4 flex-grow">
+                                    <a href={`/users/${moderator.userDto?.username}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+                                        {moderator.userDto?.avatarUrl ? (
+                                            <img
+                                                src={moderator.userDto.avatarUrl}
+                                                alt={moderator.userDto?.username}
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className={`w-10 h-10 rounded-full ${getAvatarColorClass(moderator.userDto?.username)} flex items-center justify-center text-sm text-white font-semibold`}>
+                                                {getInitials(moderator.userDto?.displayName || moderator.userDto?.username)}
+                                            </div>
+                                        )}
                                     </a>
-                                    {moderator.role === "OWNER" && (
-                                        <span className="text-xs font-semibold text-orange-600">Owner</span>
+                                    <div className="flex flex-col">
+                                        <a
+                                            href={`/users/${moderator.userDto?.username}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-black font-semibold hover:underline"
+                                        >
+                                            {moderator.userDto?.displayName || moderator.userDto?.username}
+                                        </a>
+                                        {moderator.role === "OWNER" ? (
+                                            <span className="text-xs font-semibold text-gray-darker">Owner</span>
+                                        ) : (
+                                            <span className="text-xs font-semibold text-gray-darker">Moderator</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Joined Date Column */}
+                                <div className="w-40 text-gray-darker text-sm flex-shrink-0 text-right ">
+                                    {moderator.assignedAt ? new Date(moderator.assignedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                                </div>
+                                {/* Remove Button Column - Always render this container */}
+                                <div className="flex-shrink-0 ml-4 w-20 flex justify-end items-center">
+                                    {/* Conditionally render the button inside */}
+                                    {isOwner && moderator.userDto?.publicId !== user?.publicId && (
+                                        <button
+                                            onClick={() => handleRemoveModerator(moderator.userDto?.publicId)}
+                                            className={`font-medium px-3 py-1 rounded-full focus:outline-none transition-colors duration-300 opacity-0 group-hover:opacity-100
+                                                    bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black `}
+                                        >
+                                            Remove
+                                        </button>
                                     )}
                                 </div>
-                            </div>
-                            {isOwner && moderator.userDto?.publicId !== user?.publicId && (
-                                <button
-                                    onClick={() => handleRemoveModerator(moderator.userDto?.publicId)}
-                                    className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition duration-200"
-                                >
-                                    Remove
-                                </button>
-                            )}
-                        </li>
-                    ))
-                ) : (
-                    !initialLoading && <div>No moderators found.</div>
+                            </li>
+                        ))
+                    ) : (
+                        !loading && <div className="text-gray-medium text-center mt-8">{searchQuery ? `No moderators found matching "${searchQuery}"` : "No moderators found for this category."}</div>
+                    )}
+                </ul>
+
+                {loading && page > 0 && (
+                    <div className="flex justify-center mt-4">
+                        <Oval height={30} width={30} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible={true} />
+                    </div>
                 )}
-            </ul>
+            </div>
 
-            {/* Pagination Spinner (only show if loading and not initial loading for a refresh) */}
-            {loading && !(initialLoading && page === 0) && (
-                <div className="flex justify-center mt-4">
-                    <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
-                </div>
-            )}
-
-            {/* AddModerator Modal */}
             {isAddModeratorModalOpen && (
                 <AddModeratorModal
                     categoryId={category?.id}
                     onClose={() => setIsAddModeratorModalOpen(false)}
                     onModeratorAdded={() => {
-                        // Trigger a refresh when a moderator is successfully added
-                        setRefreshKey(prev => prev + 1); // Increment refresh key
+                        setPage(0);
+                        setRefreshKey(prev => prev + 1);
                         setIsAddModeratorModalOpen(false);
                     }}
                 />

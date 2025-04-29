@@ -50,7 +50,7 @@ const PopularCategoriesSidebar = () => {
     if (popularCategories.length === 0) {
         return (
             // Styled no categories state - removed width
-            <div className="py-4 bg-white rounded-lg border border-border shadow-sm p-4 text-gray-medium text-center mt-4">
+            <div className="py-4 bg-white rounded-lg p-4 text-gray-medium text-center mt-4">
                 No popular categories found yet.
             </div>
         );

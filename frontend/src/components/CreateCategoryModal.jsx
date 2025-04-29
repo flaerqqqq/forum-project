@@ -141,8 +141,8 @@ const CategoryCreateModal = ({ onClose }) => {
             if (err.response) {
                 console.error('Error data:', err.response.data);
                 console.error('Error status:', err.response.status);
-                if (err.response.data && err.response.data.message) {
-                    toast.error(`Error creating category: ${err.response.data.message}`);
+                if (err.response.data && err.response.data.body.detail) {
+                    toast.error(`Error creating category: ${err.response.data.body.detail}`);
                 } else {
                     toast.error(`Error creating category. Status: ${err.response.status}`);
                 }

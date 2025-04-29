@@ -4,8 +4,9 @@ import { Oval } from 'react-loader-spinner';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import CategoryCard from './CategoryCard';
+import { Link } from 'react-router-dom';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 const MIN_LOADING_TIME = 300;
 
 const UserCategories = ({ userPublicId }) => {
@@ -21,11 +22,29 @@ const UserCategories = ({ userPublicId }) => {
     const token = Cookies.get('token');
     const observer = useRef();
 
+    const getAvatarColorClass = (identifier) => {
+        if (!identifier) return 'bg-gray-medium';
+        const firstLetter = identifier.charAt(0).toUpperCase();
+        const asciiCode = firstLetter.charCodeAt(0);
+        const colorIndex = asciiCode % 10;
+        const avatarColors = [
+            'bg-accent-green', 'bg-gray-darker', 'bg-indigo-600', 'bg-blue-600', 'bg-purple-600',
+            'bg-pink-600', 'bg-teal-600', 'bg-orange-600', 'bg-red-600', 'bg-gray-medium',
+        ];
+        return avatarColors[colorIndex];
+    };
+
+    const getInitials = (name) => {
+        if (!name) return '';
+        const firstWord = name.split(' ')[0];
+        return firstWord.charAt(0).toUpperCase();
+    };
+
     const lastCategoryRef = useCallback(node => {
-        if (loading || initialLoading || isSearching) return;
+        if (loading || initialLoading || isSearching || !hasMore) return;
         if (observer.current) observer.current.disconnect();
         observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore) {
+            if (entries[0].isIntersecting) {
                 setPage(prevPage => prevPage + 1);
             }
         });
@@ -38,44 +57,54 @@ const UserCategories = ({ userPublicId }) => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             return res.data;
-        } catch (err) {
-            toast.error('Failed to load category details');
+        } catch {
             return null;
         }
     };
 
     const fetchCategories = useCallback(async () => {
         if (!userPublicId) return;
-
-        if (page === 0) setInitialLoading(true);
-        else setLoading(true);
+        if (page === 0) {
+            setInitialLoading(true);
+            setCategories([]);
+            setHasMore(true);
+        } else {
+            setLoading(true);
+        }
 
         const startTime = Date.now();
+        let fetchedCategories = [];
+        let isLast = false;
+
         try {
             const url = isFollowing
                 ? `http://localhost:8080/api/v1/users/me/follows`
                 : `http://localhost:8080/api/v1/users/me/categories`;
 
             const res = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
                 params: { page, size: PAGE_SIZE },
             });
 
-            const categoryIds = res.data.content || [];
-            const isLast = res.data.last;
+            const categoryData = res.data.content || [];
+            isLast = res.data.last;
 
-            let fetchedCategories = [];
             if (isFollowing) {
-                fetchedCategories = await Promise.all(
-                    categoryIds.map(async (category) => {
-                        const details = await fetchCategoryDetails(category.categoryId);
-                        return details;
-                    })
-                );
+                const categoryDetailsPromises = categoryData.map(item => fetchCategoryDetails(item.categoryId));
+                const detailedCategories = await Promise.all(categoryDetailsPromises);
+                fetchedCategories = detailedCategories.filter(cat => cat !== null);
             } else {
-                fetchedCategories = categoryIds;
+                fetchedCategories = categoryData;
             }
 
+        } catch (err) {
+            const errorMessage = err.response?.data?.body?.detail || 'Failed to load categories.';
+            if (err.response?.status !== 404 && err.response?.status !== 500) {
+                toast.error(errorMessage);
+            }
+            fetchedCategories = [];
+            isLast = true;
+        } finally {
             const elapsedTime = Date.now() - startTime;
             const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
 
@@ -87,20 +116,13 @@ const UserCategories = ({ userPublicId }) => {
                 setInitialLoading(false);
                 setLoading(false);
             }, remainingTime);
-        } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail || 'Failed to load categories.';
-            if (err.response?.status !== 404 && err.response?.status !== 500) {
-                toast.error(errorMessage);
-            }
-            setInitialLoading(false);
-            setLoading(false);
-            setHasMore(false);
         }
     }, [page, token, userPublicId, isFollowing]);
 
     const searchCategories = useCallback(async (query) => {
         if (!query.trim()) {
             setIsSearching(false);
+            setSearchQuery('');
             setPage(0);
             return;
         }
@@ -128,95 +150,139 @@ const UserCategories = ({ userPublicId }) => {
     }, []);
 
     useEffect(() => {
-        if (isSearching) return;
-        fetchCategories();
-    }, [fetchCategories, isSearching]);
+        if (!isSearching) {
+            fetchCategories();
+        }
+    }, [fetchCategories, isSearching, isFollowing]);
 
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            searchCategories(searchQuery);
-        }, 500);
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchQuery, searchCategories]);
+        if (searchQuery.trim()) {
+            const delayDebounceFn = setTimeout(() => {
+                searchCategories(searchQuery);
+            }, 300);
+            return () => clearTimeout(delayDebounceFn);
+        } else if (isSearching) {
+            searchCategories('');
+        }
+    }, [searchQuery, searchCategories, isSearching]);
 
     const handleSearchChange = (e) => {
+        setPage(0);
         setSearchQuery(e.target.value);
     };
 
     const toggleCategoryView = () => {
         setIsFollowing(prev => !prev);
+        setSearchQuery('');
         setPage(0);
         setCategories([]);
     };
 
-    const handleUnfollow = (categoryId) => {
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    const handleUnfollow = async (categoryId) => {
+        const token = Cookies.get('token');
+        if (!token) {
+            toast.error('Please login to unfollow.');
+            return;
+        }
+        try {
+            await axios.delete(
+                `http://localhost:8080/api/v1/categories/${categoryId}/follows`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            toast.success('Category unfollowed.');
+            setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to unfollow category');
+        }
     };
 
     return (
-        <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
-            <div className="mb-4">
+        <div className="mt-6 rounded-md text-black font-sans">
+            <div className="mb-6">
+                <div className="flex items-center justify-center bg-gray-light rounded-full p-1 w-fit mx-auto">
+                    <button
+                        onClick={() => { if (isFollowing) toggleCategoryView(); }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${!isFollowing ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                    >Created</button>
+                    <button
+                        onClick={() => { if (!isFollowing) toggleCategoryView(); }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${isFollowing ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                    >Following</button>
+                </div>
+            </div>
+
+            <div className="mb-6">
+                <label htmlFor="categorySearch" className="block text-xs font-normal text-gray-medium mb-1 uppercase tracking-wide">Search Categories</label>
                 <input
+                    id="categorySearch"
                     type="text"
-                    placeholder="Search categories..."
+                    placeholder="Enter category name or slug"
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    className="px-4 py-2 rounded-md border w-full"
+                    className="block w-full sm:w-auto bg-transparent border-0 border-b border-border focus:outline-none focus:border-black py-2 text-sm text-gray-darker placeholder-gray-medium"
                 />
             </div>
 
-            <div className="mb-4 flex items-center justify-center">
-                <div className="flex items-center bg-gray-100 rounded-full p-1">
-                    <button
-                        onClick={() => {
-                            if (isFollowing) toggleCategoryView();
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                            !isFollowing ? 'bg-blue-500 text-white' : 'text-gray-700'
-                        }`}
-                    >
-                        Created
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (!isFollowing) toggleCategoryView();
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                            isFollowing ? 'bg-blue-500 text-white' : 'text-gray-700'
-                        }`}
-                    >
-                        Following
-                    </button>
-                </div>
-            </div>
             {initialLoading && categories.length === 0 ? (
-                <div className="flex justify-center mt-6">
-                    <Oval height={40} width={40} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible />
+                <div className="flex justify-center items-center min-h-[200px]">
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible />
                 </div>
             ) : categories.length === 0 ? (
-                <p className="text-gray-500">No categories found.</p>
+                <p className="text-gray-medium text-center py-10 text-base">
+                    {isSearching ? `No categories found matching "${searchQuery}".` : `No categories found in the "${isFollowing ? 'Following' : 'Created'}" list.`}
+                </p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ul className="space-y-8">
                     {categories.map((category, idx) => (
-                        <div key={category.id} ref={idx === categories.length - 1 ? lastCategoryRef : null}>
-                            <CategoryCard
-                                category={category}
-                                isFollowed={isFollowing}
-                                onUnfollow={handleUnfollow}
-                            />
-                        </div>
+                        <li key={category.id} ref={idx === categories.length - 1 ? lastCategoryRef : null}
+                            className="flex items-center justify-between pb-4 border-b border-border last:border-b-0 hover:bg-gray-lighter transition duration-200 rounded-md p-3">
+                            <div className="flex items-center gap-3 flex-grow pr-4">
+                                <Link to={`/categories/${category.slug}`} className="flex-shrink-0">
+                                    {category?.iconUrl ? (
+                                        <img src={category.iconUrl} alt={`${category.name} icon`} className="w-8 h-8 rounded-full object-cover" />
+                                    ) : (
+                                        <div className={`${getAvatarColorClass(category?.slug || category.name)} w-8 h-8 rounded-full flex items-center justify-center text-xs text-white font-bold`}>
+                                            {getInitials(category?.slug || category.name)}
+                                        </div>
+                                    )}
+                                </Link>
+                                <div>
+                                    <Link to={`/categories/${category.slug}`} className="text-base font-semibold text-black hover:underline">
+                                        {category.name}
+                                    </Link>
+                                    <p className="text-sm text-gray-darker">
+                                        {category.followersCount} {category.followersCount === 1 ? 'member' : 'members'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <p className="text-xs text-gray-medium whitespace-nowrap">
+                                    {new Date(category.createdAt).toLocaleDateString()}
+                                </p>
+                                {isFollowing && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleUnfollow(category.id); }}
+                                        className="font-medium px-6 py-1 rounded-full focus:outline-none transition-colors duration-300 bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black"
+                                    >Unfollow</button>
+                                )}
+                            </div>
+                        </li>
                     ))}
+                </ul>
+            )}
+
+            {loading && page > 0 && !isSearching && (
+                <div className="flex justify-center py-6">
+                    <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} visible />
                 </div>
             )}
 
-            {loading && categories.length > 0 && (
-                <div className="flex justify-center mt-4">
-                    <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={3} visible />
-                </div>
-            )}
-
-            {!loading && hasMore && categories.length > 0 && !initialLoading && (
-                <p className="text-gray-500 mt-4 text-center">Scroll down to load more categories...</p>
+            {!loading && hasMore && categories.length > 0 && !initialLoading && !isSearching && (
+                <p className="text-gray-medium text-sm mt-8 text-center pb-4">
+                    Scroll down for more categories...
+                </p>
             )}
         </div>
     );

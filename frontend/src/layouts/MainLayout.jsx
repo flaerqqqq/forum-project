@@ -6,7 +6,7 @@ const MainLayout = () => {
     const location = useLocation();
 
     // Check if the current path is one of the authentication pages
-    const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
     return (
         <>

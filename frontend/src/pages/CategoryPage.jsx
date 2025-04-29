@@ -1,37 +1,33 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useUser } from '../contexts/UserContext'; // Import the user context hook
-import { Oval } from 'react-loader-spinner'; // Import Oval spinner
-import { ToastContainer, toast } from 'react-toastify'; // Import React-Toastify components
-import 'react-toastify/dist/ReactToastify.css'; // Import the styles for Toastify
-import PopularCategoriesSidebar from "../components/PopularCategoriesSidebar.jsx"; // Keep if needed elsewhere
-import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx"; // Keep if needed elsewhere
-import CategoryNotFound from "../components/CategoryNotFound.jsx"; // Import the Not Found page
+import { useUser } from '../contexts/UserContext';
+import { Oval } from 'react-loader-spinner';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
+import CategoryNotFound from "../components/CategoryNotFound.jsx";
 
 const CategoryPage = () => {
     const { categorySlug } = useParams();
-    const navigate = useNavigate(); // Initialize navigate
+    const navigate = useNavigate();
 
-    // --- State for CategoryPage (Main Data Fetch) ---
     const [category, setCategory] = useState(null);
-    const [loadingCategory, setLoadingCategory] = useState(true); // Renamed loading for clarity
-    const [categoryError, setCategoryError] = useState(null); // Renamed error for clarity
+    const [loadingCategory, setLoadingCategory] = useState(true);
+    const [categoryError, setCategoryError] = useState(null);
     const [notFound, setNotFound] = useState(false);
 
-    // --- State for CategoryHeader Logic (Follow Status) ---
-    const { user, loading: userLoading } = useUser(); // Get user data and loading state
+    const { user, loading: userLoading } = useUser();
     const [isFollowed, setIsFollowed] = useState(false);
-    const [loadingFollowStatus, setLoadingFollowStatus] = useState(true); // Loading state for follow check/action
-    const [followActionError, setFollowActionError] = useState(null); // Error state for follow action
+    const [loadingFollowStatus, setLoadingFollowStatus] = useState(true);
+    const [followActionError, setFollowActionError] = useState(null);
 
-    // Effect to fetch category details based on slug
     useEffect(() => {
         const fetchCategoryDetails = async () => {
-            setLoadingCategory(true); // Start loading main category data
-            setCategoryError(null); // Clear previous errors
-            setNotFound(false); // Reset not found status
+            setLoadingCategory(true);
+            setCategoryError(null);
+            setNotFound(false);
 
             try {
                 const res = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
@@ -42,17 +38,16 @@ const CategoryPage = () => {
                     setNotFound(true);
                 } else {
                     setCategoryError('Failed to load category details.');
-                    toast.error('Failed to load category details.'); // Show error toast
+                    toast.error('Failed to load category details.');
                 }
             } finally {
-                setLoadingCategory(false); // End loading main category data
+                setLoadingCategory(false);
             }
         };
 
         fetchCategoryDetails();
-    }, [categorySlug]); // Re-run effect if categorySlug changes
+    }, [categorySlug]);
 
-    // Effect to check follow status - Runs AFTER category and user data are potentially loaded
     useEffect(() => {
         if (userLoading || !category) {
             setLoadingFollowStatus(true);
@@ -66,8 +61,8 @@ const CategoryPage = () => {
         }
 
         const checkFollowStatus = async () => {
-            setLoadingFollowStatus(true); // Start loading follow status
-            setFollowActionError(null); // Clear previous follow errors
+            setLoadingFollowStatus(true);
+            setFollowActionError(null);
 
             try {
                 const response = await axios.get(
@@ -76,22 +71,21 @@ const CategoryPage = () => {
                 setIsFollowed(true);
             } catch (err) {
                 if (err.response && err.response.status === 400) {
-                    setIsFollowed(false); // 404 means not followed
+                    setIsFollowed(false);
                 } else {
                     console.error("Failed to fetch follow status", err);
                     setFollowActionError("Failed to fetch follow status.");
-                    toast.error("Failed to fetch follow status."); // Show error toast
+                    toast.error("Failed to fetch follow status.");
                     setIsFollowed(false);
                 }
             } finally {
-                setLoadingFollowStatus(false); // End loading follow status
+                setLoadingFollowStatus(false);
             }
         };
 
         checkFollowStatus();
     }, [category?.id, user?.publicId, userLoading, category]);
 
-    // Handler for the follow/unfollow button click
     const handleFollowClick = async () => {
         if (!user) {
             navigate('/login');
@@ -126,7 +120,7 @@ const CategoryPage = () => {
         } catch (err) {
             console.error("Failed to follow/unfollow category.", err);
             setFollowActionError("Failed to update follow status.");
-            toast.error("Failed to update follow status."); // Show error toast
+            toast.error("Failed to update follow status.");
         } finally {
             setLoadingFollowStatus(false);
         }
@@ -134,10 +128,10 @@ const CategoryPage = () => {
 
     if (loadingCategory || userLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
                 <div className="flex flex-col items-center gap-4">
-                    <Oval height={50} width={50} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={5} visible={true} />
-                    <p className="text-gray-600">Loading category...</p>
+                    <Oval height={50} width={50} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} visible={true} />
+                    <p className="text-gray-medium">Loading category...</p>
                 </div>
             </div>
         );
@@ -149,8 +143,8 @@ const CategoryPage = () => {
 
     if (categoryError) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="text-red-500 text-center">
+            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
+                <div className="text-red-600 text-center">
                     <p>{categoryError}</p>
                 </div>
             </div>
@@ -158,68 +152,78 @@ const CategoryPage = () => {
     }
 
     return (
-        <div className="bg-gray-100 max-w-[88%] mx-auto px-4 py-1 flex flex-col gap-6 overflow-x-hidden">
-            <div className="relative mb-6 overflow-hidden">
-                {category?.bannerUrl ? (
-                    <img src={category.bannerUrl} alt="Category Banner" className="w-full h-32 object-cover rounded-lg" />
-                ) : (
-                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-gray-400 text-sm rounded-t-lg">
-                        No Banner
-                    </div>
-                )}
+        <div className="bg-background-light-gray font-sans text-black min-h-screen">
+            {category?.bannerUrl ? (
+                <div className="w-full h-64 overflow-hidden">
+                    <img src={category.bannerUrl} alt="Category Banner" className="w-full h-full object-cover" />
+                </div>
+            ) : (
+                <div className="w-full h-40 bg-gray-light flex items-center justify-center text-gray-medium text-lg">
+                    No Banner
+                </div>
+            )}
 
-                <div className="relative p-4 flex items-center">
-                    <div className="absolute -top-8 left-4 bg-gray-100 p-1 rounded-full">
-                        {category?.iconUrl ? (
-                            <img
-                                src={category.iconUrl}
-                                alt="Category Icon"
-                                className="w-20 h-20 rounded-full border-1 border-white object-cover"
-                            />
-                        ) : (
-                            <div className="w-20 h-20 rounded-full border-1 border-white bg-gray-200 flex items-center justify-center text-gray-400">
-                                No Icon
+            {/* Increased max-width here */}
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="flex flex-col lg:flex-row gap-10">
+                    <div className="flex-grow">
+                        <div className="flex items-center mb-4">
+                            {category?.iconUrl ? (
+                                <img
+                                    src={category.iconUrl}
+                                    alt="Category Icon"
+                                    className="w-16 h-16 rounded-full object-cover mr-4 border border-border"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full bg-gray-light flex items-center justify-center text-xl text-gray-medium mr-4 border border-border">
+                                    🏷️
+                                </div>
+                            )}
+                            <div>
+                                <h1 className="text-3xl font-heading text-black mb-1">{category?.name}</h1>
+                                <p className="text-sm text-gray-medium">
+                                    {category?.followersCount} {category?.followersCount === 1 ? 'follower' : 'followers'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {category?.description && (
+                            <p className="text-gray-darker text-base mb-6">
+                                {category.description}
+                            </p>
+                        )}
+
+                        {user && (
+                            <div className="mb-8">
+                                <button
+                                    onClick={handleFollowClick}
+                                    disabled={loadingFollowStatus}
+                                    className={`${
+                                        isFollowed
+                                            ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
+                                            : 'bg-accent-green hover:bg-green-700 text-white'
+                                    } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm`}
+                                >
+                                    {loadingFollowStatus ? (
+                                        <Oval height={16} width={16} color={isFollowed ? '#000' : '#fff'} secondaryColor={isFollowed ? '#EAEAEA' : '#ffffff33'} strokeWidth={5} visible={true} />
+                                    ) : (
+                                        isFollowed ? 'Following' : 'Follow'
+                                    )}
+                                </button>
                             </div>
                         )}
+
+                        <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
+                            No posts yet.
+                        </div>
+
                     </div>
 
-                    <div className="ml-24">
-                        <h1 className="text-2xl pl-2 font-semibold text-gray-900 tracking-tight">
-                            {category?.name}
-                        </h1>
-                    </div>
-
-                    <div className="ml-auto flex items-center">
-                        <button
-                            onClick={handleFollowClick}
-                            disabled={loadingFollowStatus}
-                            className={`${
-                                isFollowed ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'
-                            } text-white text-sm font-semibold py-2 px-4 rounded-full transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                            {loadingFollowStatus ? (
-                                <Oval height={16} width={16} color="#fff" secondaryColor="#ffffff33" strokeWidth={5} visible={true} />
-                            ) : (
-                                isFollowed ? 'Following' : 'Follow'
-                            )}
-                        </button>
-
+                    <div className="w-80 flex-shrink-0">
+                        {category && <CategoryInfoSidebar category={category} />}
                     </div>
                 </div>
             </div>
-
-            <div className="flex gap-6 w-full">
-                <div className="flex-1">
-                    <div className="p-4 bg-white rounded-md border border-gray-200 text-center text-gray-500">
-                        No posts yet.
-                    </div>
-                </div>
-
-                <div className="w-80 flex flex-col gap-6">
-                    {category && <CategoryInfoSidebar category={category} />}
-                </div>
-            </div>
-
         </div>
     );
 };

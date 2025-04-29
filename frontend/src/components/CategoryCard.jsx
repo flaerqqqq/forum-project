@@ -3,7 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 
-const CategoryCard = ({ category, isFollowed, onUnfollow }) => {
+const CategoryCard = ({ category, isFollowed, onUnfollow, profilePublicId }) => {
     const [loading, setLoading] = useState(false);
 
     const handleUnfollow = async (e) => {

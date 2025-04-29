@@ -20,10 +20,6 @@ public class CategoryUpdateRequestDto {
     @Size(min = 3, max = 50, message = "Category name must be between 3 and 50 characters")
     private String name;
 
-    @NotBlank(message = "Slug is required")
-    @Size(min = 3, max = 50, message = "Slug must be between 3 and 50 characters")
-    private String slug;
-
     @Size(max = 1000, message = "Description can be up to 1000 characters")
     private String description;
 
