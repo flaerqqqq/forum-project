@@ -2,29 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+@font-face {
+  font-family: 'Kievit';
+  src: url('/fonts/Kievit-Regular.woff2') format('woff2'),
+  url('/fonts/Kievit-Regular.woff') format('woff');
   font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/Charter-Regular.woff2') format('woff2'),
+  url('/fonts/Charter-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fell';
+  src: url('/fonts/Fell-Headline.woff2') format('woff2'),
+  url('/fonts/Fell-Headline.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/Sohne-Regular.woff2') format('woff2'),
+  url('/fonts/Sohne-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 body {
-  background-color: #f3f4f6; /* Tailwind's bg-gray-100 */
-  margin: 0;
-  padding: 0;
+  /* Applying background and text color utility classes directly */
+  background-color: theme('colors.gray-lighter');
+  color: theme('colors.black');
+
+  font-family: theme('fontFamily.sans');
+  line-height: 1.6;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  @apply text-accent-green hover:underline;
+  text-decoration: none;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+a:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: theme('fontFamily.heading');
+  color: theme('colors.black'); /* Explicitly set heading color to black */
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
 }
