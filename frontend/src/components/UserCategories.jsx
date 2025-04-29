@@ -155,8 +155,6 @@ const UserCategories = ({ userPublicId }) => {
 
     return (
         <div className="mt-6 bg-white rounded-lg shadow p-6 text-gray-800">
-            <h2 className="text-xl font-bold mb-4 border-b pb-2">📚 My Categories</h2>
-
             <div className="mb-4">
                 <input
                     type="text"

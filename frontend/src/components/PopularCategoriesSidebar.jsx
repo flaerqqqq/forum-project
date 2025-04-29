@@ -28,18 +28,18 @@ const PopularCategoriesSidebar = () => {
     }, []);
 
     const handleCategoryClick = (slug) => {
-        // Full page reload using window.location.href
         window.location.href = `/categories/${slug}`;
     };
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center w-56 h-20 sticky top-20 bg-white rounded-lg">
+            // Styled loading state container - removed sticky, max-h, overflow, width
+            <div className="flex justify-center items-center py-6 bg-white rounded-lg mt-4">
                 <Oval
                     height={40}
                     width={40}
-                    color="#3b82f6"
-                    secondaryColor="#dbeafe"
+                    color="#1A8917"
+                    secondaryColor="#EAEAEA"
                     strokeWidth={4}
                     visible={true}
                 />
@@ -47,30 +47,41 @@ const PopularCategoriesSidebar = () => {
         );
     }
 
+    if (popularCategories.length === 0) {
+        return (
+            // Styled no categories state - removed width
+            <div className="py-4 bg-white rounded-lg border border-border shadow-sm p-4 text-gray-medium text-center mt-4">
+                No popular categories found yet.
+            </div>
+        );
+    }
+
+
     return (
-        <div className="w-56 py-4 sticky top-20 rounded-lg max-h-[calc(100vh-4rem)] overflow-y-auto bg-white">
-            <h2 className="text-xl font-semibold mb-4">Categories</h2>
-            <ul className="space-y-4">
+        // Container - removed sticky, max-h, overflow, width
+        <div className="rounded-lg ">
+            <h2 className="text-xl font-heading text-black px-2 ">Categories</h2>
+            <ul className="space-y-2">
                 {popularCategories.map(category => (
                     <li key={category.id}>
                         <button
-                            onClick={() => handleCategoryClick(category.slug)} // Trigger page reload here
-                            className="w-full flex items-center space-x-3 text-left hover:underline text-gray-700"
+                            onClick={() => handleCategoryClick(category.slug)}
+                            className="w-full flex items-center space-x-3 text-left text-gray-darker hover:text-black hover:bg-gray-lighter rounded-md transition-colors px-1 py-1.5"
                         >
                             {category.iconUrl ? (
                                 <img
                                     src={category.iconUrl}
                                     alt={category.name}
-                                    className="w-8 h-8 rounded-full object-cover"
+                                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                 />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm">
+                                <div className="w-8 h-8 rounded-full bg-gray-light flex items-center justify-center text-sm flex-shrink-0">
                                     🏷️
                                 </div>
                             )}
-                            <div className="flex flex-col">
-                                <span className="font-medium">c/{category.name}</span>
-                                <span className="text-xs text-gray-500">{category.followersCount} followers</span>
+                            <div className="flex flex-col flex-grow">
+                                <span className="font-medium text-black">c/{category.name}</span>
+                                <span className="text-xs text-gray-medium">{category.followersCount} followers</span>
                             </div>
                         </button>
                     </li>

@@ -3,19 +3,18 @@ import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useUser } from '../contexts/UserContext'; // Assuming useUser hook is available
-import { Oval } from 'react-loader-spinner'; // Import the spinner for loading state
-import 'react-toastify/dist/ReactToastify.css'; // Toastify styles
+import { useUser } from '../contexts/UserContext';
+import { Oval } from 'react-loader-spinner';
+import 'react-toastify/dist/ReactToastify.css';
 
-const CategoryView = ({ category }) => {
+const CategoryView = ({ category}) => {
     const navigate = useNavigate();
     const { user, loading: userLoading } = useUser();
     const [isFollowed, setIsFollowed] = useState(false);
-    const [loadingFollowStatus, setLoadingFollowStatus] = useState(true); // Loading state for follow/unfollow
-    const [followActionError, setFollowActionError] = useState(null); // Error state for follow action
+    const [loadingFollowStatus, setLoadingFollowStatus] = useState(true);
+    const [followActionError, setFollowActionError] = useState(null);
 
     useEffect(() => {
-        // Fetch follow status when category and user are available
         if (userLoading || !category) {
             setLoadingFollowStatus(true);
             return;
@@ -32,7 +31,7 @@ const CategoryView = ({ category }) => {
                 setIsFollowed(true);
             } catch (err) {
                 if (err.response?.status === 400) {
-                    setIsFollowed(false); // 404 means not followed
+                    setIsFollowed(false);
                 } else {
                     console.error('Failed to fetch follow status', err);
                     setFollowActionError('Failed to fetch follow status.');
@@ -48,7 +47,7 @@ const CategoryView = ({ category }) => {
     }, [category?.id, user?.publicId, userLoading, category]);
 
     const handleFollowClick = async (event) => {
-        event.stopPropagation(); // Prevent the card click (redirection) from happening
+        event.stopPropagation();
 
         if (!user) {
             navigate('/login');
@@ -95,46 +94,53 @@ const CategoryView = ({ category }) => {
 
     return (
         <div
-            className={`bg-white rounded-xl shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300`}
+            className={`bg-white rounded-md shadow-sm border border-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300`}
             onClick={navigateToCategoryPage}
         >
-            <div className="flex p-4 space-x-4">
-                {/* Icon Section */}
-                <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
-                    <img
-                        src={category.iconUrl || '/default-icon.png'} // Fallback to a default icon if no icon is provided
-                        alt="Category Icon"
-                        className="w-full h-full object-cover"
-                    />
+            <div className="flex p-4 space-x-4 items-center">
+                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                    {category.iconUrl ? (
+                        <img
+                            src={category.iconUrl || '/default-icon.png'}
+                            alt="Category Icon"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-light flex items-center justify-center text-lg">
+                            🏷️
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between">
+                <div className="flex-1 flex flex-col justify-center">
                     <div className="flex-grow">
-                        <h2 className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-300">{category.name}</h2>
+                        <h2 className="text-xl font-heading text-black hover:text-gray-darker transition-colors duration-300">{category.name}</h2>
 
-                        {/* Description with 2-line limit and fixed height */}
-                        <p className="text-gray-600 mt-2 line-clamp-2" style={{ height: '3rem' }}>
+                        {/* Description with fixed height for 2 lines */}
+                        {/* Added h-12 (3rem) and overflow-hidden */}
+                        <p className="text-gray-medium mt-1 line-clamp-2 h-12 overflow-hidden">
                             {category.description}
                         </p>
 
-                        {/* Number of followers */}
-                        <p className="text-sm text-gray-500 mt-2">
+                        <p className="text-sm text-gray-medium mt-1">
                             {category.followersCount} {category.followersCount === 1 ? 'follower' : 'followers'}
                         </p>
                     </div>
 
-                    {/* Follow button section */}
                     {user && (
-                        <div className={`mt-4 transition-all duration-300 ${isFollowed ? 'h-12' : 'h-12'}`}>
+                        <div className={`mt-4 transition-all duration-300`}>
                             <button
                                 onClick={handleFollowClick}
                                 disabled={loadingFollowStatus}
-                                className={`${
-                                    isFollowed ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'
-                                } text-white font-medium px-6 py-2 rounded-full focus:outline-none transition-colors duration-300`}
+                                className={`font-medium px-6 py-1 rounded-full focus:outline-none transition-colors duration-300
+                                ${
+                                    isFollowed
+                                        ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
+                                        : 'bg-accent-green hover:bg-green-700 text-white'
+                                }`}
                             >
                                 {loadingFollowStatus ? (
-                                    <Oval height={16} width={16} color="#fff" secondaryColor="#ffffff33" strokeWidth={5} visible={true} />
+                                    <Oval height={16} width={16} color={isFollowed ? '#000' : '#fff'} secondaryColor={isFollowed ? '#EAEAEA' : '#ffffff33'} strokeWidth={5} visible={true} />
                                 ) : (
                                     isFollowed ? 'Following' : 'Follow'
                                 )}

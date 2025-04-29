@@ -63,6 +63,12 @@ export default {
           'Helvetica Neue', // Fallback for subheadings
           ...defaultTheme.fontFamily.sans,
         ],
+        'noe-bold': [
+          'Noe Bold',
+          'Georgia',
+          'Cambria',
+          ...defaultTheme.fontFamily.serif
+        ],
       },
     },
   },

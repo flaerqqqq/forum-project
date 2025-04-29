@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Oval } from 'react-loader-spinner';
 import CategoryView from "../components/CategoryView.jsx";
 
-const PAGE_SIZE = 9; // 3 categories per row
+const PAGE_SIZE = 9;
 
 const ExploreCategories = () => {
     const [categories, setCategories] = useState([]);
@@ -20,7 +20,7 @@ const ExploreCategories = () => {
     const lastCategoryRef = useCallback(node => {
         if (loading || initialLoading) return;
         if (observer.current) observer.current.disconnect();
-        if (!query) { // Only observe when NOT searching
+        if (!query) {
             observer.current = new IntersectionObserver(entries => {
                 if (entries[0].isIntersecting && hasMore) {
                     setPage(prev => prev + 1);
@@ -39,37 +39,28 @@ const ExploreCategories = () => {
 
         try {
             if (query) {
-                // Search mode: no pagination
                 const response = await axios.get('http://localhost:8080/api/v1/categories/search', {
                     params: { query },
                 });
                 setCategories(response.data || []);
-                setHasMore(false); // No further loading when searching
+                setHasMore(false);
             } else {
-                // Normal Browse with pagination
                 const response = await axios.get('http://localhost:8080/api/v1/categories', {
                     params: { page, size: PAGE_SIZE },
                 });
                 const fetchedCategories = response.data.content || [];
                 setCategories(prev => (page === 0 ? fetchedCategories : [...prev, ...fetchedCategories]));
 
-                // Original logic for hasMore
                 let morePages = !response.data.last;
 
-                // *** START OF REQUESTED ADDITION ***
-                // Frontend Safeguard: If we received an empty array on any page AFTER the first page (page > 0),
-                // assume there are no more categories, even if backend 'last' is incorrect.
                 if (fetchedCategories.length === 0 && page > 0) {
                     morePages = false;
-                    console.log('Frontend: Detected end of results via empty page response.'); // Optional log
                 }
-                // *** END OF REQUESTED ADDITION ***
 
-                setHasMore(morePages); // Use the potentially updated value
+                setHasMore(morePages);
             }
         } catch (error) {
             toast.error('Failed to load categories');
-            // Also set hasMore to false on error to prevent infinite loop attempts
             setHasMore(false);
         } finally {
             setInitialLoading(false);
@@ -90,31 +81,30 @@ const ExploreCategories = () => {
     };
 
     return (
-        <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6">Explore Categories</h1>
+        <div className="container mx-auto bg-background-light-gray font-sans text-black px-6 sm:px-8 lg:px-12 pt-4 pb-10">
+            <h1 className="text-3xl font-heading text-black mb-10 text-center">Explore Categories</h1>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="mb-6 flex justify-center">
+            <form onSubmit={handleSearchSubmit} className="mb-10 flex justify-center">
                 <input
                     type="text"
                     placeholder="Search categories..."
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    className="border border-gray-300 p-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/3"
+                    className="border border-border p-3 rounded-l-md focus:outline-none focus:border-black w-1/3 text-gray-darker text-base"
                 />
                 <button
                     type="submit"
-                    className="bg-blue-500 text-white px-4 rounded-r-md hover:bg-blue-600 transition"
+                    className="bg-accent-green text-white px-6 rounded-r-md hover:bg-green-700 transition text-base"
                 >
                     Search
                 </button>
             </form>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-10">
                 {categories.map((category, index) => (
                     <div
                         key={category.id}
-                        ref={!query && index === categories.length - 1 ? lastCategoryRef : null} // ref only in normal mode
+                        ref={!query && index === categories.length - 1 ? lastCategoryRef : null}
                     >
                         <CategoryView category={category} />
                     </div>
@@ -122,20 +112,29 @@ const ExploreCategories = () => {
             </div>
 
             {initialLoading && (
-                <div className="flex justify-center mt-4">
-                    <Oval height={40} width={40} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={4} visible={true} />
+                <div className="flex justify-center mt-10">
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible={true} />
                 </div>
             )}
 
             {loading && !initialLoading && (
-                <div className="flex justify-center mt-4">
-                    <Oval height={30} width={30} color="#3b82f6" secondaryColor="#dbeafe" strokeWidth={3} visible={true} />
+                <div className="flex justify-center mt-8">
+                    <Oval height={30} width={30} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={3} visible={true} />
                 </div>
             )}
 
             {!loading && hasMore && categories.length > 0 && !initialLoading && !query && (
-                <p className="text-gray-500 mt-4 text-center">Scroll down to load more categories...</p>
+                <p className="text-gray-medium mt-8 text-center text-base">Scroll down to load more categories...</p>
             )}
+            {!initialLoading && categories.length === 0 && !query && (
+                <p className="text-gray-medium mt-10 text-center text-base">No categories found.</p>
+            )}
+            {!initialLoading && categories.length === 0 && query && (
+                <p className="text-gray-medium mt-10 text-center text-base">No results found for "{query}".</p>
+            )}
+
+            {/* Add bottom padding */}
+            <div className="pb-10"></div>
         </div>
     );
 };

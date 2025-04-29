@@ -1,53 +1,65 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import PopularCategoriesSidebar from './PopularCategoriesSidebar.jsx';
 import CategoryCreateModal from "./CreateCategoryModal.jsx";
 import {isAuthenticated} from "../utils/Auth.js";
 
 const SidebarMenu = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const location = useLocation();
 
-    const openModal = () => setIsModalOpen(true); // Open modal
-    const closeModal = () => setIsModalOpen(false); // Close modal
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
+
+    const isActive = (pathname) => location.pathname === pathname;
+
 
     return (
-        <div className="sticky top-6 w-64 h-full bg-white border border-gray-200 shadow-md p-4">
-            <h2 className="text-lg font-semibold mb-4">Menu</h2>
-            <ul className="space-y-4">
+        // Added scrollbar-thin-light class
+        <div className="sticky top-6 w-64 bg-white  px-6 py-3 overflow-y-auto max-h-[calc(100vh-3rem)] scrollbar-thin-light">
+
+            <ul className="pt-3">
                 <li>
-                    <Link to="/" className="text-blue-600 hover:underline">
-                        Home
+                    <Link
+                        to="/"
+                        className={`flex items-center space-x-2 text-gray-darker hover:text-black p-2 transition-colors ${isActive('/') ? 'text-black font-semibold bg-gray-lighter rounded-md p-2' : ''}`}
+                    >
+                        <span>🏠</span>
+                        <span>Home</span>
                     </Link>
                 </li>
-
-                {/* Show "Explore" link only if user is authenticated */}
                 <li>
-                    <Link to="/categories" className="text-blue-600 hover:underline">
-                        Explore
+                    <Link
+                        to="/categories"
+                        className={`flex items-center space-x-2 text-gray-darker hover:text-black p-2 transition-colors ${isActive('/categories') ? 'text-black font-semibold bg-gray-lighter rounded-md p-2' : ''}`}
+                    >
+                        <span >📂</span>
+                        <span>Explore</span>
                     </Link>
                 </li>
-
-                {/* Show "Create Category" button only if user is authenticated */}
                 {isAuthenticated() && (
                     <>
-                        <hr />
+                        <hr className="my-4 border-border" />
                         <li>
                             <button
                                 onClick={openModal}
-                                className="text-blue-600 hover:underline"
+                                className='flex items-center space-x-2 text-gray-darker hover:text-black p-2 transition-colors '
                             >
-                                Create Category
+                                <span>✨</span>
+                                <span className='hover:underline'>Create Category</span>
                             </button>
                         </li>
                     </>
                 )}
             </ul>
 
-            {/* Conditional Rendering of CategoryCreateModal */}
-            {isModalOpen && <CategoryCreateModal onClose={closeModal} />}
-            <hr />
+            <hr className="my-4 border-border" />
+
             <PopularCategoriesSidebar />
-            <hr />
+
+            <hr className="my-4 border-border" />
+
+            {isModalOpen && <CategoryCreateModal onClose={closeModal} />}
         </div>
     );
 };
