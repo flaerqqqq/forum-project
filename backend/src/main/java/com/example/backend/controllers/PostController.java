@@ -60,8 +60,8 @@ public class PostController {
     @PutMapping("/{postId}")
     public ResponseEntity<PostResponseDto> update(@PathVariable Long postId,
                                                   @RequestPart("data") PostUpdateRequestDto request,
-                                                  @RequestParam("newImages") List<MultipartFile> newImages,
-                                                  @RequestParam("keepImageUrls") List<String> keepImageUrls,
+                                                  @RequestParam(value = "newImages", required = false) List<MultipartFile> newImages,
+                                                  @RequestParam(value = "keepImageUrls", required = false) List<String> keepImageUrls,
                                                   @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         PostDto updatedPostDto = postService.update(postId, customUserDetails.getPublicId(), request, newImages, keepImageUrls);
         return ResponseEntity.ok(postMapper.toResponseDto(updatedPostDto));

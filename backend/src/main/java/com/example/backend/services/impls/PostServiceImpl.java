@@ -7,12 +7,10 @@ import com.example.backend.exceptions.CategoryNotFoundException;
 import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.PostMapper;
-import com.example.backend.models.Category;
-import com.example.backend.models.Post;
-import com.example.backend.models.PostImage;
-import com.example.backend.models.User;
+import com.example.backend.models.*;
 import com.example.backend.models.enums.PostType;
 import com.example.backend.repositories.CategoryRepository;
+import com.example.backend.repositories.PostImageRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.PostService;
@@ -20,10 +18,12 @@ import com.example.backend.services.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -35,6 +35,7 @@ public class PostServiceImpl implements PostService {
     private final CategoryRepository categoryRepository;
     private final PostMapper postMapper;
     private final S3Service s3Service;
+    private final PostImageRepository postImageRepository;
 
     @Override
     @Transactional
@@ -52,7 +53,7 @@ public class PostServiceImpl implements PostService {
                 .build();
 
         if (images != null && !images.isEmpty()) {
-            post.setPostImages(createAndUploadPostImages(images));
+            post.setPostImages(createAndUploadPostImages(images, post));
         }
 
         Post savedPost = postRepository.save(post);
@@ -75,8 +76,67 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public PostDto update(Long postId, String publicId, PostUpdateRequestDto request, List<MultipartFile> newImages, List<String> keepImageUrls) {
-        return null;
+        Post post = findPostById(postId);
+        User user = findUserByPublicId(publicId);
+
+        checkAuthorizedUser(user, post);
+
+        List<PostImage> keepImages = new ArrayList<>();
+        List<PostImage> imagesToBeDeleted = new ArrayList<>();
+
+        if (keepImageUrls != null && !keepImageUrls.isEmpty()) {
+            keepImages = post.getPostImages().stream()
+                    .filter(postImage -> keepImageUrls.contains(postImage.getUrl()))
+                    .toList();
+
+            imagesToBeDeleted = post.getPostImages().stream()
+                    .filter(postImage -> !keepImageUrls.contains(postImage.getUrl()))
+                    .toList();
+        }
+
+        List<PostImage> combinedPostImages = new ArrayList<>(keepImages);
+
+        if (newImages != null && !newImages.isEmpty()) {
+            List<PostImage> savedPostImages = createAndUploadPostImages(newImages, post);
+            combinedPostImages.addAll(savedPostImages);
+        }
+
+        deleteImageFromStorage(imagesToBeDeleted);
+
+        postImageRepository.deleteAll(imagesToBeDeleted);
+
+        post.setPostImages(combinedPostImages);
+        post.setTitle(request.getTitle());
+        post.setBody(request.getBody());
+        post.setType(request.getType());
+
+        Post updatedPost = postRepository.save(post);
+
+        return postMapper.toDto(updatedPost);
+    }
+
+    private void deleteImageFromStorage(List<PostImage> imagesToBeDeleted) {
+        if (!imagesToBeDeleted.isEmpty()) {
+            for (PostImage image : imagesToBeDeleted) {
+                s3Service.deletePostImage(image.getUrl());
+            }
+        }
+    }
+
+    private void checkAuthorizedUser(User user, Post post) {
+        boolean isGlobalModeartor = user.getRoles().stream()
+                .anyMatch(role -> role.getName() == Role.RoleName.ROLE_MODERATOR);
+
+        boolean isPostCreator = post.getCreator().equals(user);
+
+        boolean isCategoryModerator = user.getModeratedCategories().stream()
+                .anyMatch(categoryModerator -> categoryModerator.getCategory().equals(post.getCategory()));
+
+        if (!isPostCreator && !isGlobalModeartor && !isCategoryModerator) {
+            new AccessDeniedException(STR."User with such publicId=\{user.getPublicId()} has no access to current post with id=\{post.getId()}");
+        }
     }
 
     private Post findPostById(Long postId) {
@@ -94,11 +154,10 @@ public class PostServiceImpl implements PostService {
                 new UserNotFoundException(STR."User with such publicId=\{creatorPublicId} not found"));
     }
 
-    private List<PostImage> createAndUploadPostImages(List<MultipartFile> images) {
+    private List<PostImage> createAndUploadPostImages(List<MultipartFile> images, Post post) {
         if (images.isEmpty()) return List.of();
         return images.stream()
-                .map(image -> PostImage.builder().url(s3Service.uploadPostImage(image)).build())
+                .map(image -> PostImage.builder().url(s3Service.uploadPostImage(image)).post(post).build())
                 .toList();
-
     }
 }

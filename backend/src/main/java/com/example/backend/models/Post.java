@@ -41,7 +41,7 @@ public class Post {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, orphanRemoval = true)
+    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<PostImage> postImages;
 
     @ManyToOne
