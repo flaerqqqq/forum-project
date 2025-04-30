@@ -58,6 +58,16 @@ public class ImageValidator {
         }
     }
 
+    public void validatePostImage(MultipartFile file) {
+        try {
+            validateFileType(file);
+            validateIconDimensions(file);
+            validateImageContentModeration(file);
+        } catch (Exception e) {
+            throw new ImageValidationException(e);
+        }
+    }
+
     private void validateIconDimensions(MultipartFile file) throws IOException {
         validateDimensions(file, ICON_MIN_HEIGHT, ICON_MIN_WIDTH, ICON_MAX_HEIGHT, ICON_MAX_WIDTH, ICON_MIN_ASPECT_RATIO, ICON_MAX_ASPECT_RATIO);
     }

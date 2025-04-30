@@ -29,6 +29,9 @@ public class S3ServiceImpl implements S3Service {
     @Value("${aws.category-icons.name}")
     private String categoryIconBucketName;
 
+    @Value("${aws.post-images.name}")
+    private String postImageBucketName;
+
     private final AmazonS3 s3Client;
     private final ImageValidator imageValidator;
 
@@ -56,6 +59,11 @@ public class S3ServiceImpl implements S3Service {
     }
 
     @Override
+    public void deletePostImage(String url) {
+        deleteByUrl(postImageBucketName, url);
+    }
+
+    @Override
     public String uploadCategoryBanner(MultipartFile file) {
         imageValidator.validateBannerFormatImage(file);
         ObjectMetadata metadata = new ObjectMetadata();
@@ -69,6 +77,14 @@ public class S3ServiceImpl implements S3Service {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType(file.getContentType());
         return uploadFile(file, categoryIconBucketName, metadata);
+    }
+
+    @Override
+    public String uploadPostImage(MultipartFile file) {
+        imageValidator.validatePostImage(file);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(file.getContentType());
+        return uploadFile(file, postImageBucketName, metadata);
     }
 
     private String uploadFile(MultipartFile file, String bucketName, ObjectMetadata metadata) {
