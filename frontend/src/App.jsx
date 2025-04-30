@@ -12,9 +12,12 @@ import AuthOnlyRoute from "./routes/AuthOnlyRoute.jsx";
 import { UserProvider } from "./contexts/UserContext.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import 'react-toastify/dist/ReactToastify.css';
-import {useState} from "react";
 import Moderator from "./Moderator.jsx";
-import ModeratorOnlyRoute from "./routes/ModeratorOnlyRoute.jsx"; // Don't forget to import Toastify styles
+import ModeratorOnlyRoute from "./routes/ModeratorOnlyRoute.jsx";
+import CategoryPage from "./pages/CategoryPage";
+import ContentLayout from "./layouts/ContentLayout.jsx";
+import ExploreCategories from "./pages/ExploreCategories.jsx";
+import CategoryModeratorsPage from "./pages/CategoryModeratorsPage.jsx"; // Don't forget to import Toastify styles
 
 function App() {
     return (
@@ -26,6 +29,9 @@ function App() {
                             <Route path="/email-verify-notice" element={<EmailVerificationNotice />} />
                             <Route path="/users/:username" element={<UserProfile />} />
                             <Route path="/" element={<Home />} />
+                            <Route path="/categories/:categorySlug" element={<CategoryPage />} />
+                            <Route path="/categories" element={<ExploreCategories />} />
+                            <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
                             <Route path="/moderator" element={
                                 <ModeratorOnlyRoute>
                                     <Moderator />

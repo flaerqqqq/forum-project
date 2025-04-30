@@ -29,7 +29,7 @@ export const UserProvider = ({ children }) => {
         if (token && !user) {
             try {
                 const decoded = jwtDecode(token);
-                fetchUserData(decoded.sub);
+                fetchUserData(decoded.publicId);
             } catch (error) {
                 console.error('Error decoding token:', error);
                 Cookies.remove('token');

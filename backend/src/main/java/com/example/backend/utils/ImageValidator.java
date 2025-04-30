@@ -23,16 +23,16 @@ public class ImageValidator {
 
     private static final float MIN_CONFIDENCE = 75F;
     private static final int ICON_MIN_HEIGHT = 64;
-    private static final int ICON_MAX_HEIGHT = 2048;
+    private static final int ICON_MAX_HEIGHT = 4096;
     private static final int ICON_MIN_WIDTH = 64;
-    private static final int ICON_MAX_WIDTH = 2048;
+    private static final int ICON_MAX_WIDTH = 4096;
     private static final double ICON_MIN_ASPECT_RATIO = 0.5;
     private static final double ICON_MAX_ASPECT_RATIO = 2;
 
     private static final int BANNER_MIN_HEIGHT = 256;
-    private static final int BANNER_MAX_HEIGHT = 4096;
+    private static final int BANNER_MAX_HEIGHT = 8192;
     private static final int BANNER_MIN_WIDTH = 256;
-    private static final int BANNER_MAX_WIDTH = 4096;
+    private static final int BANNER_MAX_WIDTH = 8192;
     private static final double BANNER_MIN_ASPECT_RATIO = 0.25;
     private static final double BANNER_MAX_ASPECT_RATIO = 4;
 

@@ -17,4 +17,5 @@ public interface CategoryFollowService {
 
     CategoryFollowDto updateFollow(String publicId, Long categoryId, CategoryFollowUpdateRequestDto request);
 
+    CategoryFollowDto getUserCategoryFollow(Long categoryId, String publicId);
 }

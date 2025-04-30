@@ -22,13 +22,13 @@ public abstract class CategoryMapper {
 
     abstract Category toEntity(CategoryDto categoryDto);
 
-    @Mapping(source = "createdBy.id", target = "creatorId")
+    @Mapping(source = "createdBy.publicId", target = "creatorId")
     public abstract CategoryDto toDto(Category category);
 
     public abstract CategoryResponseDto toResponseDto(CategoryDto dto);
 
-    public User resolverUser(Long userId) {
+    public User resolverUser(String userId) {
         if (userId == null) return null;
-        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException());
+        return userRepository.findByPublicId(userId).orElseThrow(() -> new UserNotFoundException());
     }
 }

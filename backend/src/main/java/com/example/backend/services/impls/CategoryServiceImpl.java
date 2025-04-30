@@ -97,13 +97,7 @@ public class CategoryServiceImpl implements CategoryService {
                               MultipartFile bannerFile) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException());
 
-        if (!category.getSlug().equals(request.getSlug()) && categoryRepository.existsBySlug(request.getSlug())) {
-            throw new CategoryAlreadyExistsException("Category with such a slug=%s already exists".formatted(
-                    request.getSlug()));
-        }
-
         category.setName(request.getName());
-        category.setSlug(request.getSlug());
         category.setDescription(request.getDescription());
         category.setVisibility(request.getVisibility());
         category.setPostPermission(request.getPostPermission());

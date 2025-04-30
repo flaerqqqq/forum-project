@@ -2,33 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+@font-face {
+  font-family: 'Kievit';
+  src: url('/fonts/Kievit-Regular.woff2') format('woff2'),
+  url('/fonts/Kievit-Regular.woff') format('woff');
   font-weight: 400;
-
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-display: swap;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/Charter-Regular.woff2') format('woff2'),
+  url('/fonts/Charter-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fell';
+  src: url('/fonts/Fell-Headline.woff2') format('woff2'),
+  url('/fonts/Fell-Headline.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/Sohne-Regular.woff2') format('woff2'),
+  url('/fonts/Sohne-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: theme('colors.background');
+  /* Corrected to use 'text' key from theme('colors') */
+  color: theme('colors.text');
+  font-family: theme('fontFamily.sans');
+  line-height: 1.6;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+a {
+  @apply text-accent-green hover:underline;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: theme('fontFamily.heading');
+  color: theme('colors.black');
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+@layer utilities {
+  .scrollbar-thin-light::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-thin-light::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin-light::-webkit-scrollbar-thumb {
+    background-color: theme('colors.gray-light');
+    border-radius: 4px;
+    border: 2px solid theme('colors.white');
+  }
+
+  .scrollbar-thin-light::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.gray-medium');
+  }
+
+  .scrollbar-thin-light {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray-light') transparent;
+  }
+
+  @font-face {
+    font-family: 'Noe Bold'; /* Must match the name in tailwind.config.js */
+    src:     url("https://db.onlinewebfonts.com/t/d5057d1717ee8f3db3350cf9a6252f82.woff2")format("woff2");
+    font-weight: 700; /* Or whatever the weight is */
+    font-style: normal;
+    font-display: swap;
+  }
+  /* ... other @font-face rules ... */
 }

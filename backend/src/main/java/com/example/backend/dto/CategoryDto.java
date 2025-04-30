@@ -38,7 +38,7 @@ public class CategoryDto {
 
     private LocalDateTime updatedAt;
 
-    private Long creatorId;
+    private String creatorId;
 
     private List<CategoryFollowDto> followers;
 

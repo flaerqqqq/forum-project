@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
-import defaultAvatar from '../assets/images/default-avatar.png';
 import UserNotFound from "../components/UserNotFound.jsx";
-import ReportUserModal from '../components/ReportUserModal';  // Import the modal
-import UserReports from '../components/UserReports'; // Import the UserReports component
-import { toast, ToastContainer } from 'react-toastify'; // Import toast and ToastContainer
+import ReportUserModal from '../components/ReportUserModal';
+import UserReports from '../components/UserReports';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {isModerator} from "../utils/Auth.js"; // Import React-Toastify CSS
+import { isModerator } from "../utils/Auth.js";
+import UserCategories from "../components/UserCategories.jsx";
 
 const UserProfile = () => {
     const rawParams = useParams();
@@ -20,11 +20,29 @@ const UserProfile = () => {
     const [retryCount, setRetryCount] = useState(0);
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [notFound, setNotFound] = useState(false);
-    const [showReportModal, setShowReportModal] = useState(false);  // State to control the modal
-    const [showReportsSection, setShowReportsSection] = useState(false); // State to toggle reports section
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [activeSection, setActiveSection] = useState('posts');
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const buttonRef = useRef(null);
+
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 2000;
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) && buttonRef.current && !buttonRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
 
     useEffect(() => {
         let timeoutId;
@@ -44,7 +62,7 @@ const UserProfile = () => {
                     return;
                 }
 
-                const res = await axios.get(`http://localhost:8080/api/v1/users/${profileUsername}`);
+                const res = await axios.get(`http://localhost:8080/api/v1/users/username/${profileUsername}`);
                 if (isMounted) {
                     setProfileUser(res.data);
                     setIsLoading(false);
@@ -85,11 +103,11 @@ const UserProfile = () => {
 
     if (authLoading || isLoading) {
         return (
-            <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
+            <div className="flex items-center justify-center min-h-screen bg-background-light-gray">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-16 h-16 border-4 border-accent-green border-t-transparent rounded-full animate-spin"></div>
                     {retryCount > 0 && (
-                        <p className="text-gray-600">
+                        <p className="text-gray-medium">
                             Retrying... ({retryCount}/{MAX_RETRIES})
                         </p>
                     )}
@@ -99,113 +117,199 @@ const UserProfile = () => {
     }
 
     if (!profileUser) {
-        return <div>Error loading user profile.</div>;
+        return <div className="text-center text-black mt-8">Error loading user profile.</div>;
     }
 
     const isOwnProfile = authenticatedUser?.username === profileUsername;
 
+    const getInitials = (name) => {
+        if (!name) return '';
+        const parts = name.split(' ');
+        if (parts.length === 1) {
+            return parts[0].charAt(0).toUpperCase();
+        }
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    };
+
+    const toggleDropdown = () => {
+        setShowDropdown(prev => !prev);
+    };
+
+    const handleReportClick = () => {
+        setShowReportModal(true);
+        setShowDropdown(false);
+    };
+
+    const handleEditClick = () => {
+        navigate('/settings');
+        setShowDropdown(false);
+    }
+
+    const handleCopyUsername = async () => {
+        const usernameToCopy = profileUser.username;
+        try {
+            await navigator.clipboard.writeText(usernameToCopy);
+            toast.success(`Username "@${usernameToCopy}" copied!`);
+        } catch (err) {
+            console.error('Failed to copy username: ', err);
+            toast.error('Failed to copy username.');
+        }
+    };
+
+    const getAvatarColorClass = (username) => {
+        if (!username) return 'bg-gray-medium';
+        const firstLetter = username.charAt(0).toUpperCase();
+        const asciiCode = firstLetter.charCodeAt(0);
+        const colorIndex = asciiCode % 10;
+
+        const avatarColors = [
+            'bg-accent-green',
+            'bg-gray-darker',
+            'bg-indigo-600',
+            'bg-blue-600',
+            'bg-purple-600',
+            'bg-pink-600',
+            'bg-teal-600',
+            'bg-orange-600',
+            'bg-red-600',
+            'bg-gray-medium',
+        ];
+
+        return avatarColors[colorIndex];
+    };
+
+
     return (
-        <div className="w-screen bg-gray-100 min-h-screen">
-            <div className="bg-black h-32 w-full" />
+        <div className="bg-background-light-gray min-h-screen font-sans text-black">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
 
-            <div className="max-w-3xl mx-auto">
-                <div className="bg-white rounded-lg shadow -mt-16 p-6 relative text-center">
-                    <img
-                        src={profileUser.avatarUrl || defaultAvatar}
-                        alt="avatar"
-                        className="w-28 h-28 rounded-full border-4 border-white mx-auto"
-                    />
-                    <h2 className="text-2xl font-bold text-gray-700 mt-2 m-4">
-                        {profileUser.displayName}
-                    </h2>
-                    <p className="text-gray-600">
-                        {profileUser.description || "404 bio not found"}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-6">
-                        🎂 Joined on {new Date(profileUser.registrationDate).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    })}
-                    </p>
-
-                    {profileUser.publicId && (
-                        <div className="mt-4">
-                            <UserReactions
-                                targetPublicId={profileUser.publicId}
-                                readOnly={isOwnProfile}
-                            />
-                        </div>
-                    )}
-
-                    {isOwnProfile && (
-                        <div className="absolute top-6 right-6">
-                            <Link
-                                to="/settings"
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                            >
-                                Edit profile
-                            </Link>
-                        </div>
-                    )}
-
-                    {authenticatedUser && !isOwnProfile && (
-                        <div className="absolute top-6 right-20">
-                            <button
-                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                                onClick={() => setShowReportModal(true)}
-                            >
-                                Report User
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="mt-6 bg-white rounded-lg shadow p-4 text-gray-700 text-sm">
-                    <div className="flex justify-around flex-wrap gap-4">
-                        <button className="flex items-center space-x-2">
-                            <span>📰</span>
-                            <span>Posts</span>
-                        </button>
-
-                        <button className="flex items-center space-x-2">
-                            <span>💬</span>
-                            <span>Comments</span>
-                        </button>
-
-                        <button className="flex items-center space-x-2">
-                            <span>❤️</span>
-                            <span>Likes</span>
-                        </button>
-
-                        <button className="flex items-center space-x-2">
-                            <span>👎</span>
-                            <span>Dislikes</span>
-                        </button>
-
-                        {isOwnProfile && !isModerator() && (
-                            <div className="relative">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 mb-6 border-b border-border">
+                    <div className="flex flex-col flex-grow border-r border-border pr-6">
+                        <div className="flex items-center mb-4">
+                            <h1 className="text-3xl sm:text-4xl font-heading text-black mr-4 flex-grow">
+                                {profileUser.displayName}
+                            </h1>
+                            <div className="relative flex-shrink-0">
                                 <button
-                                    className="flex items-center space-x-2"
-                                    onClick={() => setShowReportsSection(!showReportsSection)} // Toggle reports section visibility
+                                    ref={buttonRef}
+                                    className="flex items-center justify-center w-8 h-8 text-gray-medium hover:text-black text-2xl font-bold rounded-full transition-colors"
+                                    onClick={toggleDropdown}
+                                    aria-label="More actions"
                                 >
-                                    <span>🚨</span>
-                                    <span>Reports</span>
+                                    ...
                                 </button>
+                                {showDropdown && (
+                                    <div
+                                        ref={dropdownRef}
+                                        className="absolute top-full mt-2 right-0 w-48 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
+                                    >
+                                        {isOwnProfile ? (
+                                            <button
+                                                onClick={handleEditClick}
+                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                            >
+                                                Edit profile
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleReportClick}
+                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                            >
+                                                Report User
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-6 font-medium text-gray-darker">
+                            <button
+                                className={`pb-2 border-b-2 ${activeSection === 'posts' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
+                                onClick={() => setActiveSection('posts')}
+                            >
+                                Posts
+                            </button>
+                            {isOwnProfile && (
+                                <button
+                                    className={`pb-2 border-b-2 ${activeSection === 'categories' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
+                                    onClick={() => setActiveSection('categories')}
+                                >
+                                    Categories
+                                </button>
+                            )}
+                            <button
+                                className={`pb-2 border-b-2 ${activeSection === 'comments' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
+                                onClick={() => setActiveSection('comments')}
+                            >
+                                Comments
+                            </button>
+                            {isOwnProfile && !isModerator() && (
+                                <button
+                                    className={`pb-2 border-b-2 ${activeSection === 'reports' ? 'border-black text-black' : 'border-transparent hover:border-gray-medium'} transition-colors duration-200`}
+                                    onClick={() => setActiveSection('reports')}
+                                >
+                                    Reports
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center flex-shrink-0 mt-6 sm:mt-0 pl-6">
+                        {/* Dynamically set background color */}
+                        <div className={`w-16 h-16 rounded-full ${profileUser.username ? getAvatarColorClass(profileUser.username) : 'bg-gray-medium'} flex items-center justify-center text-white text-2xl font-bold mb-2 overflow-hidden`}>
+                            {profileUser.avatarUrl ? (
+                                <img src={profileUser.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span>{getInitials(profileUser.displayName)}</span>
+                            )}
+                        </div>
+                        <p
+                            className="text-gray-darker text-sm font-semibold cursor-pointer hover:underline"
+                            onClick={handleCopyUsername}
+                            title={`Click to copy username: @${profileUser.username}`}
+                        >
+                            @{profileUser.username}
+                        </p>
+                        {profileUser.publicId && (
+                            <div className="mt-4">
+                                <UserReactions
+                                    targetPublicId={profileUser.publicId}
+                                    readOnly={isOwnProfile}
+                                />
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Style the UserReports like the profile container */}
-                {showReportsSection && (
-                    <UserReports userId={profileUser.publicId} />
-                )}
+                <div className="mt-8">
+                    {activeSection === 'posts' && (
+                        <div>
+                            <h2 className="text-2xl font-heading text-black mb-4">Posts</h2>
+                            <div className="text-gray-medium">No posts found.</div>
+                        </div>
+                    )}
+                    {activeSection === 'comments' && (
+                        <div>
+                            <h2 className="text-2xl font-heading text-black mb-4">Comments</h2>
+                            <div className="text-gray-medium">No comments found.</div>
+                        </div>
+                    )}
+
+                    {activeSection === 'categories' && (
+                        <UserCategories userPublicId={profileUser.publicId} />
+                    )}
+
+                    {activeSection === 'reports' && (
+                        <UserReports userId={profileUser.publicId} />
+                    )}
+                </div>
+
             </div>
 
             {showReportModal && (
                 <ReportUserModal
-                    targetUsername={profileUser.username}
+                    targetPublicId={profileUser.publicId}
                     onClose={() => setShowReportModal(false)}
                 />
             )}

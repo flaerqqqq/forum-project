@@ -16,7 +16,7 @@ public class CategoryModeratorDto {
 
     private Long id;
 
-    private Long userId;
+    private UserResponseDto userDto;
 
     private Long categoryId;
 

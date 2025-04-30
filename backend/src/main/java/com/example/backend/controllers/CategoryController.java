@@ -99,6 +99,13 @@ public class CategoryController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @GetMapping("/{categoryId:\\d+}/follows/{publicId}")
+    public ResponseEntity<CategoryFollowDto> getUserCategoryFollow(@PathVariable Long categoryId,
+                                                                   @PathVariable String publicId) {
+        CategoryFollowDto userCategoryFollow = categoryFollowService.getUserCategoryFollow(categoryId, publicId);
+        return ResponseEntity.ok(userCategoryFollow);
+    }
+
     @GetMapping("/{categoryId:\\d+}/follows")
     public ResponseEntity<Page<CategoryFollowDto>> getCategoryFollows(@PathVariable Long categoryId,
                                                                       Pageable pageable) {

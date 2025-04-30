@@ -19,7 +19,9 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
 
     const fetchInitialReaction = async () => {
         try {
-            const userRes = await axios.get(`http://localhost:8080/api/v1/users/${targetPublicId}`);
+            const userRes = await axios.get(`http://localhost:8080/api/v1/users/${targetPublicId}`, {
+                headers
+            });
             setLikes(userRes.data.receivedLikesCount);
             setDislikes(userRes.data.receivedDislikesCount);
 
@@ -61,31 +63,44 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
     }, [targetPublicId, authenticatedUser]);
 
     return (
-        <div className="flex items-center justify-center gap-4 mt-6">
+        <div className="flex items-center justify-center gap-4 ">
             {readOnly ? (
-                <>
-                    <div className="px-4 py-2 rounded-full bg-gray-300 text-black">
-                        👍 {likes}
-                    </div>
-                    <div className="px-4 py-2 rounded-full bg-gray-300 text-black">
-                        👎 {dislikes}
-                    </div>
-                </>
-            ) : (
                 <>
                     <button
                         onClick={() => sendReaction('LIKE')}
-                        className={`px-4 py-2 rounded-full text-white ${reaction === 'LIKE' ? 'bg-green-600' : 'bg-gray-400'}`}
-                        disabled={!authenticatedUser}
+                        className={`flex items-center space-x-1 px-3 py-1 border rounded-full text-sm transition-colors ${reaction === 'LIKE' ? 'border-accent-green text-accent-green' : 'border-gray-medium text-gray-darker hover:border-black hover:text-black'}`}
+                        disabled={authenticatedUser.publicId === targetPublicId}
                     >
-                        👍 {likes}
+                        <span>👍</span>
+                        <span>{likes}</span>
                     </button>
                     <button
                         onClick={() => sendReaction('DISLIKE')}
-                        className={`px-4 py-2 rounded-full text-white ${reaction === 'DISLIKE' ? 'bg-red-600' : 'bg-gray-400'}`}
+                        className={`flex items-center space-x-1 px-3 py-1 border rounded-full text-sm transition-colors ${reaction === 'DISLIKE' ? 'border-red-600 text-red-600' : 'border-gray-medium text-gray-darker hover:border-black hover:text-black'}`}
+                        disabled={authenticatedUser.publicId === targetPublicId}
+                    >
+                        <span>👎</span>
+                        <span>{dislikes}</span>
+                    </button>
+                </>
+            ) : (
+                <>
+                    {/* Styled interactive buttons */}
+                    <button
+                        onClick={() => sendReaction('LIKE')}
+                        className={`flex items-center space-x-1 px-3 py-1 border rounded-full text-sm transition-colors ${reaction === 'LIKE' ? 'border-accent-green text-accent-green' : 'border-gray-medium text-gray-darker hover:border-black hover:text-black'}`}
                         disabled={!authenticatedUser}
                     >
-                        👎 {dislikes}
+                        <span>👍</span>
+                        <span>{likes}</span>
+                    </button>
+                    <button
+                        onClick={() => sendReaction('DISLIKE')}
+                        className={`flex items-center space-x-1 px-3 py-1 border rounded-full text-sm transition-colors ${reaction === 'DISLIKE' ? 'border-red-600 text-red-600' : 'border-gray-medium text-gray-darker hover:border-black hover:text-black'}`}
+                        disabled={!authenticatedUser}
+                    >
+                        <span>👎</span>
+                        <span>{dislikes}</span>
                     </button>
                 </>
             )}

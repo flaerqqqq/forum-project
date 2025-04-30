@@ -84,6 +84,12 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
         return categoryFollowMapper.toDto(savedCategoryFollow);
     }
 
+    @Override
+    public CategoryFollowDto getUserCategoryFollow(Long categoryId, String publicId) {
+        CategoryFollow userCategoryFollow = getAndValidateCategoryFollow(publicId, categoryId);
+        return categoryFollowMapper.toDto(userCategoryFollow);
+    }
+
     private CategoryFollow getAndValidateCategoryFollow(String publicId, Long categoryId) {
         User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
