@@ -43,4 +43,6 @@ public class CategoryDto {
     private List<CategoryFollowDto> followers;
 
     private List<CategoryModeratorDto> categoryModerators;
+
+    private List<PostDto> posts;
 }

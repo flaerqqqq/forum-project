@@ -16,7 +16,9 @@ import org.mapstruct.Mapping;
         ReportMapper.class,
         CategoryMapper.class,
         CategoryFollowMapper.class,
-        CategoryModeratorMapper.class
+        CategoryModeratorMapper.class,
+        PostMapper.class,
+        PostMapper.class
 })
 public interface UserMapper {
 

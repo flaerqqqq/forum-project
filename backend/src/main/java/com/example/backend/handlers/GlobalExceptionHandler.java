@@ -33,7 +33,8 @@ public class GlobalExceptionHandler {
             ReportNotFoundException.class,
             ReactionNotFoundException.class,
             CategoryNotFoundException.class,
-            CategoryFollowNotFoundException.class
+            CategoryFollowNotFoundException.class,
+            PostImageNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("Not found: {}", ex.getMessage());
