@@ -31,7 +31,7 @@ public class PostDto {
 
     private LocalDateTime updatedAt;
 
-    private Long userId;
+    private Long creatorId;
 
     private Long categoryId;
 }

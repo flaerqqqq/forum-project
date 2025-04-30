@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @NoArgsConstructor
@@ -35,10 +36,10 @@ public class Post {
     private PostType type;
 
     @CreationTimestamp
-    private Long createdAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private Long updatedAt;
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, orphanRemoval = true)
     private List<PostImage> postImages;
