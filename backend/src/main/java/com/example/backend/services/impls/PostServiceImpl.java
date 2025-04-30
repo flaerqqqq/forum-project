@@ -3,6 +3,7 @@ package com.example.backend.services.impls;
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.exceptions.CategoryNotFoundException;
+import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.PostMapper;
 import com.example.backend.models.Category;
@@ -57,7 +58,14 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostDto findById(Long postId) {
-        return null;
+        final Post post = findPostById(postId);
+        return postMapper.toDto(post);
+    }
+
+    private Post findPostById(Long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() ->
+                new PostNotFoundException(STR."Post with such id=\{postId} not found"));
+        return post;
     }
 
     private Category findCategoryBySlug(PostCreateRequestDto request) {

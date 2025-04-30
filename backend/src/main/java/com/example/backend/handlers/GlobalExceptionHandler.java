@@ -34,7 +34,8 @@ public class GlobalExceptionHandler {
             ReactionNotFoundException.class,
             CategoryNotFoundException.class,
             CategoryFollowNotFoundException.class,
-            PostImageNotFoundException.class
+            PostImageNotFoundException.class,
+            PostNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFoundException(RuntimeException ex) {
         log.warn("Not found: {}", ex.getMessage());
