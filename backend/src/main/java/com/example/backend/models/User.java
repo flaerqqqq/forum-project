@@ -90,4 +90,7 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CategoryModerator> moderatedCategories;
+
+    @OneToMany(mappedBy = "creator")
+    private List<Post> posts;
 }
