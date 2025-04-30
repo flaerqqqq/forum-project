@@ -39,7 +39,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostDto createPost(String creatorPublicId, PostCreateRequestDto request, List<MultipartFile> images) {
         final User user = findUserByPublicId(creatorPublicId);
-        final Category category = findCategoryBySlug(request);
+        final Category category = findCategoryBySlug(request.getCategorySlug());
 
         Post post = Post.builder()
                 .title(request.getTitle())
@@ -66,26 +66,26 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public Page<PostDto> findPostsPage(Pageable pageable, PostType type, String creatorPublicId, String categorySlug) {
-        return null;
+        User creator = creatorPublicId == null ? null : findUserByPublicId(creatorPublicId);
+        Category category = categorySlug == null ? null : findCategoryBySlug(categorySlug);
+        return postRepository.findFilteredPage(type, creator, category, pageable).map(postMapper::toDto);
     }
 
     private Post findPostById(Long postId) {
-        Post post = postRepository.findById(postId).orElseThrow(() ->
+        return postRepository.findById(postId).orElseThrow(() ->
                 new PostNotFoundException(STR."Post with such id=\{postId} not found"));
-        return post;
     }
 
-    private Category findCategoryBySlug(PostCreateRequestDto request) {
-        Category category = categoryRepository.findBySlug(request.getCategorySlug()).orElseThrow(() ->
-                new CategoryNotFoundException(STR."Category with such slug=\{request.getCategorySlug()} not found"));
-        return category;
+    private Category findCategoryBySlug(String categorySlug) {
+        return categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
+                new CategoryNotFoundException(STR."Category with such slug=\{categorySlug} not found"));
     }
 
     private User findUserByPublicId(String creatorPublicId) {
-        User user = userRepository.findByPublicId(creatorPublicId).orElseThrow(() ->
+        return userRepository.findByPublicId(creatorPublicId).orElseThrow(() ->
                 new UserNotFoundException(STR."User with such publicId=\{creatorPublicId} not found"));
-        return user;
     }
 
     private List<PostImage> createAndUploadPostImages(List<MultipartFile> images) {
