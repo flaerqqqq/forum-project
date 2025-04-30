@@ -27,7 +27,7 @@ public class PostController {
     @PostMapping
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<PostResponseDto> create(@RequestPart("data") PostCreateRequestDto request,
-                                                  @RequestParam("images") List<MultipartFile> images,
+                                                  @RequestParam(name = "images", required = false) List<MultipartFile> images,
                                                   @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         PostDto postDto = postService.createPost(customUserDetails.getPublicId(), request, images);
         URI resourceUri = URI.create(STR."/api/v1/posts/\{postDto.getId()}");

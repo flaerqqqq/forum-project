@@ -43,6 +43,7 @@ public class PostServiceImpl implements PostService {
                 .type(request.getType())
                 .creator(user)
                 .category(category)
+                .commentsCount(0L)
                 .build();
 
         if (images != null && !images.isEmpty()) {
