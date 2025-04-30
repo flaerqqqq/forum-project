@@ -2,6 +2,7 @@ package com.example.backend.services.impls;
 
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
+import com.example.backend.dto.PostUpdateRequestDto;
 import com.example.backend.exceptions.CategoryNotFoundException;
 import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
@@ -71,6 +72,11 @@ public class PostServiceImpl implements PostService {
         User creator = creatorPublicId == null ? null : findUserByPublicId(creatorPublicId);
         Category category = categorySlug == null ? null : findCategoryBySlug(categorySlug);
         return postRepository.findFilteredPage(type, creator, category, pageable).map(postMapper::toDto);
+    }
+
+    @Override
+    public PostDto update(Long postId, String publicId, PostUpdateRequestDto request, List<MultipartFile> newImages, List<String> keepImageUrls) {
+        return null;
     }
 
     private Post findPostById(Long postId) {

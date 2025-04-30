@@ -3,6 +3,7 @@ package com.example.backend.controllers;
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.dto.PostResponseDto;
+import com.example.backend.dto.PostUpdateRequestDto;
 import com.example.backend.mappers.PostMapper;
 import com.example.backend.models.enums.PostType;
 import com.example.backend.security.CustomUserDetails;
@@ -54,5 +55,15 @@ public class PostController {
             return new ResponseEntity(HttpStatus.NO_CONTENT);
         }
         return ResponseEntity.ok(postsPage);
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<PostResponseDto> update(@PathVariable Long postId,
+                                                  @RequestPart("data") PostUpdateRequestDto request,
+                                                  @RequestParam("newImages") List<MultipartFile> newImages,
+                                                  @RequestParam("keepImageUrls") List<String> keepImageUrls,
+                                                  @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        PostDto updatedPostDto = postService.update(postId, customUserDetails.getPublicId(), request, newImages, keepImageUrls);
+        return ResponseEntity.ok(postMapper.toResponseDto(updatedPostDto));
     }
 }
