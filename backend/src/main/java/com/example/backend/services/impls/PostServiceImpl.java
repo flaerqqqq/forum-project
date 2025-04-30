@@ -10,12 +10,15 @@ import com.example.backend.models.Category;
 import com.example.backend.models.Post;
 import com.example.backend.models.PostImage;
 import com.example.backend.models.User;
+import com.example.backend.models.enums.PostType;
 import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.PostService;
 import com.example.backend.services.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +63,11 @@ public class PostServiceImpl implements PostService {
     public PostDto findById(Long postId) {
         final Post post = findPostById(postId);
         return postMapper.toDto(post);
+    }
+
+    @Override
+    public Page<PostDto> findPostsPage(Pageable pageable, PostType type, String creatorPublicId, String categorySlug) {
+        return null;
     }
 
     private Post findPostById(Long postId) {

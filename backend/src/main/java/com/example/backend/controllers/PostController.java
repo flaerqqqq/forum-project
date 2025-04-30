@@ -4,9 +4,13 @@ import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.dto.PostResponseDto;
 import com.example.backend.mappers.PostMapper;
+import com.example.backend.models.enums.PostType;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,5 +42,17 @@ public class PostController {
     public ResponseEntity<PostResponseDto> getPostById(@PathVariable Long postId) {
         PostDto postDto = postService.findById(postId);
         return ResponseEntity.ok(postMapper.toResponseDto(postDto));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<PostResponseDto>> getPostsPage(Pageable pageable,
+                                                              @RequestParam(value = "type", required = false) PostType type,
+                                                              @RequestParam(value = "creatorPublicId", required = false) String creatorPublicId,
+                                                              @RequestParam(value = "categorySlug", required = false) String categorySlug) {
+        Page<PostResponseDto> postsPage = postService.findPostsPage(pageable, type, creatorPublicId, categorySlug).map(postMapper::toResponseDto);
+        if (postsPage.isEmpty()) {
+            return new ResponseEntity(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(postsPage);
     }
 }
