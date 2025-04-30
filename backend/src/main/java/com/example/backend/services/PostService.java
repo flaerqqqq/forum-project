@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface PostService {
 
-    PostDto createPost(PostCreateRequestDto request, List<MultipartFile> images);
+    PostDto createPost(String creatorPublicId, PostCreateRequestDto request, List<MultipartFile> images);
 }
