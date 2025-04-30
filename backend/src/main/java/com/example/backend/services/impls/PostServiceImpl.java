@@ -55,6 +55,11 @@ public class PostServiceImpl implements PostService {
         return postMapper.toDto(savedPost);
     }
 
+    @Override
+    public PostDto findById(Long postId) {
+        return null;
+    }
+
     private Category findCategoryBySlug(PostCreateRequestDto request) {
         Category category = categoryRepository.findBySlug(request.getCategorySlug()).orElseThrow(() ->
                 new CategoryNotFoundException(STR."Category with such slug=\{request.getCategorySlug()} not found"));

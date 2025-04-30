@@ -33,4 +33,10 @@ public class PostController {
         URI resourceUri = URI.create(STR."/api/v1/posts/\{postDto.getId()}");
         return ResponseEntity.created(resourceUri).body(postMapper.toResponseDto(postDto));
     }
+
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostResponseDto> getPostById(@PathVariable Long postId) {
+        PostDto postDto = postService.findById(postId);
+        return ResponseEntity.ok(postMapper.toResponseDto(postDto));
+    }
 }

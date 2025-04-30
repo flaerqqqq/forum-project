@@ -9,4 +9,6 @@ import java.util.List;
 public interface PostService {
 
     PostDto createPost(String creatorPublicId, PostCreateRequestDto request, List<MultipartFile> images);
+
+    PostDto findById(Long postId);
 }
