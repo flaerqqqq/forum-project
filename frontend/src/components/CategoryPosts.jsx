@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import PostCard from './PostCard';
 import { Oval } from 'react-loader-spinner';
@@ -10,9 +10,14 @@ const CategoryPosts = ({ categorySlug }) => {
     const [error, setError] = useState(null);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [sortBy, setSortBy] = useState('createdAt,desc');
 
-    const fetchPosts = async (pageNumber = 0) => {
-        setLoading(true);
+    const initialFetchDone = useRef(false);
+
+    const fetchPosts = async (pageNumber = 0, currentSortBy = sortBy) => {
+        if (!initialFetchDone.current || pageNumber > 0) {
+            setLoading(true);
+        }
         setError(null);
 
         try {
@@ -21,49 +26,99 @@ const CategoryPosts = ({ categorySlug }) => {
                     categorySlug,
                     page: pageNumber,
                     size: 10,
-                    sort: 'createdAt,desc'
+                    sort: currentSortBy
                 }
             });
 
             if (res.status === 204 || res.data.content.length === 0) {
                 if (pageNumber === 0) setPosts([]);
                 setHasMore(false);
-                return;
-            }
-
-            if (pageNumber === 0) {
-                setPosts(res.data.content);
             } else {
-                setPosts(prev => [...prev, ...res.data.content]);
+                if (pageNumber === 0) {
+                    setPosts(res.data.content);
+                } else {
+                    setPosts(prev => [...prev, ...res.data.content]);
+                }
+                setHasMore(!res.data.last);
             }
 
-            setHasMore(!res.data.last);
+
         } catch (err) {
             console.error('Error fetching posts:', err);
             setError('Failed to load posts.');
             toast.error('Failed to load posts.');
+            setHasMore(false);
         } finally {
             setLoading(false);
+            initialFetchDone.current = true;
         }
     };
 
     useEffect(() => {
         setPage(0);
-        fetchPosts(0);
-    }, [categorySlug]);
+        setPosts([]);
+        setHasMore(true);
+        initialFetchDone.current = false;
+        fetchPosts(0, sortBy);
+    }, [categorySlug, sortBy]);
 
     const loadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchPosts(nextPage);
+        fetchPosts(nextPage, sortBy);
     };
 
+    const handleScroll = () => {
+        const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 500;
+
+        if (isAtBottom && hasMore && !loading) {
+            loadMore();
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [hasMore, loading, sortBy, categorySlug]);
+
+
+    const handleSortChange = (newSortBy) => {
+        if (newSortBy !== sortBy) {
+            setSortBy(newSortBy);
+        }
+    };
+
+    const showInitialLoading = loading && posts.length === 0 && !error;
+    const showLoadingMore = loading && posts.length > 0;
+
+
     return (
-        <div className="space-y-4">
-            {loading && posts.length === 0 && (
-                <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
-                    <Oval height={24} width={24} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
-                    <p>Loading posts...</p>
+        <div className="space-y-1">
+            <div className="flex justify-end items-center mb-4 space-x-4">
+                <span className="text-sm text-gray-600">Sort By:</span>
+                <button
+                    className={`text-sm ${sortBy === 'createdAt,desc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    onClick={() => handleSortChange('createdAt,desc')}
+                >
+                    Newest
+                </button>
+                <button
+                    className={`text-sm ${sortBy === 'createdAt,asc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    onClick={() => handleSortChange('createdAt,asc')}
+                >
+                    Oldest
+                </button>
+            </div>
+
+
+            {posts.length > 0 && <hr className="border-gray-300 my-2" />}
+
+            {showInitialLoading && (
+                <div className="w-full flex items-center justify-center py-8">
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
                 </div>
             )}
 
@@ -73,24 +128,24 @@ const CategoryPosts = ({ categorySlug }) => {
                 </div>
             )}
 
-            {!loading && posts.length === 0 && (
+            {!loading && posts.length === 0 && !error && (
                 <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
                     No posts found.
                 </div>
             )}
 
-            {posts.map(post => (
-                <PostCard key={post.id} post={post} />
+            {posts.map((post, index) => (
+                <React.Fragment key={post.id}>
+                    <PostCard post={post} />
+                    {index < posts.length - 1 && (
+                        <hr className="border-gray-300 my-2" />
+                    )}
+                </React.Fragment>
             ))}
 
-            {hasMore && !loading && (
-                <div className="flex justify-center">
-                    <button
-                        onClick={loadMore}
-                        className="bg-accent-green hover:bg-green-700 text-white font-medium px-4 py-2 rounded-full transition duration-300"
-                    >
-                        Load More
-                    </button>
+            {showLoadingMore && (
+                <div className="w-full flex items-center justify-center py-8">
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
                 </div>
             )}
         </div>

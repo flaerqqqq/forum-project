@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import PopularCategoriesSidebar from './PopularCategoriesSidebar.jsx';
 import CategoryCreateModal from "./CreateCategoryModal.jsx";
-import {isAuthenticated} from "../utils/Auth.js";
+import { isAuthenticated } from "../utils/Auth.js";
 
 const SidebarMenu = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -13,10 +13,8 @@ const SidebarMenu = () => {
 
     const isActive = (pathname) => location.pathname === pathname;
 
-
     return (
-        // Added scrollbar-thin-light class
-        <div className="sticky top-6 w-64 bg-white  px-6 py-3 overflow-y-auto max-h-[calc(100vh-3rem)] scrollbar-thin-light">
+        <div className="sticky border border-border top-6 w-64 bg-white px-6 py-3 overflow-hidden hover:overflow-y-auto max-h-[calc(100vh-3rem)] scrollbar-thin-light">
 
             <ul className="pt-3">
                 <li>
@@ -33,7 +31,7 @@ const SidebarMenu = () => {
                         to="/categories"
                         className={`flex items-center space-x-2 text-gray-darker hover:text-black p-2 transition-colors ${isActive('/categories') ? 'text-black font-semibold bg-gray-lighter rounded-md p-2' : ''}`}
                     >
-                        <span >📂</span>
+                        <span>📂</span>
                         <span>Explore</span>
                     </Link>
                 </li>

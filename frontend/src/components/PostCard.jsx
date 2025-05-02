@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, ChevronLeft, ChevronRight, X } from 'lucide-react'; // Import X icon
+import { MessageCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const PostCard = ({ post }) => {
     const {
@@ -75,9 +75,8 @@ const PostCard = ({ post }) => {
 
     const currentImageUrl = images[currentImageIndex]?.url;
 
-
     return (
-        <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100">
+        <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100 overflow-hidden">
             <Link to={postDetailUrl} className="block no-underline text-inherit hover:no-underline focus:no-underline">
                 <div className="text-xs text-gray-600 mb-1">
                     {category?.name && (
@@ -93,17 +92,22 @@ const PostCard = ({ post }) => {
                     {new Date(createdAt).toLocaleDateString()}
                 </div>
 
-                <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline">
+                <div
+                    className="text-black font-semibold text-xl mb-1 no-underline hover:underline"
+                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                >
                     {title}
                 </div>
 
-                <p className="text-gray-700 text-base mb-3 line-clamp-2">
+                <p
+                    className="text-gray-700 text-base mb-3 line-clamp-2"
+                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                >
                     {snippet}
                 </p>
 
                 {images.length > 0 && (
                     <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-3">
-
                         <div
                             className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
                             style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
@@ -132,7 +136,6 @@ const PostCard = ({ post }) => {
                             ))}
                         </div>
 
-
                         {showPrevButton && (
                             <button
                                 onClick={showPrevImage}
@@ -155,9 +158,7 @@ const PostCard = ({ post }) => {
                                 {images.map((_, index) => (
                                     <div
                                         key={index}
-                                        className={`w-2 h-2 rounded-full ${
-                                            index === currentImageIndex ? 'bg-white' : 'bg-gray-400'
-                                        }`}
+                                        className={`w-2 h-2 rounded-full ${index === currentImageIndex ? 'bg-white' : 'bg-gray-400'}`}
                                     ></div>
                                 ))}
                             </div>
@@ -175,7 +176,7 @@ const PostCard = ({ post }) => {
 
             {showPreview && images[currentImageIndex] && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50"
+                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-30"
                     onClick={closePreview}
                 >
                     {currentImageUrl && (

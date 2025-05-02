@@ -4,7 +4,6 @@ import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { useUser } from "../contexts/UserContext.jsx";
-import CategoryUpdateModal from './CategoryUpdateModal'; // <-- Import the modal
 
 const CategoryInfoSidebar = ({ category }) => {
     const { user: currentUser } = useUser();
@@ -12,8 +11,6 @@ const CategoryInfoSidebar = ({ category }) => {
     const [moderators, setModerators] = useState([]);
     const [loadingModerators, setLoadingModerators] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // <-- Modal state
-    const navigate = useNavigate(); // <-- Initialize navigate
 
     const getAvatarColorClass = (username) => {
         if (!username) return 'bg-gray-medium';
@@ -78,10 +75,6 @@ const CategoryInfoSidebar = ({ category }) => {
         fetchModerators();
     }, [category?.id]);
 
-    const handleCategoryUpdate = (updatedCategorySlug) => {
-        // Redirect to the updated category's page using navigate
-        window.location.reload();
-    };
 
     if (initialLoading && !category) {
         return (
@@ -100,7 +93,7 @@ const CategoryInfoSidebar = ({ category }) => {
     }
 
     return (
-        <div className="bg-white border border-border rounded-md overflow-hidden shadow-sm">
+        <div className="bg-white border border-border rounded-xl overflow-hidden shadow-sm">
             {category.bannerUrl && (
                 <img
                     src={category.bannerUrl}
@@ -206,30 +199,11 @@ const CategoryInfoSidebar = ({ category }) => {
                                 View all moderators
                             </Link>
 
-                            {/* Visible only to category owner */}
-                            {currentUser?.publicId === category.creatorId && (
-                                <button
-                                    onClick={() => setIsUpdateModalOpen(true)}
-                                    className="inline-block px-4 py-2 text-sm text-accent-green border border-accent-green rounded-md hover:bg-gray-100 transition-colors"
-                                >
-                                    Update category
-                                </button>
-                            )}
+                            {/* Update Category button is no longer here */}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Render Update Modal */}
-            {isUpdateModalOpen && (
-                <CategoryUpdateModal
-                    category={category}
-                    onClose={() => {
-                        setIsUpdateModalOpen(false);
-                        handleCategoryUpdate(category.slug); // Redirect after modal close
-                    }}
-                />
-            )}
         </div>
     );
 };

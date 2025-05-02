@@ -45,14 +45,29 @@ const CategoryUpdateModal = ({ onClose, category }) => {
         if (categoryData.icon) {
             const newUrl = URL.createObjectURL(categoryData.icon);
             setPreviewIcon(newUrl);
+            if (iconUrlRef.current) URL.revokeObjectURL(iconUrlRef.current);
             iconUrlRef.current = newUrl;
+        } else if (category?.iconUrl && !previewIcon) {
+            setPreviewIcon(category.iconUrl);
+        } else if (!categoryData.icon && previewIcon && previewIcon !== category?.iconUrl) {
+            URL.revokeObjectURL(previewIcon);
+            setPreviewIcon(null);
         }
+
+
         if (categoryData.banner) {
             const newUrl = URL.createObjectURL(categoryData.banner);
             setPreviewBanner(newUrl);
+            if (bannerUrlRef.current) URL.revokeObjectURL(bannerUrlRef.current);
             bannerUrlRef.current = newUrl;
+        } else if (category?.bannerUrl && !previewBanner) {
+            setPreviewBanner(category.bannerUrl);
+        } else if (!categoryData.banner && previewBanner && previewBanner !== category?.bannerUrl) {
+            URL.revokeObjectURL(previewBanner);
+            setPreviewBanner(null);
         }
-    }, [categoryData.icon, categoryData.banner]);
+
+    }, [categoryData.icon, categoryData.banner, category?.iconUrl, category?.bannerUrl]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -99,7 +114,7 @@ const CategoryUpdateModal = ({ onClose, category }) => {
             );
 
             toast.success('Category Updated Successfully!');
-            onClose();
+            onClose(true); // Pass true to indicate successful update
         } catch (err) {
             console.error(err);
             toast.error(err.response.data.body.detail.split(':')[1] || 'Failed to update category');
@@ -108,17 +123,21 @@ const CategoryUpdateModal = ({ onClose, category }) => {
         }
     };
 
+    const handleCloseWithoutSubmit = () => {
+        onClose(false); // Pass false to indicate closure without successful update
+    };
+
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto"
-            onClick={(e) => e.target === e.currentTarget && onClose()}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto p-4"
+            onClick={(e) => e.target === e.currentTarget && handleCloseWithoutSubmit()}
         >
             <div
                 className="relative bg-white p-6 rounded-xl shadow-xl max-w-lg w-full my-8 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
-                    onClick={onClose}
+                    onClick={handleCloseWithoutSubmit}
                     className="absolute top-4 right-4 text-gray-500 hover:text-black transition-colors"
                 >
                     ✕

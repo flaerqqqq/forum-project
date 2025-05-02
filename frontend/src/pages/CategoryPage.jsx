@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useUser } from '../contexts/UserContext';
@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
 import CategoryPosts from "../components/CategoryPosts.jsx";
+import CategoryUpdateModal from '../components/CategoryUpdateModal';
 
 const CategoryPage = () => {
     const { categorySlug } = useParams();
@@ -24,28 +25,30 @@ const CategoryPage = () => {
     const [loadingFollowStatus, setLoadingFollowStatus] = useState(true);
     const [followActionError, setFollowActionError] = useState(null);
 
-    useEffect(() => {
-        const fetchCategoryDetails = async () => {
-            setLoadingCategory(true);
-            setCategoryError(null);
-            setNotFound(false);
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
-            try {
-                const res = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
-                setCategory(res.data);
-            } catch (error) {
-                console.error("Failed to load category details:", error);
-                if (error.response?.status === 404) {
-                    setNotFound(true);
-                } else {
-                    setCategoryError('Failed to load category details.');
-                    toast.error('Failed to load category details.');
-                }
-            } finally {
-                setLoadingCategory(false);
+    const fetchCategoryDetails = async () => {
+        setLoadingCategory(true);
+        setCategoryError(null);
+        setNotFound(false);
+
+        try {
+            const res = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`);
+            setCategory(res.data);
+        } catch (error) {
+            console.error("Failed to load category details:", error);
+            if (error.response?.status === 404) {
+                setNotFound(true);
+            } else {
+                setCategoryError('Failed to load category details.');
+                toast.error('Failed to load category details.');
             }
-        };
+        } finally {
+            setLoadingCategory(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCategoryDetails();
     }, [categorySlug]);
 
@@ -127,6 +130,14 @@ const CategoryPage = () => {
         }
     };
 
+    const handleUpdateModalClose = (updated = false) => {
+        setIsUpdateModalOpen(false);
+        if (updated) {
+            fetchCategoryDetails();
+        }
+    };
+
+
     if (loadingCategory || userLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
@@ -164,7 +175,6 @@ const CategoryPage = () => {
                 </div>
             )}
 
-            {/* Increased max-width here */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-grow">
@@ -194,8 +204,8 @@ const CategoryPage = () => {
                             </p>
                         )}
 
-                        {user && (
-                            <div className="mb-8">
+                        <div className="flex items-center gap-4 mb-8">
+                            {user && (
                                 <button
                                     onClick={handleFollowClick}
                                     disabled={loadingFollowStatus}
@@ -203,7 +213,7 @@ const CategoryPage = () => {
                                         isFollowed
                                             ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
                                             : 'bg-accent-green hover:bg-green-700 text-white'
-                                    } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm`}
+                                    } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center`}
                                 >
                                     {loadingFollowStatus ? (
                                         <Oval height={16} width={16} color={isFollowed ? '#000' : '#fff'} secondaryColor={isFollowed ? '#EAEAEA' : '#ffffff33'} strokeWidth={5} visible={true} />
@@ -211,18 +221,45 @@ const CategoryPage = () => {
                                         isFollowed ? 'Following' : 'Follow'
                                     )}
                                 </button>
-                            </div>
-                        )}
+                            )}
+
+                            {user && categorySlug && (
+                                <Link
+                                    to={`/categories/${categorySlug}/create-post`}
+                                    className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1 hover:no-underline"
+                                >
+                                    + Create Post
+                                </Link>
+                            )}
+
+                            {user?.publicId === category?.creatorId && (
+                                <button
+                                    onClick={() => setIsUpdateModalOpen(true)}
+                                    className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1"
+                                >
+                                    Update category
+                                </button>
+                            )}
+                        </div>
+
 
                         <CategoryPosts categorySlug={categorySlug} />
 
                     </div>
 
-                    <div className="w-80 flex-shrink-0">
+                    <div className="w-80 flex-shrink-0 sticky top-16 self-start">
                         {category && <CategoryInfoSidebar category={category} />}
                     </div>
                 </div>
             </div>
+
+            {isUpdateModalOpen && category && (
+                <CategoryUpdateModal
+                    category={category}
+                    onClose={handleUpdateModalClose}
+                />
+            )}
+
         </div>
     );
 };
