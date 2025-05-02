@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.models.PostImage;
 import com.example.backend.models.enums.PostType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +26,7 @@ public class PostDto {
 
     private PostType type;
 
-    private List<String> imageUrls;
+    private List<PostImageDto> images;
 
     private LocalDateTime createdAt;
 

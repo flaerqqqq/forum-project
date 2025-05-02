@@ -15,7 +15,9 @@ import org.mapstruct.factory.Mappers;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperConfig.class, uses = {
+        PostImageMapper.class
+})
 public abstract class PostMapper {
 
     @Autowired
@@ -32,7 +34,7 @@ public abstract class PostMapper {
 
     @Mapping(source = "creator.id", target = "creatorId")
     @Mapping(source = "category.id", target = "categoryId")
-    @Mapping(source = "postImages", target = "imageUrls")
+    @Mapping(source = "postImages", target = "images")
     public abstract PostDto toDto(Post entity);
 
     public abstract Post toEntity(PostDto dto);

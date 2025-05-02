@@ -61,7 +61,7 @@ public class ImageValidator {
     public void validatePostImage(MultipartFile file) {
         try {
             validateFileType(file);
-            validateIconDimensions(file);
+            validateBannerDimensions(file);
             validateImageContentModeration(file);
         } catch (Exception e) {
             throw new ImageValidationException(e);

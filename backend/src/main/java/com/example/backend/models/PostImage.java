@@ -19,6 +19,12 @@ public class PostImage {
     @Column(nullable = false)
     private String url;
 
+    @Column(nullable = false)
+    private Integer width;
+
+    @Column(nullable = false)
+    private Integer height;
+
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;

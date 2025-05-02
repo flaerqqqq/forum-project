@@ -16,6 +16,7 @@ import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.PostService;
 import com.example.backend.services.S3Service;
+import com.example.backend.utils.ImageUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -183,8 +184,18 @@ public class PostServiceImpl implements PostService {
 
     private List<PostImage> createAndUploadPostImages(List<MultipartFile> images, Post post) {
         if (images.isEmpty()) return List.of();
-        return images.stream()
-                .map(image -> PostImage.builder().url(s3Service.uploadPostImage(image)).post(post).build())
-                .toList();
+        List<PostImage> postImages = new ArrayList<>();
+        for (MultipartFile image : images) {
+            Integer[] dimensions = ImageUtils.getImageWidthAndHeight(image);
+            String url = s3Service.uploadPostImage(image);
+            PostImage postImage = PostImage.builder()
+                    .url(url)
+                    .width(dimensions[0])
+                    .height(dimensions[1])
+                    .post(post)
+                    .build();
+            postImages.add(postImage);
+        }
+        return postImages;
     }
 }

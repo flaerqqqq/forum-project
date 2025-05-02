@@ -25,7 +25,7 @@ public class PostResponseDto {
 
     private PostType type;
 
-    private List<String> imageUrls;
+    private List<PostImageResponseDto> images;
 
     private LocalDateTime createdAt;
 
