@@ -8,6 +8,7 @@ import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.PostMapper;
 import com.example.backend.models.*;
+import com.example.backend.models.enums.PostPermission;
 import com.example.backend.models.enums.PostType;
 import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.PostImageRepository;
@@ -43,6 +44,8 @@ public class PostServiceImpl implements PostService {
         final User user = findUserByPublicId(creatorPublicId);
         final Category category = findCategoryBySlug(request.getCategorySlug());
 
+        verifyCategoryPostPermission(category, user);
+
         Post post = Post.builder()
                 .title(request.getTitle())
                 .body(request.getBody())
@@ -59,6 +62,20 @@ public class PostServiceImpl implements PostService {
         Post savedPost = postRepository.save(post);
 
         return postMapper.toDto(savedPost);
+    }
+
+    private void verifyCategoryPostPermission(Category category, User user) {
+        final PostPermission permission = category.getPostPermission();
+        boolean isCategoryMod = user.getModeratedCategories().stream()
+                .anyMatch(mod -> mod.getCategory().equals(category));
+        boolean isMember = user.getFollowedCategories().stream()
+                .anyMatch(follow -> follow.getCategory().equals(category));
+
+        if (permission == PostPermission.MODS_ONLY && !isCategoryMod) {
+            throw new AccessDeniedException(STR."Post permission for category with slug=\{category.getSlug()} is \{permission}, but user does not have category moderator authority to perform such an action");
+        } else if (permission == PostPermission.MEMBERS_ONLY && !isMember && !isCategoryMod) {
+            throw new AccessDeniedException(STR."Post permission for category with slug=\{category.getSlug()} is \{permission}, but user has neither category moderator authority, nor member authority to perform such an action");
+        }
     }
 
     @Override
