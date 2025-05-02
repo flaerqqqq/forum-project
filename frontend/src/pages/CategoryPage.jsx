@@ -8,6 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
+import CategoryPosts from "../components/CategoryPosts.jsx";
 
 const CategoryPage = () => {
     const { categorySlug } = useParams();
@@ -213,9 +214,7 @@ const CategoryPage = () => {
                             </div>
                         )}
 
-                        <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
-                            No posts yet.
-                        </div>
+                        <CategoryPosts categorySlug={categorySlug} />
 
                     </div>
 

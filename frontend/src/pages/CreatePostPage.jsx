@@ -9,6 +9,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import Cookies from 'js-cookie';
 import { useParams, useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 
 const ItemType = 'IMAGE_ITEM';
 
@@ -79,28 +80,39 @@ const CreatePostPage = () => {
             setBodyTextLength(0);
             navigate(`/categories/${categorySlug}/posts/${postId}`);
         } catch (err) {
-            toast.error(err.response?.data?.body.detail.split(":")[1] || 'Failed to create post');
+            const errorMessage = err.response?.data?.body?.detail?.split(":")[1]?.trim() || 'Failed to create post';
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleModalClose = (e) => {
-        if (e.target === e.currentTarget || e.target.tagName === 'IMG') {
-            setPreviewIndex(null);
-        }
+    // Simplified function to close the preview
+    const closePreview = () => {
+        setPreviewIndex(null);
     };
 
+    // Close modal on Escape key press
     const handleEscClose = (e) => {
         if (e.key === 'Escape') {
-            setPreviewIndex(null);
+            closePreview();
         }
     };
 
+    // Add/remove Escape key listener based on preview visibility
     useEffect(() => {
-        window.addEventListener('keydown', handleEscClose);
-        return () => window.removeEventListener('keydown', handleEscClose);
-    }, []);
+        if (previewIndex !== null) {
+            window.addEventListener('keydown', handleEscClose);
+        } else {
+            window.removeEventListener('keydown', handleEscClose);
+        }
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('keydown', handleEscClose);
+        };
+    }, [previewIndex]);
+
 
     const modules = {
         toolbar: [
@@ -118,6 +130,10 @@ const CreatePostPage = () => {
         'list', 'bullet',
         'link', 'image'
     ];
+
+    // Get the URL for the image preview from the File object
+    const previewImageUrl = previewIndex !== null && images[previewIndex] ? URL.createObjectURL(images[previewIndex]) : null;
+
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -238,16 +254,46 @@ const CreatePostPage = () => {
                 </div>
             </form>
 
+            {/* Full-page Image Preview Modal */}
             {previewIndex !== null && images[previewIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-                    onClick={handleModalClose}
+                    onClick={closePreview} // Clicking the outer area closes
                 >
-                    <img
-                        src={URL.createObjectURL(images[previewIndex])}
-                        alt="Preview"
-                        className="max-w-full max-h-full"
-                    />
+                    {/* Blurred Background in Preview */}
+                    {previewImageUrl && (
+                        <div
+                            className="absolute inset-0 bg-cover bg-center filter blur-xl transform scale-125"
+                            style={{ backgroundImage: `url(${previewImageUrl})` }}
+                            onClick={closePreview} // Clicking blurred background closes
+                        ></div>
+                    )}
+                    {/* Optional: Overlay for preview background */}
+                    {previewImageUrl && (
+                        <div
+                            className="absolute inset-0 bg-black opacity-40"
+                            onClick={closePreview} // Clicking overlay closes
+                        ></div>
+                    )}
+
+                    {/* Main Image in Preview - Clicking THIS closes */}
+                    {previewImageUrl && (
+                        <img
+                            src={previewImageUrl}
+                            alt="Image Preview"
+                            className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
+                            onClick={closePreview} // Clicking the image itself closes
+                        />
+                    )}
+
+                    {/* Close Button - Clicking THIS closes */}
+                    <button
+                        className="absolute top-4 right-4 text-white z-20 p-2 rounded-full bg-black/40 hover:bg-black/60 transition"
+                        onClick={closePreview} // Clicking the button closes
+                        aria-label="Close Image Preview"
+                    >
+                        <X size={24} />
+                    </button>
                 </div>
             )}
         </DndProvider>
