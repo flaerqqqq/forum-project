@@ -19,4 +19,6 @@ public interface PostService {
     Page<PostDto> findPostsPage(Pageable pageable, PostType type, String creatorPublicId, String categorySlug);
 
     PostDto update(Long postId, String publicId, PostUpdateRequestDto request, List<MultipartFile> newImages, List<String> keepImageUrls);
+
+    void deleteById(String publicId, Long postId);
 }

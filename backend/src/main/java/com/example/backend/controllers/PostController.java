@@ -58,6 +58,7 @@ public class PostController {
     }
 
     @PutMapping("/{postId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<PostResponseDto> update(@PathVariable Long postId,
                                                   @RequestPart("data") PostUpdateRequestDto request,
                                                   @RequestParam(value = "newImages", required = false) List<MultipartFile> newImages,
@@ -65,5 +66,13 @@ public class PostController {
                                                   @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         PostDto updatedPostDto = postService.update(postId, customUserDetails.getPublicId(), request, newImages, keepImageUrls);
         return ResponseEntity.ok(postMapper.toResponseDto(updatedPostDto));
+    }
+
+    @DeleteMapping("/{postId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Void> delete(@PathVariable Long postId,
+                                       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        postService.deleteById(customUserDetails.getPublicId(), postId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

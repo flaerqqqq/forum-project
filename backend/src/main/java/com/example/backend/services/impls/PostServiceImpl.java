@@ -117,6 +117,16 @@ public class PostServiceImpl implements PostService {
         return postMapper.toDto(updatedPost);
     }
 
+    @Override
+    public void deleteById(String publicId, Long postId) {
+        Post post = findPostById(postId);
+        User user = findUserByPublicId(publicId);
+
+        checkAuthorizedUser(user, post);
+
+        postRepository.delete(post);
+    }
+
     private void deleteImageFromStorage(List<PostImage> imagesToBeDeleted) {
         if (!imagesToBeDeleted.isEmpty()) {
             for (PostImage image : imagesToBeDeleted) {
