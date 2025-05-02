@@ -12,12 +12,15 @@ import AuthOnlyRoute from "./routes/AuthOnlyRoute.jsx";
 import { UserProvider } from "./contexts/UserContext.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import 'react-toastify/dist/ReactToastify.css';
-import Moderator from "./Moderator.jsx";
 import ModeratorOnlyRoute from "./routes/ModeratorOnlyRoute.jsx";
 import CategoryPage from "./pages/CategoryPage";
 import ContentLayout from "./layouts/ContentLayout.jsx";
 import ExploreCategories from "./pages/ExploreCategories.jsx";
-import CategoryModeratorsPage from "./pages/CategoryModeratorsPage.jsx"; // Don't forget to import Toastify styles
+import CategoryModeratorsPage from "./pages/CategoryModeratorsPage.jsx";
+import CreatePostPage from "./pages/CreatePostPage.jsx";
+import {DndProvider} from "react-dnd";
+import {HTML5Backend} from "react-dnd-html5-backend";
+import Moderator from "./pages/Moderator.jsx";
 
 function App() {
     return (
@@ -32,6 +35,11 @@ function App() {
                             <Route path="/categories/:categorySlug" element={<CategoryPage />} />
                             <Route path="/categories" element={<ExploreCategories />} />
                             <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
+                            <Route path="/categories/:categorySlug/create-post" element={
+                                <AuthOnlyRoute>
+                                    <CreatePostPage />
+                                </AuthOnlyRoute>
+                            } />
                             <Route path="/moderator" element={
                                 <ModeratorOnlyRoute>
                                     <Moderator />

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import UserReports from "./components/UserReports.jsx";
+import UserReports from "../components/UserReports.jsx";
 
 const ModeratorPage = () => {
     const [activeComponent, setActiveComponent] = useState('reports'); // State to handle active component
