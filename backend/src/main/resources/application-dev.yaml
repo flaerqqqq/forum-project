@@ -26,7 +26,7 @@ server:
     max-swallow-size: 100MB
 
 jwt:
-  expiration: 3600000
+  expiration: 36000000
   secret: ${JWT_SECRET}
 
 gmail:
@@ -43,6 +43,8 @@ aws:
     name: ${CATEGORY_BANNERS_BUCKER_NAME}
   category-icons:
     name: ${CATEGORY_ICONS_BUCKER_NAME}
+  post-images:
+    name: ${POST_IMAGES_BUCKET_NAME}
 
 api:
   front-end:

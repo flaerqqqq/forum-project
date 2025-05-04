@@ -10,11 +10,13 @@ const MainLayout = () => {
 
     return (
         <>
-            <Header />
+            <div className="sticky top-0 z-40 w-full">
+                <Header />
+            </div>
             <main className="flex">
                 {/* Conditionally render the fixed left sidebar */}
                 {!isAuthPage && (
-                    <div className="fixed top-14 left-0 h-screen w-64 bg-white shadow-md z-10">
+                    <div className="fixed top-14 left-0 h-screen w-64  bg-white shadow-md z-40">
                         <SidebarMenu />
                     </div>
                 )}

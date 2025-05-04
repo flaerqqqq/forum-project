@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { useUser } from "../contexts/UserContext.jsx";
-import CategoryUpdateModal from './CategoryUpdateModal'; // <-- Import the modal
 
 const CategoryInfoSidebar = ({ category }) => {
     const { user: currentUser } = useUser();
@@ -12,8 +11,36 @@ const CategoryInfoSidebar = ({ category }) => {
     const [moderators, setModerators] = useState([]);
     const [loadingModerators, setLoadingModerators] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false); // <-- Modal state
-    const navigate = useNavigate(); // <-- Initialize navigate
+    const sidebarRef = useRef(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!sidebarRef.current) return;
+
+            const sidebar = sidebarRef.current;
+            const sidebarRect = sidebar.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+
+            if (sidebarRect.top <= 80) {
+                if (sidebar.scrollHeight > viewportHeight - 80) {
+                    sidebar.style.height = `${viewportHeight - 80}px`;
+                    sidebar.style.overflowY = 'auto';
+                    sidebar.classList.add('scrollbar-thin-light');
+                }
+            } else {
+                sidebar.style.height = '';
+                sidebar.style.overflowY = '';
+                sidebar.classList.remove('scrollbar-thin-light');
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        handleScroll();
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [category, moderators]);
 
     const getAvatarColorClass = (username) => {
         if (!username) return 'bg-gray-medium';
@@ -30,10 +57,9 @@ const CategoryInfoSidebar = ({ category }) => {
     const getInitials = (name) => {
         if (!name) return '';
         const parts = name.split(' ');
-        if (parts.length === 1) {
-            return parts[0].charAt(0).toUpperCase();
-        }
-        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        return parts.length === 1
+            ? parts[0].charAt(0).toUpperCase()
+            : (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     };
 
     useEffect(() => {
@@ -78,11 +104,6 @@ const CategoryInfoSidebar = ({ category }) => {
         fetchModerators();
     }, [category?.id]);
 
-    const handleCategoryUpdate = (updatedCategorySlug) => {
-        // Redirect to the updated category's page using navigate
-        window.location.reload();
-    };
-
     if (initialLoading && !category) {
         return (
             <div className="flex items-center justify-center min-h-[300px] bg-white border border-border rounded-md shadow-sm p-6">
@@ -100,136 +121,124 @@ const CategoryInfoSidebar = ({ category }) => {
     }
 
     return (
-        <div className="bg-white border border-border rounded-md overflow-hidden shadow-sm">
-            {category.bannerUrl && (
-                <img
-                    src={category.bannerUrl}
-                    alt={`${category.name} Banner`}
-                    className="w-full h-24 object-cover rounded-t-md"
-                />
-            )}
-
-            <div className="p-6 flex flex-col gap-4">
-                <div>
-                    <h2 className="text-xl font-heading text-black mb-4">About Category</h2>
-                    <p className="text-sm text-gray-darker">{category.description || "No description provided."}</p>
-                </div>
-
-                <hr className="my-2 border-border" />
-
-                <div className="flex items-center justify-between text-sm text-gray-darker">
-                    <span>Members</span>
-                    <span className="font-semibold text-black">{category.followersCount}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-darker">
-                    <span>Created</span>
-                    <span className="font-semibold text-black">{new Date(category.createdAt).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                    })}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-darker">
-                    <span>Visibility</span>
-                    <span className="capitalize font-semibold text-black">{category.visibility.toLowerCase().replace('_', ' ')}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-darker">
-                    <span>Who can post</span>
-                    <span className="capitalize font-semibold text-black">{category.postPermission.toLowerCase().replace('_', ' ')}</span>
-                </div>
-
-                {creator && (
-                    <div className="text-sm text-gray-darker">
-                        Created by{" "}
-                        <Link
-                            to={`/users/${creator.username}`}
-                            className="text-accent-green hover:underline"
-                        >
-                            {creator.displayName || creator.username}
-                        </Link>
-                    </div>
+        <div className="sticky top-16" style={{ marginBottom: '16px' }}>
+            <div
+                ref={sidebarRef}
+                className="bg-gray-50 border   border-border rounded-xl overflow-hidden "
+            >
+                {category.bannerUrl && (
+                    <img
+                        src={category.bannerUrl}
+                        alt={`${category.name} Banner`}
+                        className="w-full h-24 object-cover"
+                    />
                 )}
 
-                <hr className="mt-2 border-border" />
+                <div className="p-6 flex flex-col gap-4">
+                    <div>
+                        <h2 className="text-xl font-heading text-black mb-4">About Category</h2>
+                        <p className="text-sm text-gray-darker">{category.description || "No description provided."}</p>
+                    </div>
 
-                <div>
-                    <h3 className="text-lg font-heading text-black">Moderators</h3>
+                    <hr className="my-2 border-border" />
 
-                    {loadingModerators ? (
-                        <div className="flex justify-center py-4">
-                            <Oval height={30} width={30} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible={true} />
-                        </div>
-                    ) : (
-                        <ul className="space-y-2 mt-4">
-                            {moderators.length > 0 ? (
-                                moderators.map((moderator) => (
-                                    <li key={moderator.id}>
-                                        <Link
-                                            to={`/users/${moderator.userDto?.username}`}
-                                            className="flex items-center space-x-2 py-1 rounded-md hover:bg-gray-lighter transition-colors"
-                                        >
-                                            {moderator.userDto?.avatarUrl ? (
-                                                <img
-                                                    src={moderator.userDto.avatarUrl}
-                                                    alt={`${moderator.userDto?.username}'s Avatar`}
-                                                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                                                />
-                                            ) : (
-                                                <div className={`w-8 h-8 rounded-full ${getAvatarColorClass(moderator.userDto?.username)} flex items-center justify-center text-sm text-white font-semibold flex-shrink-0`}>
-                                                    {getInitials(moderator.userDto?.displayName || moderator.userDto?.username)}
-                                                </div>
-                                            )}
-                                            <div>
-                                                <div className="text-black text-sm">
-                                                    {moderator.userDto?.displayName}
-                                                </div>
-                                                <div className="text-gray-medium text-sm">@{moderator.userDto?.username}</div>
-                                            </div>
-                                        </Link>
-                                    </li>
-                                ))
-                            ) : (
-                                <li className="text-gray-medium text-center">No additional moderators found.</li>
-                            )}
-                        </ul>
-                    )}
+                    <div className="flex items-center justify-between text-sm text-gray-darker">
+                        <span>Members</span>
+                        <span className="font-semibold text-black">{category.followersCount}</span>
+                    </div>
 
-                    {category?.slug && (
-                        <div className="mt-4 text-center space-y-2">
+                    <div className="flex items-center justify-between text-sm text-gray-darker">
+                        <span>Created</span>
+                        <span className="font-semibold text-black">
+                            {new Date(category.createdAt).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                            })}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-gray-darker">
+                        <span>Visibility</span>
+                        <span className="capitalize font-semibold text-black">{category.visibility.toLowerCase().replace('_', ' ')}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-gray-darker">
+                        <span>Who can post</span>
+                        <span className="capitalize font-semibold text-black">{category.postPermission.toLowerCase().replace('_', ' ')}</span>
+                    </div>
+
+                    {creator && (
+                        <div className="text-sm text-gray-darker">
+                            Created by{" "}
                             <Link
-                                to={`/categories/${category.slug}/moderators`}
-                                className="inline-block px-4 py-2 text-sm text-white bg-accent-green rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors"
+                                to={`/users/${creator.username}`}
+                                className="text-accent-green hover:underline"
                             >
-                                View all moderators
+                                {creator.displayName || creator.username}
                             </Link>
-
-                            {/* Visible only to category owner */}
-                            {currentUser?.publicId === category.creatorId && (
-                                <button
-                                    onClick={() => setIsUpdateModalOpen(true)}
-                                    className="inline-block px-4 py-2 text-sm text-accent-green border border-accent-green rounded-md hover:bg-gray-100 transition-colors"
-                                >
-                                    Update category
-                                </button>
-                            )}
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Render Update Modal */}
-            {isUpdateModalOpen && (
-                <CategoryUpdateModal
-                    category={category}
-                    onClose={() => {
-                        setIsUpdateModalOpen(false);
-                        handleCategoryUpdate(category.slug); // Redirect after modal close
-                    }}
-                />
-            )}
+                    <hr className="mt-2 border-border" />
+
+                    <div>
+                        <h3 className="text-lg font-sans text-black">Moderators</h3>
+
+                        {loadingModerators ? (
+                            <div className="flex justify-center py-4">
+                                <Oval height={30} width={30} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible={true} />
+                            </div>
+                        ) : (
+                            <ul className="space-y-2 mt-4">
+                                {moderators.length > 0 ? (
+                                    moderators.map((moderator) => (
+                                        <li key={moderator.id}>
+                                            <Link
+                                                to={`/users/${moderator.userDto?.username}`}
+                                                className="flex items-center space-x-2 py-0.5 rounded-md hover:bg-gray-lighter transition-colors"
+                                            >
+                                                {moderator.userDto?.avatarUrl ? (
+                                                    <img
+                                                        src={moderator.userDto.avatarUrl}
+                                                        alt={`${moderator.userDto?.username}'s Avatar`}
+                                                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className={`w-8 h-8 rounded-full ${getAvatarColorClass(moderator.userDto?.username)} flex items-center justify-center text-sm text-white font-semibold flex-shrink-0`}>
+                                                        {getInitials(moderator.userDto?.displayName || moderator.userDto?.username)}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <div className="text-black text-sm">
+                                                        {moderator.userDto?.displayName}
+                                                    </div>
+                                                    <div className="text-gray-medium text-[13px]">@{moderator.userDto?.username}</div>
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="text-gray-medium text-center">No additional moderators found.</li>
+                                )}
+                            </ul>
+                        )}
+
+                        {category?.slug && (
+                            <div className="mt-4 text-center space-y-2">
+                                <Link
+                                    to={`/categories/${category.slug}/moderators`}
+                                    className="inline-block px-4 py-2 text-sm text-white bg-accent-green rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors"
+                                >
+                                    View all moderators
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="h-4"></div>
+            </div>
         </div>
     );
 };

@@ -13,7 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(config = MapperConfig.class, uses = {
         CategoryFollowMapper.class,
-        CategoryModeratorMapper.class
+        CategoryModeratorMapper.class,
+        PostMapper.class
 })
 public abstract class CategoryMapper {
 

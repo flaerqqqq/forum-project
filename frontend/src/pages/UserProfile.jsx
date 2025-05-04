@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
 import UserNotFound from "../components/UserNotFound.jsx";
@@ -10,6 +11,10 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { isModerator } from "../utils/Auth.js";
 import UserCategories from "../components/UserCategories.jsx";
+import PostsFeed from '../components/PostsFeed.jsx';
+import { ArrowUp } from 'lucide-react';
+
+const userPostsCache = {};
 
 const UserProfile = () => {
     const rawParams = useParams();
@@ -29,6 +34,25 @@ const UserProfile = () => {
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 2000;
     const navigate = useNavigate();
+
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+    const saveUserPostsCache = useCallback((key, sort, posts, loadedCount, scrollY, page, hasMore) => {
+        userPostsCache[`${key}-${sort}`] = { posts, loadedCount, scrollY, page, hasMore, timestamp: Date.now(), sortBy: sort };
+    }, []);
+
+    const getUserPostsCache = useCallback((key, sort) => {
+        const cachedData = userPostsCache[`${key}-${sort}`];
+        if (cachedData) {
+            return cachedData;
+        }
+        return null;
+    }, []);
+
+    const clearUserPostsCache = useCallback((key, sort) => {
+        delete userPostsCache[`${key}-${sort}`];
+    }, []);
+
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -96,6 +120,30 @@ const UserProfile = () => {
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [profileUsername, authenticatedUser, authLoading, retryCount, navigate]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setShowScrollToTop(true);
+            } else {
+                setShowScrollToTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
 
     if (notFound) {
         return (<UserNotFound />);
@@ -256,7 +304,6 @@ const UserProfile = () => {
                     </div>
 
                     <div className="flex flex-col items-center flex-shrink-0 mt-6 sm:mt-0 pl-6">
-                        {/* Dynamically set background color */}
                         <div className={`w-16 h-16 rounded-full ${profileUser.username ? getAvatarColorClass(profileUser.username) : 'bg-gray-medium'} flex items-center justify-center text-white text-2xl font-bold mb-2 overflow-hidden`}>
                             {profileUser.avatarUrl ? (
                                 <img src={profileUser.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
@@ -283,11 +330,13 @@ const UserProfile = () => {
                 </div>
 
                 <div className="mt-8">
-                    {activeSection === 'posts' && (
-                        <div>
-                            <h2 className="text-2xl font-heading text-black mb-4">Posts</h2>
-                            <div className="text-gray-medium">No posts found.</div>
-                        </div>
+                    {activeSection === 'posts' && profileUser?.publicId && (
+                        <PostsFeed
+                            saveHomePostsCache={saveUserPostsCache}
+                            getHomePostsCache={getUserPostsCache}
+                            clearHomePostsCache={clearUserPostsCache}
+                            creatorPublicId={profileUser.publicId}
+                        />
                     )}
                     {activeSection === 'comments' && (
                         <div>
@@ -296,23 +345,34 @@ const UserProfile = () => {
                         </div>
                     )}
 
-                    {activeSection === 'categories' && (
+                    {activeSection === 'categories' && profileUser?.publicId && (
                         <UserCategories userPublicId={profileUser.publicId} />
                     )}
 
-                    {activeSection === 'reports' && (
+                    {activeSection === 'reports' && profileUser?.publicId && (
                         <UserReports userId={profileUser.publicId} />
                     )}
                 </div>
 
             </div>
 
-            {showReportModal && (
+            {showReportModal && profileUser?.publicId && (
                 <ReportUserModal
                     targetPublicId={profileUser.publicId}
                     onClose={() => setShowReportModal(false)}
                 />
             )}
+
+            {showScrollToTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-8 right-8 bg-accent-green hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 flex items-center justify-center"
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp size={20} />
+                </button>
+            )}
+
         </div>
     );
 };

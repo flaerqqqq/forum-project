@@ -12,7 +12,11 @@ public interface S3Service {
 
     void deleteCategoryBanner(String url);
 
+    void deletePostImage(String url);
+
     String uploadCategoryBanner(MultipartFile file);
 
     String uploadCategoryIcon(MultipartFile file);
+
+    String uploadPostImage(MultipartFile file);
 }

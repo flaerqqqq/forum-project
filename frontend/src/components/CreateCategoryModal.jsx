@@ -37,43 +37,40 @@ const CategoryCreateModal = ({ onClose }) => {
     const bannerUrlRef = useRef(null);
 
     useEffect(() => {
-        if (iconUrlRef.current) {
-            URL.revokeObjectURL(iconUrlRef.current);
-            iconUrlRef.current = null;
-        }
-        if (bannerUrlRef.current) {
-            URL.revokeObjectURL(bannerUrlRef.current);
-            bannerUrlRef.current = null;
-        }
+        return () => {
+            if (iconUrlRef.current) URL.revokeObjectURL(iconUrlRef.current);
+            if (bannerUrlRef.current) URL.revokeObjectURL(bannerUrlRef.current);
+        };
+    }, []);
 
+    useEffect(() => {
         let newIconUrl = null;
         let newBannerUrl = null;
 
         if (categoryData.icon) {
             newIconUrl = URL.createObjectURL(categoryData.icon);
             setPreviewIcon(newIconUrl);
+            if (iconUrlRef.current) URL.revokeObjectURL(iconUrlRef.current);
             iconUrlRef.current = newIconUrl;
         } else {
+            if (iconUrlRef.current) URL.revokeObjectURL(iconUrlRef.current);
+            iconUrlRef.current = null;
             setPreviewIcon(null);
         }
 
         if (categoryData.banner) {
             newBannerUrl = URL.createObjectURL(categoryData.banner);
             setPreviewBanner(newBannerUrl);
+            if (bannerUrlRef.current) URL.revokeObjectURL(bannerUrlRef.current);
             bannerUrlRef.current = newBannerUrl;
         } else {
+            if (bannerUrlRef.current) URL.revokeObjectURL(bannerUrlRef.current);
+            bannerUrlRef.current = null;
             setPreviewBanner(null);
         }
 
-        return () => {
-            if (iconUrlRef.current) {
-                URL.revokeObjectURL(iconUrlRef.current);
-            }
-            if (bannerUrlRef.current) {
-                URL.revokeObjectURL(bannerUrlRef.current);
-            }
-        };
     }, [categoryData.icon, categoryData.banner]);
+
 
     const handleNextStep = () => setStep(step + 1);
     const handlePrevStep = () => setStep(step - 1);
@@ -141,11 +138,8 @@ const CategoryCreateModal = ({ onClose }) => {
             if (err.response) {
                 console.error('Error data:', err.response.data);
                 console.error('Error status:', err.response.status);
-                if (err.response.data && err.response.data.body.detail) {
-                    toast.error(`Error creating category: ${err.response.data.body.detail}`);
-                } else {
-                    toast.error(`Error creating category. Status: ${err.response.status}`);
-                }
+                const errorMessage = err.response.data?.body?.detail || `Error creating category. Status: ${err.response.status}`;
+                toast.error(errorMessage);
             } else if (err.request) {
                 toast.error('Error creating category: No response from server.');
             } else {
@@ -158,14 +152,13 @@ const CategoryCreateModal = ({ onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto"
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto p-4" // Changed z-index to z-[999]
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
             <div
                 className="relative bg-white p-6 rounded-xl shadow-xl max-w-lg w-full my-8 max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Exit Button */}
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 text-gray-500 hover:text-black transition-colors"
@@ -186,7 +179,6 @@ const CategoryCreateModal = ({ onClose }) => {
                     </svg>
                 </button>
 
-                {/* Header */}
                 <div className="mb-6">
                     <h3 className="text-2xl font-semibold text-center text-black">
                         {step === 1
@@ -197,7 +189,6 @@ const CategoryCreateModal = ({ onClose }) => {
                     </h3>
                 </div>
 
-                {/* Step 1: Category Details */}
                 {step === 1 && (
                     <div className="flex flex-col items-center">
                         <div className="mb-4 w-full max-w-sm">
@@ -247,7 +238,6 @@ const CategoryCreateModal = ({ onClose }) => {
                     </div>
                 )}
 
-                {/* Step 2: Upload Icon & Banner */}
                 {step === 2 && (
                     <div className="flex flex-col items-center">
                         <div className="mb-2 w-full max-w-sm">
@@ -328,7 +318,6 @@ const CategoryCreateModal = ({ onClose }) => {
                     </div>
                 )}
 
-                {/* Step 3: Permissions */}
                 {step === 3 && (
                     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
                         <div className="mb-4 w-full">
@@ -369,7 +358,6 @@ const CategoryCreateModal = ({ onClose }) => {
                     </div>
                 )}
 
-                {/* Buttons */}
                 <div className="flex justify-between items-center mt-6">
                     {step > 1 && (
                         <button

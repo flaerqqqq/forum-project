@@ -59,4 +59,6 @@ public class UserDto {
     private List<CategoryFollowDto> followedCategories;
 
     private List<CategoryModeratorDto> moderatedCategories;
+
+    private List<PostDto> posts;
 }
