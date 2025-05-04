@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import HomePosts from '../components/HomePosts.jsx';
+import PostsFeed from '../components/PostsFeed.jsx';
 import { ArrowUp } from 'lucide-react';
 
 const homePostsCache = {};
@@ -51,7 +51,7 @@ const Home = () => {
         <div className="min-h-screen bg-gray-50 py-6">
             <div className="container max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                    <HomePosts
+                    <PostsFeed
                         saveHomePostsCache={saveHomePostsCache}
                         getHomePostsCache={getHomePostsCache}
                         clearHomePostsCache={clearHomePostsCache}

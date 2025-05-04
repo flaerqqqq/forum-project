@@ -6,9 +6,13 @@ import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const POSTS_PER_PAGE = 10;
-const HOME_CACHE_KEY = 'home_feed_cache';
+// Use a function to generate cache key based on presence of creatorPublicId
+const getCacheKey = (creatorPublicId) => creatorPublicId ? `user_posts_cache_${creatorPublicId}` : 'home_feed_cache';
 
-const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache }) => {
+// Props for HomePosts:
+// saveHomePostsCache, getHomePostsCache, clearHomePostsCache - Functions for managing cache
+// creatorPublicId - Optional prop for filtering posts by creator
+const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache, creatorPublicId }) => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -26,6 +30,7 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
     const isRestoringScroll = useRef(false);
     const isRestoringFromCache = useRef(false);
 
+    // Function to fetch posts from the API
     const fetchPosts = useCallback(async (pageNumber = 0, size = POSTS_PER_PAGE, currentSortBy = sortBy, append = true) => {
         if (isRestoringFromCache.current) {
             return [];
@@ -36,13 +41,20 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
         }
         setError(null);
 
+        const params = {
+            page: pageNumber,
+            size: size,
+            sort: currentSortBy
+        };
+
+        // Add creatorPublicId to params if it exists
+        if (creatorPublicId) {
+            params.creatorPublicId = creatorPublicId;
+        }
+
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/posts`, {
-                params: {
-                    page: pageNumber,
-                    size: size,
-                    sort: currentSortBy
-                }
+                params: params
             });
 
             if (res.status === 204 || res.data.content.length === 0) {
@@ -71,9 +83,9 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
             }
 
         } catch (err) {
-            console.error('Error fetching home feed posts:', err);
-            setError('Failed to load home feed posts.');
-            toast.error('Failed to load home feed posts.');
+            console.error('Error fetching posts:', err);
+            setError('Failed to load posts.');
+            toast.error('Failed to load posts.');
             setHasMore(false);
             return [];
         } finally {
@@ -81,14 +93,16 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
                 setLoading(false);
             }
         }
-    }, [sortBy, posts]);
+    }, [sortBy, posts, creatorPublicId]); // Add creatorPublicId to dependencies
 
     useEffect(() => {
         if (!initialMountHandled.current) {
             initialMountHandled.current = true;
 
-            const cachedDataDesc = getHomePostsCache(HOME_CACHE_KEY, 'createdAt,desc');
-            const cachedDataAsc = getHomePostsCache(HOME_CACHE_KEY, 'createdAt,asc');
+            const cacheKey = getCacheKey(creatorPublicId);
+
+            const cachedDataDesc = getHomePostsCache(cacheKey, 'createdAt,desc');
+            const cachedDataAsc = getHomePostsCache(cacheKey, 'createdAt,asc');
 
             let cachedDataToUse = null;
 
@@ -152,7 +166,7 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
                     }, 100);
                 }
 
-                clearHomePostsCache(HOME_CACHE_KEY, cachedDataToUse.sortBy);
+                clearHomePostsCache(cacheKey, cachedDataToUse.sortBy);
             } else {
                 setPage(0);
                 setPosts([]);
@@ -161,13 +175,16 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
                 fetchPosts(0, POSTS_PER_PAGE, sortBy, false);
             }
         }
-    }, [sortBy, fetchPosts, getHomePostsCache, clearHomePostsCache]);
+    }, [creatorPublicId, sortBy, fetchPosts, getHomePostsCache, clearHomePostsCache]); // Add creatorPublicId to dependencies
 
     const prevSortRef = useRef(sortBy);
+    // Add ref for previous creatorPublicId
+    const prevCreatorRef = useRef(creatorPublicId);
 
     useEffect(() => {
+        // Trigger fetch if sort or creatorPublicId changes after initial mount
         if (initialMountHandled.current &&
-            prevSortRef.current !== sortBy &&
+            (prevSortRef.current !== sortBy || prevCreatorRef.current !== creatorPublicId) &&
             !isRestoringFromCache.current) {
 
             setPage(0);
@@ -178,7 +195,8 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
         }
 
         prevSortRef.current = sortBy;
-    }, [sortBy]);
+        prevCreatorRef.current = creatorPublicId; // Update previous creatorPublicId ref
+    }, [sortBy, creatorPublicId]); // Add creatorPublicId to dependencies
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -211,9 +229,10 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
     }, [handleScroll]);
 
     const saveCurrentStateToCache = useCallback(() => {
+        const cacheKey = getCacheKey(creatorPublicId);
         if (posts.length > 0) {
             saveHomePostsCache(
-                HOME_CACHE_KEY,
+                cacheKey,
                 sortBy,
                 posts,
                 posts.length,
@@ -222,12 +241,13 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
                 hasMore
             );
         }
-    }, [sortBy, posts, page, hasMore, saveHomePostsCache]);
+    }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId]); // Add creatorPublicId to dependencies
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
             setSortBy(newSortBy);
-            clearHomePostsCache(HOME_CACHE_KEY, newSortBy);
+            const cacheKey = getCacheKey(creatorPublicId);
+            clearHomePostsCache(cacheKey, newSortBy);
             setPage(0);
             setPosts([]);
             setHasMore(true);
@@ -292,4 +312,4 @@ const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache 
     );
 };
 
-export default HomePosts;
+export default PostsFeed;
