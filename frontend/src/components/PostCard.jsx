@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-// Receive saveCurrentStateToCache function as prop
 const PostCard = ({ post, saveCurrentStateToCache }) => {
     const {
         id,
@@ -12,7 +11,7 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
         createdAt,
         commentsCount,
         creator,
-        category, // Access category directly from post
+        category,
     } = post;
 
     const location = useLocation();
@@ -79,21 +78,18 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
 
     const currentImageUrl = images[currentImageIndex]?.url;
 
-    // Function to call the save cache function passed from parent
     const handleLinkClick = () => {
         console.log('PostCard Link clicked, calling saveCurrentStateToCache.');
         if (saveCurrentStateToCache) {
-            saveCurrentStateToCache(); // Call the function provided by CategoryPosts
+            saveCurrentStateToCache();
         }
     };
 
-    // Removed the old saveHistoryState function as it's no longer needed
+    const snippetLineClampClass = images.length > 0 ? 'line-clamp-2' : 'line-clamp-5';
 
 
     return (
         <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100 overflow-hidden">
-            {/* Add onClick handler to the Link */}
-            {/* Ensure category slug is available before rendering the Link to avoid errors */}
             {category?.slug && (
                 <Link to={postDetailUrl} className="block no-underline text-inherit hover:no-underline focus:no-underline" onClick={handleLinkClick}>
                     <div className="text-xs text-gray-600 mb-1">
@@ -110,11 +106,11 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                         {new Date(createdAt).toLocaleDateString()}
                     </div>
 
-                    <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline break-words" style={{ wordBreak: 'break-all' }}>
+                    <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline break-words" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {title}
                     </div>
 
-                    <p className="text-gray-700 text-base mb-3 line-clamp-2 break-words" style={{ wordBreak: 'break-all' }}>
+                    <p className={`text-gray-700 text-base mb-3 ${snippetLineClampClass} break-words`} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {snippet}
                     </p>
 
@@ -186,7 +182,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
 
 
             <div className="flex items-center text-sm text-gray-600 gap-2 mt-2">
-                {/* Ensure category slug is available for the comments link too */}
                 {category?.slug && (
                     <Link to={`${postDetailUrl}#comments`} className="flex items-center text-gray-600 hover:underline">
                         <MessageCircle size={16} className="mr-1" />

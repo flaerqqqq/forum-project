@@ -6,8 +6,9 @@ import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const POSTS_PER_PAGE = 10;
+const HOME_CACHE_KEY = 'home_feed_cache';
 
-const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsCache, clearCategoryPostsCache }) => {
+const HomePosts = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache }) => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -38,7 +39,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/posts`, {
                 params: {
-                    categorySlug,
                     page: pageNumber,
                     size: size,
                     sort: currentSortBy
@@ -71,9 +71,9 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             }
 
         } catch (err) {
-            console.error('Error fetching posts:', err);
-            setError('Failed to load posts.');
-            toast.error('Failed to load posts.');
+            console.error('Error fetching home feed posts:', err);
+            setError('Failed to load home feed posts.');
+            toast.error('Failed to load home feed posts.');
             setHasMore(false);
             return [];
         } finally {
@@ -81,14 +81,14 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 setLoading(false);
             }
         }
-    }, [categorySlug, sortBy, posts]);
+    }, [sortBy, posts]);
 
     useEffect(() => {
         if (!initialMountHandled.current) {
             initialMountHandled.current = true;
 
-            const cachedDataDesc = getCategoryPostsCache(categorySlug, 'createdAt,desc');
-            const cachedDataAsc = getCategoryPostsCache(categorySlug, 'createdAt,asc');
+            const cachedDataDesc = getHomePostsCache(HOME_CACHE_KEY, 'createdAt,desc');
+            const cachedDataAsc = getHomePostsCache(HOME_CACHE_KEY, 'createdAt,asc');
 
             let cachedDataToUse = null;
 
@@ -97,7 +97,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             } else if (cachedDataAsc && cachedDataAsc.posts && cachedDataAsc.posts.length > 0) {
                 cachedDataToUse = cachedDataAsc;
             }
-
 
             if (cachedDataToUse) {
                 isRestoringFromCache.current = true;
@@ -153,7 +152,7 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                     }, 100);
                 }
 
-                clearCategoryPostsCache(categorySlug, cachedDataToUse.sortBy);
+                clearHomePostsCache(HOME_CACHE_KEY, cachedDataToUse.sortBy);
             } else {
                 setPage(0);
                 setPosts([]);
@@ -162,14 +161,13 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 fetchPosts(0, POSTS_PER_PAGE, sortBy, false);
             }
         }
-    }, [categorySlug, sortBy, fetchPosts, getCategoryPostsCache, clearCategoryPostsCache]);
+    }, [sortBy, fetchPosts, getHomePostsCache, clearHomePostsCache]);
 
-    const prevCategoryRef = useRef(categorySlug);
     const prevSortRef = useRef(sortBy);
 
     useEffect(() => {
         if (initialMountHandled.current &&
-            (prevCategoryRef.current !== categorySlug || prevSortRef.current !== sortBy) &&
+            prevSortRef.current !== sortBy &&
             !isRestoringFromCache.current) {
 
             setPage(0);
@@ -179,9 +177,8 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             fetchPosts(0, POSTS_PER_PAGE, sortBy, false);
         }
 
-        prevCategoryRef.current = categorySlug;
         prevSortRef.current = sortBy;
-    }, [categorySlug, sortBy]);
+    }, [sortBy]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -214,9 +211,9 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     }, [handleScroll]);
 
     const saveCurrentStateToCache = useCallback(() => {
-        if (categorySlug && posts.length > 0) {
-            saveCategoryPostsCache(
-                categorySlug,
+        if (posts.length > 0) {
+            saveHomePostsCache(
+                HOME_CACHE_KEY,
                 sortBy,
                 posts,
                 posts.length,
@@ -225,12 +222,12 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 hasMore
             );
         }
-    }, [categorySlug, sortBy, posts, page, hasMore, saveCategoryPostsCache]);
+    }, [sortBy, posts, page, hasMore, saveHomePostsCache]);
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
             setSortBy(newSortBy);
-            clearCategoryPostsCache(categorySlug, newSortBy);
+            clearHomePostsCache(HOME_CACHE_KEY, newSortBy);
             setPage(0);
             setPosts([]);
             setHasMore(true);
@@ -295,4 +292,4 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     );
 };
 
-export default CategoryPosts;
+export default HomePosts;

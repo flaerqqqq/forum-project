@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react'; // Import useCallback
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -10,6 +10,7 @@ import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
 import CategoryPosts from "../components/CategoryPosts.jsx";
 import CategoryUpdateModal from '../components/CategoryUpdateModal';
+import { ArrowUp } from 'lucide-react';
 
 const categoryPostsCache = new Map();
 
@@ -29,26 +30,46 @@ const CategoryPage = () => {
 
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+
     const saveCategoryPostsCache = useCallback((slug, sort, posts, loadedCount, scrollY, currentPage, hasMore) => {
-        console.log('Saving to cache:', slug, sort, posts, loadedCount, scrollY, currentPage, hasMore);
         const key = `${slug}_${sort}`;
-        categoryPostsCache.set(key, { posts, loadedCount, scrollY, currentPage, hasMore });
-        console.log('Saved to cache:', key, categoryPostsCache.get(key));
+        categoryPostsCache.set(key, { posts, loadedCount, scrollY, currentPage, hasMore, sortBy: sort });
     }, []);
 
     const getCategoryPostsCache = useCallback((slug, sort) => {
         const key = `${slug}_${sort}`;
         const cachedData = categoryPostsCache.get(key);
-        console.log('Attempting to get from cache:', key, cachedData);
         return cachedData;
     }, []);
 
     const clearCategoryPostsCache = useCallback((slug, sort) => {
         const key = `${slug}_${sort}`;
-        const deleted = categoryPostsCache.delete(key);
-        console.log('Cleared cache for:', key, 'Deleted:', deleted);
+        categoryPostsCache.delete(key);
     }, []);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setShowScrollToTop(true);
+            } else {
+                setShowScrollToTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
 
     const fetchCategoryDetails = async () => {
         setLoadingCategory(true);
@@ -111,7 +132,7 @@ const CategoryPage = () => {
         };
 
         checkFollowStatus();
-    }, [category?.id, user?.publicId, userLoading, category]); // Depend on category and user
+    }, [category?.id, user?.publicId, userLoading, category]);
 
     const handleFollowClick = async () => {
         if (!user) {
@@ -264,14 +285,14 @@ const CategoryPage = () => {
                                 </button>
                             )}
                         </div>
-
-                        <CategoryPosts
-                            categorySlug={categorySlug}
-                            saveCategoryPostsCache={saveCategoryPostsCache}
-                            getCategoryPostsCache={getCategoryPostsCache}
-                            clearCategoryPostsCache={clearCategoryPostsCache}
-                        />
-
+                        {category?.slug && (
+                            <CategoryPosts
+                                categorySlug={categorySlug}
+                                saveCategoryPostsCache={saveCategoryPostsCache}
+                                getCategoryPostsCache={getCategoryPostsCache}
+                                clearCategoryPostsCache={clearCategoryPostsCache}
+                            />
+                        )}
                     </div>
 
                     <div className="w-80 flex-shrink-0 sticky top-16 self-start">
@@ -285,6 +306,16 @@ const CategoryPage = () => {
                     category={category}
                     onClose={handleUpdateModalClose}
                 />
+            )}
+
+            {showScrollToTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-8 right-8 bg-accent-green hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 flex items-center justify-center"
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp size={20} />
+                </button>
             )}
 
         </div>
