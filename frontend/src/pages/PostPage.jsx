@@ -3,8 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
-import { MessageCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
+import { useUser } from '../contexts/UserContext';
 
 const formatRelativeTime = (timestamp) => {
     const now = new Date();
@@ -33,15 +34,20 @@ const formatRelativeTime = (timestamp) => {
 const PostPage = () => {
     const { postId } = useParams();
     const navigate = useNavigate();
+    const { user: authenticatedUser, loading: authLoading } = useUser();
 
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
     const previewImageRef = useRef(null);
+    // Removed imageGalleryRef
+
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const dropdownButtonRef = useRef(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -67,6 +73,22 @@ const PostPage = () => {
     useEffect(() => {
         fetchPost();
     }, [postId]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                dropdownButtonRef.current && !dropdownButtonRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Removed scroll event listener useEffect
 
     const showPrevImage = (e) => {
         e.stopPropagation();
@@ -117,8 +139,16 @@ const PostPage = () => {
 
     const currentImageUrl = post?.images?.[currentImageIndex]?.url;
 
-    // This block already handles the page-level loading spinner
-    if (loading) {
+    const isPostOwner = authenticatedUser && post && authenticatedUser.publicId === post.creator.publicId;
+
+    const handleUpdatePostClick = () => {
+        if (post && post.category && post.id) {
+            navigate(`/categories/${post.category.slug}/posts/${post.id}/edit`);
+            setShowDropdown(false);
+        }
+    };
+
+    if (loading || authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
                 <div className="flex flex-col items-center gap-4">
@@ -149,23 +179,55 @@ const PostPage = () => {
         );
     }
 
+
     return (
         <div className="bg-background-light-gray text-black min-h-screen">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-grow">
-                        <div className="text-xs text-gray-600">
-                            {post.category?.name && (
-                                <Link to={`/categories/${post.category.slug}`} className="text-gray-800 font-medium hover:underline font-semibold">
-                                    {post.category.name}
+                        {/* Metadata and Dropdown */}
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="text-xs text-gray-600">
+                                {post.category?.name && (
+                                    <Link to={`/categories/${post.category.slug}`} className="text-gray-800 font-medium hover:underline font-semibold">
+                                        {post.category.name}
+                                    </Link>
+                                )}
+                                {' • '}
+                                <Link to={`/users/${post.creator.username}`} className="hover:underline text-gray-600">
+                                    {post.creator.username}
                                 </Link>
-                            )}
-                            {' • '}
-                            <Link to={`/users/${post.creator.username}`} className="hover:underline text-gray-600">
-                                {post.creator.username}
-                            </Link>
-                            {' • '}
-                            {formatRelativeTime(post.createdAt)}
+                                {' • '}
+                                {formatRelativeTime(post.createdAt)}
+                            </div>
+
+                            {/* Dropdown Button and Menu */}
+                            <div className="relative">
+                                <button
+                                    ref={dropdownButtonRef}
+                                    className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
+                                    onClick={() => setShowDropdown(prev => !prev)}
+                                    aria-label="Post options"
+                                >
+                                    <MoreHorizontal size={20} />
+                                </button>
+                                {showDropdown && (
+                                    <div
+                                        ref={dropdownRef}
+                                        className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
+                                    >
+                                        {isPostOwner && (
+                                            <button
+                                                onClick={handleUpdatePostClick}
+                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                            >
+                                                Update post
+                                            </button>
+                                        )}
+                                        {/* Add other post options here if needed */}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Post Title - Matched PostCard style */}
@@ -185,11 +247,12 @@ const PostPage = () => {
                         {post.images && post.images.length > 0 && (
                             <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-6">
                                 <div
-                                    className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
-                                    style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                                    // Removed ref={imageGalleryRef}
+                                    className="flex h-full transition-transform ease-in-out duration-300 relative z-10" // Removed overflow-x-auto, snap classes
+                                    style={{ transform: `translateX(-${currentImageIndex * 100}%)` }} // Re-added transform style
                                 >
                                     {post.images.map((image, index) => (
-                                        <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative">
+                                        <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative"> {/* Removed snap-center */}
                                             {image?.url && (
                                                 <div
                                                     className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-110"
@@ -212,6 +275,7 @@ const PostPage = () => {
                                     ))}
                                 </div>
 
+                                {/* Re-added Prev/Next Buttons */}
                                 {showPrevButton && (
                                     <button
                                         onClick={showPrevImage}
@@ -228,6 +292,7 @@ const PostPage = () => {
                                         <ChevronRight size={24} />
                                     </button>
                                 )}
+
 
                                 {post.images.length > 1 && (
                                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20 bg-black/30 rounded-full px-3 py-1">
@@ -265,7 +330,7 @@ const PostPage = () => {
 
             {showPreview && currentImageUrl && (
                 <div
-                    className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-[999] overflow-y-auto"
+                    className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-[999] overflow-hidden"
                     onClick={closePreview}
                 >
                     <div

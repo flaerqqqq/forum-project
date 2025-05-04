@@ -40,7 +40,7 @@ function App() {
                                     <CreatePostPage />
                                 </AuthOnlyRoute>
                             } />
-                            <Route path="/categories/:categorySlug/posts/:postId/update-post" element={
+                            <Route path="/categories/:categorySlug/posts/:postId/edit" element={
                                 <AuthOnlyRoute>
                                     <UpdatePostPage />
                                 </AuthOnlyRoute>
