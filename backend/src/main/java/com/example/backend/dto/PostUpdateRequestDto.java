@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,4 +27,6 @@ public class PostUpdateRequestDto {
 
     @NotNull(message = "Post type is required")
     private PostType type;
+
+    List<String> imageOrder;
 }

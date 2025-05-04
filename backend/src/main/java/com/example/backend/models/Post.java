@@ -42,6 +42,7 @@ public class Post {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OrderBy("order ASC")
     private List<PostImage> postImages;
 
     @ManyToOne

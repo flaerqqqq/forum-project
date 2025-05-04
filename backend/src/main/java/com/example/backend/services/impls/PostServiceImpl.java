@@ -1,5 +1,6 @@
 package com.example.backend.services.impls;
 
+import com.amazonaws.services.dynamodbv2.xspec.S;
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.dto.PostUpdateRequestDto;
@@ -25,8 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -101,31 +103,60 @@ public class PostServiceImpl implements PostService {
 
         checkAuthorizedUser(user, post);
 
-        List<PostImage> keepImages = new ArrayList<>();
-        List<PostImage> imagesToBeDeleted = new ArrayList<>();
+        List<String> imageOrder = request.getImageOrder();
 
-        if (keepImageUrls != null && !keepImageUrls.isEmpty()) {
-            keepImages = post.getPostImages().stream()
-                    .filter(postImage -> keepImageUrls.contains(postImage.getUrl()))
-                    .toList();
-
-            imagesToBeDeleted = post.getPostImages().stream()
-                    .filter(postImage -> !keepImageUrls.contains(postImage.getUrl()))
-                    .toList();
+        if (imageOrder == null) {
+            imageOrder = Collections.emptyList();
         }
 
-        List<PostImage> combinedPostImages = new ArrayList<>(keepImages);
+        Map<String, PostImage> originalImagesByUrl = post.getPostImages().stream()
+                .collect(Collectors.toMap(PostImage::getUrl, Function.identity()));
 
+        Map<String, PostImage> newImagesByNames = new TreeMap<>();
         if (newImages != null && !newImages.isEmpty()) {
-            List<PostImage> savedPostImages = createAndUploadPostImages(newImages, post);
-            combinedPostImages.addAll(savedPostImages);
+            for (MultipartFile image : newImages) {
+                String imageName = image.getOriginalFilename();
+                String imageUrl = s3Service.uploadPostImage(image);
+                Integer[] imageDimensions = ImageUtils.getImageWidthAndHeight(image);
+
+                PostImage postImage = PostImage.builder()
+                        .post(post)
+                        .url(imageUrl)
+                        .width(imageDimensions[0])
+                        .height(imageDimensions[1])
+                        .build();
+                newImagesByNames.put(imageName, postImage);
+            }
         }
+
+        List<PostImage> orderedPostImages = new ArrayList<>();
+
+        List<PostImage> imagesToKeepInOrder = new ArrayList<>();
+
+        for (int i = 0; i < imageOrder.size(); i++) {
+            String identifier = imageOrder.get(i);
+            if (originalImagesByUrl.containsKey(identifier)) {
+                PostImage existingImage = originalImagesByUrl.get(identifier);
+                existingImage.setOrder(i);
+                orderedPostImages.add(existingImage);
+                imagesToKeepInOrder.add(existingImage);
+            } else if (newImagesByNames.containsKey(identifier)) {
+                PostImage newImageEntity = newImagesByNames.get(identifier);
+                newImageEntity.setOrder(i);
+                orderedPostImages.add(newImageEntity);
+            }
+        }
+
+        List<PostImage> imagesToBeDeleted = post.getPostImages().stream()
+                .filter(originalImage -> !imagesToKeepInOrder.contains(originalImage))
+                .collect(Collectors.toList());
 
         deleteImageFromStorage(imagesToBeDeleted);
 
         postImageRepository.deleteAll(imagesToBeDeleted);
 
-        post.setPostImages(combinedPostImages);
+        post.setPostImages(orderedPostImages);
+
         post.setTitle(request.getTitle());
         post.setBody(request.getBody());
         post.setType(request.getType());
@@ -185,7 +216,8 @@ public class PostServiceImpl implements PostService {
     private List<PostImage> createAndUploadPostImages(List<MultipartFile> images, Post post) {
         if (images.isEmpty()) return List.of();
         List<PostImage> postImages = new ArrayList<>();
-        for (MultipartFile image : images) {
+        for (int i = 0; i < images.size(); i++) {
+            MultipartFile image = images.get(i);
             Integer[] dimensions = ImageUtils.getImageWidthAndHeight(image);
             String url = s3Service.uploadPostImage(image);
             PostImage postImage = PostImage.builder()
@@ -193,6 +225,7 @@ public class PostServiceImpl implements PostService {
                     .width(dimensions[0])
                     .height(dimensions[1])
                     .post(post)
+                    .order(i)
                     .build();
             postImages.add(postImage);
         }

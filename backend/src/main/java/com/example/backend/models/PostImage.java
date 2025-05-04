@@ -25,6 +25,9 @@ public class PostImage {
     @Column(nullable = false)
     private Integer height;
 
+    @Column(name = "image_order")
+    private Integer order;
+
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
