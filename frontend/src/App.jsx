@@ -19,6 +19,7 @@ import CategoryModeratorsPage from "./pages/CategoryModeratorsPage.jsx";
 import CreatePostPage from "./pages/CreatePostPage.jsx";
 import Moderator from "./pages/Moderator.jsx";
 import PostPage from "./pages/PostPage.jsx";
+import UpdatePostPage from "./pages/UpdatePostPage.jsx";
 
 function App() {
     return (
@@ -37,6 +38,11 @@ function App() {
                             <Route path="/categories/:categorySlug/create-post" element={
                                 <AuthOnlyRoute>
                                     <CreatePostPage />
+                                </AuthOnlyRoute>
+                            } />
+                            <Route path="/categories/:categorySlug/posts/:postId/update-post" element={
+                                <AuthOnlyRoute>
+                                    <UpdatePostPage />
                                 </AuthOnlyRoute>
                             } />
                             <Route path="/moderator" element={

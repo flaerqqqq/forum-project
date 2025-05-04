@@ -79,8 +79,8 @@ const PopularCategoriesSidebar = () => {
 
     return (
         <div className="rounded-lg ">
-            <h2 className="text-xl font-heading text-black px-2 ">Categories</h2>
-            <ul className="space-y-2">
+            <h2 className="text-xl font-heading text-black px-2 ">Popular</h2>
+            <ul className="space-y-1">
                 {popularCategories.map(category => (
                     <li key={category.id}>
                         <button
@@ -99,7 +99,7 @@ const PopularCategoriesSidebar = () => {
                                 </div>
                             )}
                             <div className="flex flex-col flex-grow">
-                                <span className="font-medium text-black">c/{category.name}</span>
+                                <span className="text-sm font-sans text-black">c/{category.name}</span>
                             </div>
                         </button>
                     </li>
