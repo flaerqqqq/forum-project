@@ -21,6 +21,11 @@ spring:
       max-request-size: 5MB
       resolve-lazily: true
 
+logging:
+  level:
+    org.springframework.data.elasticsearch: DEBUG
+    org.elasticsearch.client: DEBUG
+
 server:
   tomcat:
     max-swallow-size: 100MB
