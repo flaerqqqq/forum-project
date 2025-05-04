@@ -4,10 +4,9 @@
 -- Delete existing data from dependent tables first to avoid foreign key constraints
 DELETE FROM user_reactions WHERE TRUE; -- Assuming this depends on users, posts (not in script)
 DELETE FROM reports WHERE TRUE; -- Assuming this depends on users, posts/comments (not in script)
+DELETE FROM posts WHERE TRUE; -- Adding delete for posts
 DELETE FROM category_moderators WHERE TRUE; -- Depends on users and categories
 DELETE FROM category_follows WHERE TRUE; -- Depends on users and categories
--- DELETE FROM posts WHERE TRUE; -- If posts existed, you'd need to delete them
--- DELETE FROM comments WHERE TRUE; -- If comments existed, you'd need to delete them
 DELETE FROM email_confirm_tokens WHERE TRUE; -- Depends on users
 DELETE FROM avatars WHERE TRUE; -- Depends on users
 DELETE FROM users_roles WHERE true; -- Depends on users and roles
@@ -17,54 +16,48 @@ DELETE FROM roles WHERE true;
 DELETE FROM categories WHERE TRUE;
 DELETE FROM users WHERE true;
 
-SELECT setval('users_seq', 1000, true);
-SELECT setval('categories_id_seq', 1000, true);
-SELECT setval('user_reactions_id_seq', 1000, true);
-SELECT setval('reports_id_seq', 1000, true);
-SELECT setval('category_follows_id_seq', 1000, true);
-SELECT setval('category_moderators_id_seq', 1000, true);
-SELECT setval('avatars_id_seq', 1000, true);
-
-
 -- Reset sequences/identity columns if necessary (syntax varies by database, e.g., for PostgreSQL)
--- Make sure sequences for users, roles, categories, and avatars are reset
--- ALTER SEQUENCE users_id_seq RESTART WITH 1;
--- ALTER SEQUENCE roles_id_seq RESTART WITH 1;
--- ALTER SEQUENCE categories_id_seq RESTART WITH 1;
--- ALTER SEQUENCE avatars_id_seq RESTART WITH 1;
--- etc.
+-- The SELECT setval calls below are used instead of ALTER SEQUENCE RESTART, assuming this is the intended method for this database.
+SELECT setval('users_seq', 1000, true); -- Assuming users_seq is the sequence for users.id
+SELECT setval('categories_id_seq', 1000, true); -- Assuming categories_id_seq is the sequence for categories.id
+SELECT setval('user_reactions_id_seq', 1000, true); -- Assuming user_reactions_id_seq is the sequence for user_reactions.id
+SELECT setval('reports_id_seq', 1000, true); -- Assuming reports_id_seq is the sequence for reports.id
+SELECT setval('category_follows_id_seq', 1000, true); -- Assuming category_follows_id_seq is the sequence for category_follows.id
+SELECT setval('category_moderators_id_seq', 1000, true); -- Assuming category_moderators_id_seq is the sequence for category_moderators.id
+SELECT setval('avatars_id_seq', 1000, true); -- Assuming avatars_id_seq is the sequence for avatars.id
+SELECT setval('posts_id_seq', 1000, true); -- Assuming posts_id_seq is the sequence for posts.id (Added)
 
 -- Insert base roles
 INSERT INTO roles (id, name) VALUES (1, 'ROLE_USER');
 INSERT INTO roles (id, name) VALUES (2, 'ROLE_MODERATOR');
 
--- Insert initial users (IDs 1, 2, 3) - REMOVED avatar_url column
+-- Insert initial users (IDs 1, 2, 3) - CORRECTED
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-             1, 'user1_public_id', 'user1', 'User One', 'user1@example.com', 'password',
-             'Initial user 1 description', 0, 0, 0, 1, NOW(), NOW(), true
+             1, 'user1_public_id', 'user1', 'User One', 'user1@example.com',
+             'password', 'Initial user 1 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-             2, 'user2_public_id', 'user2', 'User Two', 'user2@example.com', 'password',
-             'Initial user 2 description', 0, 0, 0, 1, NOW(), NOW(), true
+             2, 'user2_public_id', 'user2', 'User Two', 'user2@example.com',
+             'password', 'Initial user 2 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 INSERT INTO users (
     id, public_id, username, display_name, email, password, description,
     posts_count, received_likes_count, received_dislikes_count, user_rating,
     registration_date, last_updated_at, is_email_verified
 ) VALUES (
-             3, 'user3_public_id', 'user3', 'User Three', 'user3@example.com', 'password',
-             'Initial user 3 description', 0, 0, 0, 1, NOW(), NOW(), true
+             3, 'user3_public_id', 'user3', 'User Three', 'user3@example.com',
+             'password', 'Initial user 3 description', 0, 0, 0, 1, NOW(), NOW(), true
          );
 
--- Insert 10 more users (IDs 4 through 13) - REMOVED avatar_url column
+-- Insert 10 more users (IDs 4 through 13)
 INSERT INTO users (id, public_id, username, display_name, email, password, description, posts_count, received_likes_count, received_dislikes_count, user_rating, registration_date, last_updated_at, is_email_verified) VALUES
                                                                                                                                                                                                                             (4, 'user4_public_id', 'user4', 'User Four', 'user4@example.com', 'password', 'User 4 description', 0, 0, 0, 1, NOW(), NOW(), true),
                                                                                                                                                                                                                             (5, 'user5_public_id', 'user5', 'User Five', 'user5@example.com', 'password', 'User 5 description', 0, 0, 0, 1, NOW(), NOW(), true),
@@ -110,7 +103,7 @@ INSERT INTO users_roles (user_id, role_id) VALUES (12, 1);
 INSERT INTO users_roles (user_id, role_id) VALUES (13, 1);
 
 
--- Categories (IDs 1 through 12) - unchanged from previous script
+-- Categories (IDs 1 through 12)
 INSERT INTO categories (id, name, slug, visibility, post_permission, description, banner_url, icon_url, followers_count, created_by, created_at, updated_at)
 VALUES
     (1, 'Technology', 'technology', 'PUBLIC', 'EVERYONE', 'All things tech-related.', 'https://forum-category-banners.s3.us-east-1.amazonaws.com/codioful-formerly-gradienta-rKv4HduvzIE-unsplash.jpg', 'https://forum-category-banners.s3.us-east-1.amazonaws.com/19444b9f-36ba-486a-bbc3-f98f1b88680c', 120, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -195,3 +188,34 @@ INSERT INTO category_moderators (user_id, category_id, role, assigned_at) VALUES
                                                                               (11, 7, 'MODERATOR', CURRENT_TIMESTAMP), -- user11 moderates Movies & TV (Category ID 7)
                                                                               (12, 9, 'MODERATOR', CURRENT_TIMESTAMP), -- user12 moderates Food & Cooking (Category ID 9)
                                                                               (13, 10, 'MODERATOR', CURRENT_TIMESTAMP); -- user13 moderates Travel (Category ID 10)
+
+-- Insert sample posts
+INSERT INTO posts (title, body, comments_count, type, created_at, updated_at, user_id, category_id) VALUES
+                                                                                                        ('Latest Breakthroughs in AI', 'Let''s discuss the recent advancements in Artificial Intelligence, especially in machine learning and neural networks.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 1), -- User 1 in Technology (ID 1)
+                                                                                                        ('Review of the New Action RPG', 'Just finished playing the latest action RPG and wanted to share my thoughts. What did you guys think?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 2, 2), -- User 2 in Gaming (ID 2)
+                                                                                                        ('The Physics Behind Black Holes', 'Trying to understand the complex physics involved in black holes. Any experts here?', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 3, 3), -- User 3 in Science (ID 3)
+                                                                                                        ('Best Practices for Python Development', 'Sharing some tips and tricks I''ve learned for writing clean and efficient Python code.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 4, 4), -- User 4 in Programming (ID 4)
+                                                                                                        ('Showcase Your Digital Art', 'Post your latest digital art creations here! Looking for inspiration.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 5, 5), -- User 5 in Art (ID 5)
+                                                                                                        ('Favorite Albums of All Time', 'Let''s talk about those albums that never get old. What are your timeless classics?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 6, 6), -- User 6 in Music (ID 6)
+                                                                                                        ('Upcoming Sci-Fi Movies', 'Excited about the new sci-fi releases? Which ones are you most looking forward to?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 7, 7), -- User 7 in Movies & TV (ID 7)
+                                                                                                        ('Recommendations for Fantasy Novels', 'Looking for a new fantasy series to dive into. Any hidden gems?', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 8, 8), -- User 8 in Books (ID 8)
+                                                                                                        ('Easy Weeknight Dinner Recipes', 'Share your go-to recipes for quick and tasty dinners during the week.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 9, 9), -- User 9 in Food & Cooking (ID 9)
+                                                                                                        ('Backpacking Through Southeast Asia', 'Anyone planning a trip or have experiences to share about backpacking in Southeast Asia?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 10, 10), -- User 10 in Travel (ID 10)
+                                                                                                        ('Training for a Marathon', 'Tips, advice, and motivation needed for training for my first marathon!', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 11, 11), -- User 11 in Sports (ID 11)
+                                                                                                        ('Mindfulness Techniques for Stress Reduction', 'Discussing effective mindfulness practices to help manage stress.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 12, 12), -- User 12 in Health & Fitness (ID 12)
+                                                                                                        ('Latest JavaScript Frameworks', 'What are your thoughts on the newest JavaScript frameworks and libraries?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 13, 1), -- User 13 in Technology (ID 1)
+                                                                                                        ('Best Indie Games of the Year', 'Highlighting some amazing independent games released recently.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1, 2), -- User 1 in Gaming (ID 2)
+                                                                                                        ('The Ethics of Gene Editing', 'A complex topic with many viewpoints. Let''s have a respectful discussion.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 2, 3); -- User 2 in Science (ID 3)
+
+-- Additional posts for variety
+INSERT INTO posts (title, body, comments_count, type, created_at, updated_at, user_id, category_id) VALUES
+                                                                                                        ('Question about SQL Joins', 'I''m struggling to understand the difference between LEFT JOIN and INNER JOIN. Can someone explain with examples?', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 4, 4), -- User 4 in Programming (ID 4)
+                                                                                                        ('Tips for Landscape Photography', 'Sharing some techniques for capturing stunning landscape photos.', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 5, 5), -- User 5 in Art (ID 5)
+                                                                                                        ('Underrated Music Artists', 'Which artists deserve more recognition? Share your hidden gems!', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 6, 6), -- User 6 in Music (ID 6)
+                                                                                                        ('Discussing the Ending of That Show', 'Spoilers ahead! What did you think of the season finale?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 7, 7), -- User 7 in Movies & TV (ID 7)
+                                                                                                        ('Classical Literature Recommendations', 'For those interested in classic books, where should one start?', 0, 'QUESTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 8, 8), -- User 8 in Books (ID 8)
+                                                                                                        ('Baking Bread at Home', 'Sharing my journey and tips for baking sourdough bread.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 9, 9), -- User 9 in Food & Cooking (ID 9)
+                                                                                                        ('Eco-Friendly Travel Tips', 'How to travel sustainably and minimize your environmental impact.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 10, 10), -- User 10 in Travel (ID 10)
+                                                                                                        ('Getting Started with Yoga', 'Beginner tips and resources for those new to yoga.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 11, 12), -- User 11 in Health & Fitness (ID 12)
+                                                                                                        ('Advantages of Cloud Computing', 'Debating the pros and cons of migrating to the cloud.', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 12, 1), -- User 12 in Technology (ID 1)
+                                                                                                        ('Retro Gaming Nostalgia', 'What are your favorite classic video games and why?', 0, 'DISCUSSION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 13, 2); -- User 13 in Gaming (ID 2)

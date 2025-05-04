@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-const PostCard = ({ post }) => {
+// Receive saveCurrentStateToCache function as prop
+const PostCard = ({ post, saveCurrentStateToCache }) => {
     const {
         id,
         title,
@@ -11,8 +12,11 @@ const PostCard = ({ post }) => {
         createdAt,
         commentsCount,
         creator,
-        category,
+        category, // Access category directly from post
     } = post;
+
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const getPlainText = (html) => {
         const div = document.createElement('div');
@@ -75,108 +79,125 @@ const PostCard = ({ post }) => {
 
     const currentImageUrl = images[currentImageIndex]?.url;
 
+    // Function to call the save cache function passed from parent
+    const handleLinkClick = () => {
+        console.log('PostCard Link clicked, calling saveCurrentStateToCache.');
+        if (saveCurrentStateToCache) {
+            saveCurrentStateToCache(); // Call the function provided by CategoryPosts
+        }
+    };
+
+    // Removed the old saveHistoryState function as it's no longer needed
+
+
     return (
         <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100 overflow-hidden">
-            <Link to={postDetailUrl} className="block no-underline text-inherit hover:no-underline focus:no-underline">
-                <div className="text-xs text-gray-600 mb-1">
-                    {category?.name && (
-                        <Link to={`/categories/${category.slug}`} className="text-gray-800 font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
-                            {category.name}
+            {/* Add onClick handler to the Link */}
+            {/* Ensure category slug is available before rendering the Link to avoid errors */}
+            {category?.slug && (
+                <Link to={postDetailUrl} className="block no-underline text-inherit hover:no-underline focus:no-underline" onClick={handleLinkClick}>
+                    <div className="text-xs text-gray-600 mb-1">
+                        {category?.name && (
+                            <Link to={`/categories/${category.slug}`} className="text-gray-800 font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                                {category.name}
+                            </Link>
+                        )}
+                        {' • '}
+                        <Link to={`/users/${creator.username}`} className="hover:underline text-gray-600" onClick={(e) => e.stopPropagation()}>
+                            {creator.username}
                         </Link>
-                    )}
-                    {' • '}
-                    <Link to={`/users/${creator.username}`} className="hover:underline text-gray-600" onClick={(e) => e.stopPropagation()}>
-                        {creator.username}
-                    </Link>
-                    {' • '}
-                    {new Date(createdAt).toLocaleDateString()}
-                </div>
+                        {' • '}
+                        {new Date(createdAt).toLocaleDateString()}
+                    </div>
 
-                <div
-                    className="text-black font-semibold text-xl mb-1 no-underline hover:underline"
-                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                >
-                    {title}
-                </div>
+                    <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline break-words" style={{ wordBreak: 'break-all' }}>
+                        {title}
+                    </div>
 
-                <p
-                    className="text-gray-700 text-base mb-3 line-clamp-2"
-                    style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
-                >
-                    {snippet}
-                </p>
+                    <p className="text-gray-700 text-base mb-3 line-clamp-2 break-words" style={{ wordBreak: 'break-all' }}>
+                        {snippet}
+                    </p>
 
-                {images.length > 0 && (
-                    <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-3">
-                        <div
-                            className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
-                            style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-                        >
-                            {images.map((image, index) => (
-                                <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative">
-                                    {image?.url && (
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-110"
-                                            style={{ backgroundImage: `url(${image.url})` }}
-                                        ></div>
-                                    )}
-                                    {image?.url && (
-                                        <div className="absolute inset-0 bg-black opacity-20"></div>
-                                    )}
+                    {images.length > 0 && (
+                        <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-3">
 
-                                    {image && (
-                                        <img
-                                            src={image.url}
-                                            alt={`slide-${index}`}
-                                            className="max-w-full max-h-full object-contain relative z-10 cursor-pointer"
-                                            onClick={handleImageClick}
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {showPrevButton && (
-                            <button
-                                onClick={showPrevImage}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
+                            <div
+                                className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
+                                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                             >
-                                <ChevronLeft size={20} />
-                            </button>
-                        )}
-                        {showNextButton && (
-                            <button
-                                onClick={showNextImage}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
-                            >
-                                <ChevronRight size={20} />
-                            </button>
-                        )}
+                                {images.map((image, index) => (
+                                    <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative">
+                                        {image?.url && (
+                                            <div
+                                                className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-110"
+                                                style={{ backgroundImage: `url(${image.url})` }}
+                                            ></div>
+                                        )}
+                                        {image?.url && (
+                                            <div className="absolute inset-0 bg-black opacity-20"></div>
+                                        )}
 
-                        {images.length > 1 && (
-                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-20 bg-black/30 rounded-full px-2 py-1">
-                                {images.map((_, index) => (
-                                    <div
-                                        key={index}
-                                        className={`w-2 h-2 rounded-full ${index === currentImageIndex ? 'bg-white' : 'bg-gray-400'}`}
-                                    ></div>
+                                        {image && (
+                                            <img
+                                                src={image.url}
+                                                alt={`slide-${index}`}
+                                                className="max-w-full max-h-full object-contain relative z-10 cursor-pointer"
+                                                onClick={handleImageClick}
+                                            />
+                                        )}
+                                    </div>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                )}
-            </Link>
+
+
+                            {showPrevButton && (
+                                <button
+                                    onClick={showPrevImage}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                            )}
+                            {showNextButton && (
+                                <button
+                                    onClick={showNextImage}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            )}
+
+                            {images.length > 1 && (
+                                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-20 bg-black/30 rounded-full px-2 py-1">
+                                    {images.map((_, index) => (
+                                        <div
+                                            key={index}
+                                            className={`w-2 h-2 rounded-full ${
+                                                index === currentImageIndex ? 'bg-white' : 'bg-gray-400'
+                                            }`}
+                                        ></div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Link>
+            )}
+
 
             <div className="flex items-center text-sm text-gray-600 gap-2 mt-2">
-                <Link to={`${postDetailUrl}#comments`} className="flex items-center text-gray-600 hover:underline">
-                    <MessageCircle size={16} className="mr-1" />
-                    <span>{commentsCount || 0} comments</span>
-                </Link>
+                {/* Ensure category slug is available for the comments link too */}
+                {category?.slug && (
+                    <Link to={`${postDetailUrl}#comments`} className="flex items-center text-gray-600 hover:underline">
+                        <MessageCircle size={16} className="mr-1" />
+                        <span>{commentsCount || 0} comments</span>
+                    </Link>
+                )}
             </div>
 
             {showPreview && images[currentImageIndex] && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-30"
+                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50"
                     onClick={closePreview}
                 >
                     {currentImageUrl && (

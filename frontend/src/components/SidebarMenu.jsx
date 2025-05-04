@@ -14,7 +14,7 @@ const SidebarMenu = () => {
     const isActive = (pathname) => location.pathname === pathname;
 
     return (
-        <div className="sticky border border-border top-6 w-64 bg-white px-6 py-3 overflow-hidden hover:overflow-y-auto max-h-[calc(100vh-3rem)] scrollbar-thin-light">
+        <div className="sticky border border-b-0 border-border top-6 w-64 bg-white px-6 py-3 overflow-hidden hover:overflow-y-auto max-h-[calc(100vh-3rem)] scrollbar-thin-light">
 
             <ul className="pt-3">
                 <li>

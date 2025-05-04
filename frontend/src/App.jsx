@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import {BrowserRouter, Routes, Route, ScrollRestoration} from 'react-router-dom';
 import { ToastContainer } from 'react-toastify'; // Import ToastContainer
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -14,13 +14,11 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import 'react-toastify/dist/ReactToastify.css';
 import ModeratorOnlyRoute from "./routes/ModeratorOnlyRoute.jsx";
 import CategoryPage from "./pages/CategoryPage";
-import ContentLayout from "./layouts/ContentLayout.jsx";
 import ExploreCategories from "./pages/ExploreCategories.jsx";
 import CategoryModeratorsPage from "./pages/CategoryModeratorsPage.jsx";
 import CreatePostPage from "./pages/CreatePostPage.jsx";
-import {DndProvider} from "react-dnd";
-import {HTML5Backend} from "react-dnd-html5-backend";
 import Moderator from "./pages/Moderator.jsx";
+import PostPage from "./pages/PostPage.jsx";
 
 function App() {
     return (
@@ -35,6 +33,7 @@ function App() {
                             <Route path="/categories/:categorySlug" element={<CategoryPage />} />
                             <Route path="/categories" element={<ExploreCategories />} />
                             <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
+                            <Route path="/categories/:categorySlug/posts/:postId" element={<PostPage />} />
                             <Route path="/categories/:categorySlug/create-post" element={
                                 <AuthOnlyRoute>
                                     <CreatePostPage />
@@ -62,7 +61,6 @@ function App() {
                             } />
                         </Route>
                     </Routes>
-                    {/* ToastContainer to display notifications */}
                     <ToastContainer
                         position="bottom-right"
                         autoClose={3000}

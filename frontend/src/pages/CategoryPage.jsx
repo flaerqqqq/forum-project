@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react'; // Import useCallback
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -10,6 +10,8 @@ import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
 import CategoryPosts from "../components/CategoryPosts.jsx";
 import CategoryUpdateModal from '../components/CategoryUpdateModal';
+
+const categoryPostsCache = new Map();
 
 const CategoryPage = () => {
     const { categorySlug } = useParams();
@@ -26,6 +28,27 @@ const CategoryPage = () => {
     const [followActionError, setFollowActionError] = useState(null);
 
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+    const saveCategoryPostsCache = useCallback((slug, sort, posts, loadedCount, scrollY, currentPage, hasMore) => {
+        console.log('Saving to cache:', slug, sort, posts, loadedCount, scrollY, currentPage, hasMore);
+        const key = `${slug}_${sort}`;
+        categoryPostsCache.set(key, { posts, loadedCount, scrollY, currentPage, hasMore });
+        console.log('Saved to cache:', key, categoryPostsCache.get(key));
+    }, []);
+
+    const getCategoryPostsCache = useCallback((slug, sort) => {
+        const key = `${slug}_${sort}`;
+        const cachedData = categoryPostsCache.get(key);
+        console.log('Attempting to get from cache:', key, cachedData);
+        return cachedData;
+    }, []);
+
+    const clearCategoryPostsCache = useCallback((slug, sort) => {
+        const key = `${slug}_${sort}`;
+        const deleted = categoryPostsCache.delete(key);
+        console.log('Cleared cache for:', key, 'Deleted:', deleted);
+    }, []);
+
 
     const fetchCategoryDetails = async () => {
         setLoadingCategory(true);
@@ -88,7 +111,7 @@ const CategoryPage = () => {
         };
 
         checkFollowStatus();
-    }, [category?.id, user?.publicId, userLoading, category]);
+    }, [category?.id, user?.publicId, userLoading, category]); // Depend on category and user
 
     const handleFollowClick = async () => {
         if (!user) {
@@ -242,8 +265,12 @@ const CategoryPage = () => {
                             )}
                         </div>
 
-
-                        <CategoryPosts categorySlug={categorySlug} />
+                        <CategoryPosts
+                            categorySlug={categorySlug}
+                            saveCategoryPostsCache={saveCategoryPostsCache}
+                            getCategoryPostsCache={getCategoryPostsCache}
+                            clearCategoryPostsCache={clearCategoryPostsCache}
+                        />
 
                     </div>
 
