@@ -1,6 +1,8 @@
 package com.example.backend.services.impls;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.example.backend.documents.Post;
 import com.example.backend.dto.PostDto;
 import com.example.backend.exceptions.PostNotFoundException;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -29,17 +32,20 @@ public class PostSearchServiceImpl implements PostSearchService {
 
     @Override
     public Page<PostDto> searchPosts(String rawQuery, Pageable pageable) {
-        NativeQueryBuilder queryBuilder = new NativeQueryBuilder()
+        Query query = NativeQuery.builder()
                 .withQuery(QueryBuilders.multiMatch(builder ->
                         builder
                                 .query(rawQuery)
-                                .fields("title", "body")
+                                .fields("title^2", "body")
+                                .type(TextQueryType.BoolPrefix)
                                 .fuzziness("AUTO")
+                                .operator(Operator.And)
                                 .autoGenerateSynonymsPhraseQuery(true)
                 ))
-                .withPageable(pageable);
+                .withPageable(pageable)
+                .with
+                .build();
 
-        Query query = queryBuilder.build();
         SearchHits<Post> searchHits = elasticsearchOperations.search(query, Post.class);
 
         List<PostDto> posts = searchHits.get()
