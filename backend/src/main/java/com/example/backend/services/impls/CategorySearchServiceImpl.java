@@ -1,6 +1,8 @@
 package com.example.backend.services.impls;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.example.backend.documents.Category;
 import com.example.backend.dto.CategoryDto;
 import com.example.backend.exceptions.CategoryNotFoundException;
@@ -34,8 +36,11 @@ public class CategorySearchServiceImpl implements CategorySearchService {
                 builder
                         .query(queryString)
                         .fields(List.of("slug", "name", "description"))
+                        .type(TextQueryType.BoolPrefix)
                         .fuzziness("AUTO")
+                        .operator(Operator.And)
                         .autoGenerateSynonymsPhraseQuery(true)
+
         )).build();
 
         SearchHits<Category> searchHits = elasticsearchOperations.search(query, Category.class);

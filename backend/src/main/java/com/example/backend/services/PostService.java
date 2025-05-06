@@ -21,4 +21,6 @@ public interface PostService {
     PostDto update(Long postId, String publicId, PostUpdateRequestDto request, List<MultipartFile> newImages, List<String> keepImageUrls);
 
     void deleteById(String publicId, Long postId);
+
+    Page<PostDto> getPostsByUserFollowedCategories(String publicId, Pageable pageable);
 }

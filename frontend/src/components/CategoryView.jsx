@@ -25,10 +25,15 @@ const CategoryView = ({ category}) => {
             setFollowActionError(null);
 
             try {
-                const response = await axios.get(
-                    `http://localhost:8080/api/v1/categories/${category.id}/follows/${user.publicId}`
-                );
-                setIsFollowed(true);
+                let response;
+                if (user) {
+                    response = await axios.get(
+                        `http://localhost:8080/api/v1/categories/${category.id}/follows/${user.publicId}`
+                    );
+                    setIsFollowed(true);
+                } else {
+                    setIsFollowed(false);
+                }
             } catch (err) {
                 if (err.response?.status === 400) {
                     setIsFollowed(false);

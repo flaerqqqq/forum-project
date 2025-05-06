@@ -198,7 +198,9 @@ services:
       - certs:/usr/share/logstash/certs
       - logstashdata01:/usr/share/logstash/data
       - "./logstash_ingest_data/:/usr/share/logstash/ingest_data/"
-      - "./logstashconf/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro"
+      - "./logstashconf/categories-pipeline.conf:/usr/share/logstash/pipeline/categories-pipeline.conf:ro"
+      - "./logstashconf/posts-pipeline.conf:/usr/share/logstash/pipeline/posts-pipeline.conf:ro"
+      - "./logstashconf/pipelines.yaml:/usr/share/logstash/config/pipelines.yaml:ro"
       - "./logstashconf/postgresql-42.7.5.jar:/usr/share/logstash/postgresql-42.7.5.jar:ro"
     networks:
       - backend

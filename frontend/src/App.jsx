@@ -20,6 +20,7 @@ import CreatePostPage from "./pages/CreatePostPage.jsx";
 import Moderator from "./pages/Moderator.jsx";
 import PostPage from "./pages/PostPage.jsx";
 import UpdatePostPage from "./pages/UpdatePostPage.jsx";
+import SearchResultsPage from "./pages/SearchResultsPage.jsx";
 
 function App() {
     return (
@@ -35,6 +36,8 @@ function App() {
                             <Route path="/categories" element={<ExploreCategories />} />
                             <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
                             <Route path="/categories/:categorySlug/posts/:postId" element={<PostPage />} />
+                            <Route path="/posts/search" element={<SearchResultsPage />} />
+
                             <Route path="/categories/:categorySlug/create-post" element={
                                 <AuthOnlyRoute>
                                     <CreatePostPage />

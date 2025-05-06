@@ -7,6 +7,7 @@ import com.example.backend.dto.PostUpdateRequestDto;
 import com.example.backend.mappers.PostMapper;
 import com.example.backend.models.enums.PostType;
 import com.example.backend.security.CustomUserDetails;
+import com.example.backend.services.PostSearchService;
 import com.example.backend.services.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ public class PostController {
 
     private final PostMapper postMapper;
     private final PostService postService;
+    private final PostSearchService postSearchService;
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -74,5 +76,16 @@ public class PostController {
                                        @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         postService.deleteById(customUserDetails.getPublicId(), postId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<PostResponseDto>> searchPosts(@RequestParam("query") String query,
+                                                             Pageable pageable) {
+        Page<PostResponseDto> responsePage = postSearchService.searchPosts(query, pageable)
+                .map(postMapper::toResponseDto);
+        if (responsePage.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(responsePage);
     }
 }

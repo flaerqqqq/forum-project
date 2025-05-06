@@ -176,6 +176,13 @@ public class PostServiceImpl implements PostService {
         postRepository.delete(post);
     }
 
+    @Override
+    public Page<PostDto> getPostsByUserFollowedCategories(String publicId, Pageable pageable) {
+        User user = findUserByPublicId(publicId);
+        Page<Post> postsFromFollowing = postRepository.findPostsFromUserFollowing(user, pageable);
+        return postsFromFollowing.map(postMapper::toDto);
+    }
+
     private void deleteImageFromStorage(List<PostImage> imagesToBeDeleted) {
         if (!imagesToBeDeleted.isEmpty()) {
             for (PostImage image : imagesToBeDeleted) {
