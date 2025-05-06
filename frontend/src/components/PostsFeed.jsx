@@ -19,9 +19,7 @@ const getCacheKey = (creatorPublicId, isFollowingFeed) => {
     }
 };
 
-// Function to get initial state (sortBy and isFollowingFeed) from cache synchronously
 const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
-    // Check cache for both general and following feeds, and both sort orders
     const cacheKeyGeneralDesc = getCacheKey(creatorPublicId, false);
     const cachedDataGeneralDesc = getHomePostsCache(cacheKeyGeneralDesc, 'createdAt,desc');
 
@@ -34,11 +32,10 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
     const cacheKeyFollowingAsc = getCacheKey(creatorPublicId, true);
     const cachedDataFollowingAsc = getHomePostsCache(cacheKeyFollowingAsc, 'createdAt,asc');
 
-    let restoredSortBy = 'createdAt,desc'; // Default sort
-    let restoredIsFollowingFeed = false; // Default feed type
+    let restoredSortBy = 'createdAt,desc';
+    let restoredIsFollowingFeed = false;
     let cachedDataToUse = null;
 
-    // Prioritize the 'following' feed cache if it has posts
     if (cachedDataFollowingAsc && cachedDataFollowingAsc.posts && cachedDataFollowingAsc.posts.length > 0) {
         cachedDataToUse = cachedDataFollowingAsc;
         restoredSortBy = 'createdAt,asc';
@@ -47,9 +44,7 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
         cachedDataToUse = cachedDataFollowingDesc;
         restoredSortBy = 'createdAt,desc';
         restoredIsFollowingFeed = true;
-    }
-    // Then check the 'general' feed cache if no following feed cache with posts was found
-    else if (cachedDataGeneralAsc && cachedDataGeneralAsc.posts && cachedDataGeneralAsc.posts.length > 0) {
+    } else if (cachedDataGeneralAsc && cachedDataGeneralAsc.posts && cachedDataGeneralAsc.posts.length > 0) {
         cachedDataToUse = cachedDataGeneralAsc;
         restoredSortBy = 'createdAt,asc';
         restoredIsFollowingFeed = false;
@@ -59,7 +54,6 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
         restoredIsFollowingFeed = false;
     }
 
-    // If any cache data was found, use its sortBy and isFollowingFeed properties if available
     if (cachedDataToUse) {
         if (cachedDataToUse.sortBy !== undefined) {
             restoredSortBy = cachedDataToUse.sortBy;
@@ -68,7 +62,6 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
             restoredIsFollowingFeed = cachedDataToUse.isFollowingFeed;
         }
     } else {
-        // If no cache with posts was found, check if any cache exists just for the sortBy/isFollowingFeed state
         if (cachedDataFollowingAsc && cachedDataFollowingAsc.sortBy !== undefined) {
             restoredSortBy = cachedDataFollowingAsc.sortBy;
             restoredIsFollowingFeed = true;
@@ -84,13 +77,10 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
         }
     }
 
-
     return { initialSortBy: restoredSortBy, initialIsFollowingFeed: restoredIsFollowingFeed };
 };
 
-
 const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache, creatorPublicId }) => {
-    // Determine initial state (sortBy and isFollowingFeed) synchronously from cache
     const { initialSortBy, initialIsFollowingFeed } = getInitialStateFromCache(getHomePostsCache, creatorPublicId);
 
     const [posts, setPosts] = useState([]);
@@ -98,10 +88,9 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
     const [error, setError] = useState(null);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const [sortBy, setSortBy] = useState(initialSortBy); // Use initialSortBy for state
-    const [isFollowingFeed, setIsFollowingFeed] = useState(initialIsFollowingFeed); // Use initialIsFollowingFeed for state
+    const [sortBy, setSortBy] = useState(initialSortBy);
+    const [isFollowingFeed, setIsFollowingFeed] = useState(initialIsFollowingFeed);
     const [loadedPostCount, setLoadedPostCount] = useState(0);
-
 
     const authToken = Cookies.get('token');
 
@@ -112,8 +101,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
 
     const isRestoringScroll = useRef(false);
     const isRestoringFromCache = useRef(false);
-    const initialMountDataLoaded = useRef(false); // Ref to track if initial data (cache or fetch) is loaded
-
+    const initialMountDataLoaded = useRef(false);
 
     const fetchPosts = useCallback(async (pageNumber = 0, size = POSTS_PER_PAGE, currentSortBy = sortBy, append = true, currentIsFollowingFeed = isFollowingFeed, currentAuthToken = authToken) => {
         if (isRestoringFromCache.current || isRestoringScroll.current) {
@@ -205,53 +193,38 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         }
     }, [sortBy, creatorPublicId, isFollowingFeed, authToken]);
 
-
     const prevSortRef = useRef(sortBy);
     const prevCreatorRef = useRef(creatorPublicId);
     const prevIsFollowingFeedRef = useRef(isFollowingFeed);
     const prevAuthTokenRef = useRef(authToken);
 
-    // useEffect for initial data load and subsequent dependency changes
     useEffect(() => {
         const cacheKey = getCacheKey(creatorPublicId, isFollowingFeed);
-
-        // Get the specific cache data for the initial/current sortBy state
         const specificCachedData = getHomePostsCache(cacheKey, sortBy);
 
-        // Check if initial data is already loaded (either from a previous render's cache or a fetch)
-        // and if any relevant dependency has changed.
         if (initialMountDataLoaded.current &&
             (prevSortRef.current !== sortBy ||
                 prevCreatorRef.current !== creatorPublicId ||
                 prevIsFollowingFeedRef.current !== isFollowingFeed ||
                 prevAuthTokenRef.current !== authToken)) {
 
-            // Handle changes in dependencies after initial data load
-            console.log("Dependency change detected, performing fresh fetch.");
-
-            // If isFollowingFeed changes AND creatorPublicId is not set, clear cache for both feed types
             if (prevIsFollowingFeedRef.current !== isFollowingFeed && !creatorPublicId) {
                 clearHomePostsCache(getCacheKey(creatorPublicId, prevIsFollowingFeedRef.current), sortBy);
                 clearHomePostsCache(getCacheKey(creatorPublicId, isFollowingFeed), sortBy);
             } else if (prevSortRef.current !== sortBy || prevCreatorRef.current !== creatorPublicId || prevAuthTokenRef.current !== authToken) {
-                // If only sort, creator, or authToken changed, clear cache for the current feed type
                 clearHomePostsCache(getCacheKey(creatorPublicId, isFollowingFeed), sortBy);
             }
-
 
             setPage(0);
             setPosts([]);
             setHasMore(true);
             setLoadedPostCount(0);
-            // Use the current sortBy state for fetches triggered by dependency changes
             fetchPosts(0, POSTS_PER_PAGE, sortBy, false, isFollowingFeed, authToken);
 
         } else if (!initialMountDataLoaded.current) {
-            // This is the initial data load (first render or after a full reset)
-            initialMountDataLoaded.current = true; // Mark initial data load as handled
+            initialMountDataLoaded.current = true;
 
             if (specificCachedData && specificCachedData.posts && specificCachedData.posts.length > 0) {
-                // Restore from cache if valid cache found for the initial/current sortBy
                 isRestoringFromCache.current = true;
 
                 setPosts(specificCachedData.posts);
@@ -261,7 +234,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 setPage(Math.max(restoredPages, 0));
 
                 setHasMore(specificCachedData.hasMore);
-                setLoading(false); // Set loading to false immediately if cache is found
+                setLoading(false);
 
                 if (specificCachedData.scrollY !== undefined) {
                     isRestoringScroll.current = true;
@@ -283,36 +256,28 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                         const isNearBottomAfterRestore = (currentScrollY + viewportHeight) >= (documentHeight - SCROLL_THRESHOLD);
 
                         if (isContentShorterThanViewport || isNearBottomAfterRestore) {
-                            console.log("Triggering initial loadMore after cache restoration check.");
                             loadMore();
                         }
                     }
                 }, specificCachedData.scrollY !== undefined ? 150 : 100);
 
-
                 clearHomePostsCache(cacheKey, specificCachedData.sortBy);
 
             } else {
-                // No cache found for the initial/current sortBy, perform initial fresh fetch
-                console.log(`No cache found for current sort (${sortBy}) on initial load, performing fresh fetch.`);
                 setPage(0);
                 setPosts([]);
                 setHasMore(true);
                 setLoadedPostCount(0);
-                // Use the current sortBy state for the initial fetch
                 fetchPosts(0, POSTS_PER_PAGE, sortBy, false, isFollowingFeed, authToken);
             }
         }
 
-
-        // Update refs for the next render cycle
         prevSortRef.current = sortBy;
         prevCreatorRef.current = creatorPublicId;
         prevIsFollowingFeedRef.current = isFollowingFeed;
         prevAuthTokenRef.current = authToken;
 
-    }, [sortBy, creatorPublicId, isFollowingFeed, authToken, fetchPosts, getHomePostsCache, clearHomePostsCache]); // Dependencies for this effect
-
+    }, [sortBy, creatorPublicId, isFollowingFeed, authToken, fetchPosts, getHomePostsCache, clearHomePostsCache]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -328,11 +293,9 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         }
 
         const isNearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - SCROLL_THRESHOLD;
-
         const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
         const viewportHeight = window.innerHeight;
         const isContentScrollable = containerHeight > viewportHeight;
-
 
         if (isNearBottom && hasMore && !loading && isContentScrollable) {
             loadMore();
@@ -351,22 +314,24 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         if (posts.length > 0) {
             saveHomePostsCache(
                 cacheKey,
-                sortBy, // Save the current sortBy state with the cache
+                sortBy,
                 posts,
                 posts.length,
                 window.scrollY,
                 page,
                 hasMore,
-                isFollowingFeed // Save the isFollowingFeed state
+                isFollowingFeed
             );
         }
-    }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId, isFollowingFeed]); // Add isFollowingFeed to dependencies
+    }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId, isFollowingFeed]);
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
             setSortBy(newSortBy);
             const cacheKey = getCacheKey(creatorPublicId, isFollowingFeed);
+            clearHomePostsCache(cacheKey, sortBy);
             clearHomePostsCache(cacheKey, newSortBy);
+
             setPage(0);
             setPosts([]);
             setHasMore(true);
@@ -379,9 +344,8 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         if (!creatorPublicId) {
             const newIsFollowingFeed = !isFollowingFeed;
             setIsFollowingFeed(newIsFollowingFeed);
-            // Clear cache for both feed types for the current sort when toggling
-            clearHomePostsCache(getCacheKey(creatorPublicId, isFollowingFeed), sortBy); // Clear old feed cache
-            clearHomePostsCache(getCacheKey(creatorPublicId, newIsFollowingFeed), sortBy); // Clear new feed cache
+            clearHomePostsCache(getCacheKey(creatorPublicId, isFollowingFeed), sortBy);
+            clearHomePostsCache(getCacheKey(creatorPublicId, newIsFollowingFeed), sortBy);
             setPage(0);
             setPosts([]);
             setHasMore(true);
@@ -391,6 +355,11 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             toast.info("Following feed is not available on a user's profile page.");
         }
     };
+
+    const handleDeletePost = useCallback((deletedPostId) => {
+        setPosts(currentPosts => currentPosts.filter(post => post.id !== deletedPostId));
+        setLoadedPostCount(prevCount => Math.max(0, prevCount - 1));
+    }, []);
 
     const showInitialLoading = loading && posts.length === 0 && !error;
     const showLoadingMore = loading && posts.length > 0 && hasMore;
@@ -411,7 +380,6 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                         {isFollowingFeed ? 'Showing Following Feed' : 'Show Following Feed'}
                     </button>
                 )}
-
 
                 <div className="flex items-center space-x-4">
                     <span className="text-sm text-gray-600">Sort By:</span>
@@ -447,8 +415,9 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             )}
 
             {!loading && posts.length === 0 && !error && (
-                <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
-                    {isFollowingFeed ? "You are not following any users yet, or they haven't posted." : "No posts found."}
+                <div className=" border-border text-center text-gray-medium">
+                    <hr className="w-full my-4 border-gray-300" />
+                    {isFollowingFeed ? "You are not following any categories yet, or they do not have any posts." : "No posts found."}
                 </div>
             )}
 
@@ -457,6 +426,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     <PostCard
                         post={post}
                         saveCurrentStateToCache={saveCurrentStateToCache}
+                        onDeleteSuccess={handleDeletePost}
                     />
                     {index < posts.length - 1 && (
                         <hr className="border-gray-300 my-2" />

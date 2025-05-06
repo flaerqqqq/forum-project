@@ -22,7 +22,6 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
     const isRestoringScroll = useRef(false);
     const isRestoringFromCache = useRef(false);
 
-    // Function to fetch search results from the API
     const fetchSearchResults = useCallback(async (pageNumber = 0, size = POSTS_PER_PAGE, currentSortBy = sortBy, append = true) => {
         if (isRestoringFromCache.current) {
             return [];
@@ -60,7 +59,6 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                     });
                     setLoadedPostCount(prevCount => prevCount + res.data.content.length);
                 } else {
-                    console.log(res.data.content);
                     const uniqueNewPosts = res.data.content;
                     setPosts(uniqueNewPosts);
                     setLoadedPostCount(uniqueNewPosts.length);
@@ -80,7 +78,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                 setLoading(false);
             }
         }
-    }, [sortBy, posts, searchQuery]); // Add searchQuery to dependencies
+    }, [sortBy, posts, searchQuery]);
 
     useEffect(() => {
         if (!initialMountHandled.current) {
@@ -162,14 +160,12 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                 fetchSearchResults(0, POSTS_PER_PAGE, sortBy, false);
             }
         }
-    }, [searchQuery, sortBy, fetchSearchResults, getSearchResultsPostsCache, clearSearchResultsPostsCache]); // Add searchQuery to dependencies
+    }, [searchQuery, sortBy, fetchSearchResults, getSearchResultsPostsCache, clearSearchResultsPostsCache]);
 
     const prevSortRef = useRef(sortBy);
-    // Add ref for previous searchQuery
     const prevSearchQueryRef = useRef(searchQuery);
 
     useEffect(() => {
-        // Trigger fetch if sort or searchQuery changes after initial mount
         if (initialMountHandled.current &&
             (prevSortRef.current !== sortBy || prevSearchQueryRef.current !== searchQuery) &&
             !isRestoringFromCache.current) {
@@ -182,8 +178,8 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
         }
 
         prevSortRef.current = sortBy;
-        prevSearchQueryRef.current = searchQuery; // Update previous searchQuery ref
-    }, [sortBy, searchQuery]); // Add searchQuery to dependencies
+        prevSearchQueryRef.current = searchQuery;
+    }, [sortBy, searchQuery, fetchSearchResults]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -227,7 +223,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                 hasMore
             );
         }
-    }, [sortBy, posts, page, hasMore, saveSearchResultsPostsCache, searchQuery]); // Add searchQuery to dependencies
+    }, [sortBy, posts, page, hasMore, saveSearchResultsPostsCache, searchQuery]);
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
@@ -237,9 +233,15 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
             setPosts([]);
             setHasMore(true);
             setLoadedPostCount(0);
-            fetchSearchResults(0, POSTS_PER_PAGE, newSortBy, false);
         }
     };
+
+    // --- NEW FUNCTION TO HANDLE POST DELETION ---
+    const handleDeletePost = useCallback((deletedPostId) => {
+        setPosts(currentPosts => currentPosts.filter(post => post.id !== deletedPostId));
+        setLoadedPostCount(prevCount => Math.max(0, prevCount - 1));
+    }, []);
+    // --- END OF NEW FUNCTION ---
 
     const showInitialLoading = loading && posts.length === 0 && !error;
     const showLoadingMore = loading && posts.length > 0 && hasMore;
@@ -253,12 +255,14 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                     <button
                         className={`text-sm ${sortBy === 'created_at,desc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
                         onClick={() => handleSortChange('created_at,desc')}
+                        disabled={loading}
                     >
                         Newest
                     </button>
                     <button
                         className={`text-sm ${sortBy === 'created_at,asc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
                         onClick={() => handleSortChange('created_at,asc')}
+                        disabled={loading}
                     >
                         Oldest
                     </button>
@@ -274,15 +278,14 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
             )}
 
             {!loading && posts.length === 0 && !error && (
-                <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
+                <div className="text-center text-gray-medium">
+                    <hr className="border-gray-300 my-2 w-full" />
                     No results found for "{searchQuery}". Try different keywords or check your spelling.
                 </div>
             )}
 
             {error && (
-                <div className="p-6 bg-white rounded-md border border-red-300 text-center text-red-500">
-                    {error}
-                </div>
+                <hr className="border-gray-300 my-2 w-full" />
             )}
 
             {posts.map((post, index) => (
@@ -290,6 +293,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                     <PostCard
                         post={post}
                         saveCurrentStateToCache={saveCurrentStateToCache}
+                        onDeleteSuccess={handleDeletePost}
                     />
                     {index < posts.length - 1 && (
                         <hr className="border-gray-300 my-2" />

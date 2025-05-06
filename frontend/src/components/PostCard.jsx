@@ -2,8 +2,11 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
+import Cookies from "js-cookie";
+import axios from "axios";
+import {toast} from "react-toastify";
 
-const PostCard = ({ post, saveCurrentStateToCache }) => {
+const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const {
         id,
         title,
@@ -28,16 +31,15 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
     const snippet = getPlainText(body);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
-    // Removed imageGalleryRef
+    // State for the delete confirmation modal
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
 
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const dropdownButtonRef = useRef(null);
 
-
-    // Removed scroll event listener useEffect
-
-
+    // Corrected ref name in handleClickOutside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -51,7 +53,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
-
 
     const showPrevImage = (e) => {
         e.stopPropagation();
@@ -69,7 +70,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
         }
     };
 
-
     const handleImageClick = (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -84,10 +84,13 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
         const handleEscapeKey = (event) => {
             if (event.key === 'Escape') {
                 closePreview();
+                // Also close the delete modal if open
+                setShowDeleteModal(false);
             }
         };
 
-        if (showPreview) {
+        // Add/remove listener based on whether preview OR modal is open
+        if (showPreview || showDeleteModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
             document.removeEventListener('keydown', handleEscapeKey);
@@ -96,13 +99,13 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview]);
+    }, [showPreview, showDeleteModal]); // Add showDeleteModal to dependency array
+
 
     const postDetailUrl = `/categories/${category?.slug}/posts/${id}`;
 
     const showPrevButton = images.length > 1 && currentImageIndex > 0;
     const showNextButton = images.length > 1 && currentImageIndex < images.length - 1;
-
 
     const currentImageUrl = images[currentImageIndex]?.url;
 
@@ -116,12 +119,85 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
 
     const isPostOwner = authenticatedUser && creator && authenticatedUser.publicId === creator.publicId;
 
-    const handleUpdatePostClick = (e) => { // Accept event object
-        e.preventDefault(); // Prevent default button behavior
-        e.stopPropagation(); // Stop event from bubbling up to the Link
+    // Check if the authenticated user has the MODERATOR role
+    const isModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
+
+    // Determine if the delete option should be shown (Owner OR Moderator)
+    const canDeletePost = !authLoading && (isPostOwner || isModerator);
+
+    // Determine if the update option should be shown (Owner OR Moderator)
+    const canUpdatePost = !authLoading && (isPostOwner || isModerator);
+
+
+    const handleUpdatePostClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (category?.slug && id) {
             navigate(`/categories/${category.slug}/posts/${id}/edit`);
             setShowDropdown(false);
+        }
+    };
+
+    // Function to request delete confirmation (opens the modal)
+    const requestDeleteConfirmation = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowDropdown(false); // Close dropdown
+        setShowDeleteModal(true); // Open modal
+    };
+
+    // Function to actually perform the deletion
+    const confirmDeletePost = async () => {
+        setShowDeleteModal(false); // Close modal immediately
+
+        try {
+            const response = await axios.delete(`http://localhost:8080/api/v1/posts/${id}`, {
+                headers: {
+                    'Authorization': 'Bearer ' + Cookies.get('token'),
+                }
+            });
+
+            // Axios throws an error for non-2xx status codes, so no need to check response.ok
+            console.log(`Post with ID ${id} deleted successfully.`);
+            toast.success("Post deleted successfully!"); // Show success toast
+
+            // Trigger a function provided by the parent to handle UI update
+            if (onDeleteSuccess) {
+                onDeleteSuccess(id);
+            }
+
+        } catch (error) {
+            console.error('Error deleting post:', error);
+
+            let errorMessage = "An error occurred while trying to delete the post.";
+
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    console.error("Response data:", error.response.data);
+                    console.error("Response status:", error.response.status);
+                    console.error("Response headers:", error.response.headers);
+
+                    if (error.response.data && error.response.data.message) {
+                        errorMessage = `Failed to delete post: ${error.response.data.message}`;
+                    } else if (error.response.status === 403) {
+                        errorMessage = "You do not have permission to delete this post.";
+                    } else if (error.response.status === 404) {
+                        errorMessage = "Post not found.";
+                    } else {
+                        errorMessage = `Failed to delete post: Server responded with status ${error.response.status}`;
+                    }
+                } else if (error.request) {
+                    console.error("No response received:", error.request);
+                    errorMessage = "No response received from server. Please try again.";
+                } else {
+                    console.error("Error setting up request:", error.message);
+                    errorMessage = `Error setting up request: ${error.message}`;
+                }
+            } else {
+                errorMessage = `An unexpected error occurred: ${error.message}`;
+            }
+
+            toast.error(errorMessage); // Show error toast
         }
     };
 
@@ -164,10 +240,10 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                                 <div
                                     ref={dropdownRef}
                                     className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()} // Stop propagation so clicking menu doesn't close dropdown via global listener
                                 >
-                                    {/* Update Post option (only visible to owner) */}
-                                    {!authLoading && isPostOwner && (
+                                    {/* Update Post option (visible to owner OR moderator) */}
+                                    {canUpdatePost && (
                                         <button
                                             onClick={handleUpdatePostClick}
                                             className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
@@ -175,12 +251,20 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                                             Update post
                                         </button>
                                     )}
+                                    {/* Delete Post option (visible to owner or moderator) */}
+                                    {canDeletePost && (
+                                        <button
+                                            onClick={requestDeleteConfirmation} // Call the function to open the modal
+                                            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                                        >
+                                            Delete post
+                                        </button>
+                                    )}
                                     {/* Add other post options here if needed (e.g., Report, Share) */}
                                 </div>
                             )}
                         </div>
                     </div>
-
 
                     <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline break-words" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                         {title}
@@ -192,14 +276,12 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
 
                     {images.length > 0 && (
                         <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-3">
-
                             <div
-                                // Removed ref={imageGalleryRef}
-                                className="flex h-full transition-transform ease-in-out duration-300 relative z-10" // Removed overflow-x-auto, snap classes
-                                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }} // Re-added transform style
+                                className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
+                                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                             >
                                 {images.map((image, index) => (
-                                    <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative"> {/* Removed snap-center */}
+                                    <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative">
                                         {image?.url && (
                                             <div
                                                 className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-110"
@@ -209,7 +291,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                                         {image?.url && (
                                             <div className="absolute inset-0 bg-black opacity-20"></div>
                                         )}
-
                                         {image && (
                                             <img
                                                 src={image.url}
@@ -222,7 +303,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                                 ))}
                             </div>
 
-                            {/* Re-added Prev/Next Buttons */}
                             {showPrevButton && (
                                 <button
                                     onClick={showPrevImage}
@@ -239,7 +319,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                                     <ChevronRight size={20} />
                                 </button>
                             )}
-
 
                             {images.length > 1 && (
                                 <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-20 bg-black/30 rounded-full px-2 py-1">
@@ -258,7 +337,6 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                 </Link>
             )}
 
-
             <div className="flex items-center text-sm text-gray-600 gap-2 mt-2">
                 {category?.slug && (
                     <Link to={`${postDetailUrl}#comments`} className="flex items-center text-gray-600 hover:underline">
@@ -268,10 +346,11 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                 )}
             </div>
 
+            {/* Image Preview Modal */}
             {showPreview && images[currentImageIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
-                    onClick={closePreview}
+                    onClick={closePreview} // Click outside to close
                 >
                     {currentImageUrl && (
                         <div
@@ -288,7 +367,7 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                             src={currentImageUrl}
                             alt="Image Preview"
                             className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                            onClick={closePreview}
+                            onClick={closePreview} // Click on image to close
                         />
                     )}
 
@@ -299,6 +378,36 @@ const PostCard = ({ post, saveCurrentStateToCache }) => {
                     >
                         <X size={24} />
                     </button>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
+                    onClick={() => setShowDeleteModal(false)} // Click outside to close modal
+                >
+                    <div
+                        className="bg-white rounded-lg p-6 max-w-sm mx-4"
+                        onClick={(e) => e.stopPropagation()} // Prevent clicks inside the modal from closing it
+                    >
+                        <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+                        <p className="text-gray-700 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                                onClick={() => setShowDeleteModal(false)} // Cancel button action
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                onClick={confirmDeletePost} // Confirm button action
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
