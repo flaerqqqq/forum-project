@@ -23,4 +23,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                                 @Param("creator") User creator,
                                 @Param("category") Category category,
                                 Pageable pageable);
+
+    @Query("""
+        SELECT p FROM Post p
+        JOIN p.category c
+        JOIN CategoryFollow cf ON cf.category = c
+        WHERE cf.user = :user
+    """)
+    Page<Post> findPostsFromUserFollowing(@Param("user") User user, Pageable pageable);
 }

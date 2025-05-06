@@ -1,5 +1,6 @@
 package com.example.backend.services.impls;
 
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
@@ -14,7 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
@@ -37,13 +37,12 @@ public class PostSearchServiceImpl implements PostSearchService {
                         builder
                                 .query(rawQuery)
                                 .fields("title^2", "body")
-                                .type(TextQueryType.BoolPrefix)
-                                .fuzziness("AUTO")
+                                .type(TextQueryType.BestFields)
                                 .operator(Operator.And)
+                                .fuzziness("AUTO")
                                 .autoGenerateSynonymsPhraseQuery(true)
                 ))
                 .withPageable(pageable)
-                .with
                 .build();
 
         SearchHits<Post> searchHits = elasticsearchOperations.search(query, Post.class);

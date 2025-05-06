@@ -2,6 +2,7 @@ package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
+import com.example.backend.mappers.PostMapper;
 import com.example.backend.mappers.UserMapper;
 import com.example.backend.models.enums.ReportReason;
 import com.example.backend.models.enums.ReportStatus;
@@ -26,8 +27,10 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private final UserService userService;
+    private final PostService postService;
     private final CategoryFollowService categoryFollowService;
     private final UserMapper userMapper;
+    private final PostMapper postMapper;
     private final ReactionService reactionService;
     private final ReportService reportService;
     private final CategoryService categoryService;
@@ -129,5 +132,16 @@ public class UserController {
         }
 
         return ResponseEntity.ok(pageOfCategories.map(categoryMapper::toResponseDto));
+    }
+
+    @GetMapping("/me/follows/posts")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Page<PostResponseDto>> getPostsFromFollowingCategories(Pageable pageable,
+                                                                                 @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        Page<PostDto> postsFromFollowing = postService.getPostsByUserFollowedCategories(customUserDetails.getPublicId(), pageable);
+        if (postsFromFollowing.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(postsFromFollowing.map(postMapper::toResponseDto));
     }
 }
