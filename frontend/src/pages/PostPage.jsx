@@ -6,8 +6,9 @@ import { toast } from 'react-toastify';
 import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import { useUser } from '../contexts/UserContext';
-import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
+import { useDeletedPosts } from '../contexts/DeletedPostsContext';
 import Cookies from "js-cookie";
+import PostNotFound from '../components/PostNotFound.jsx'; // Import the new component
 
 const formatRelativeTime = (timestamp) => {
     const now = new Date();
@@ -38,11 +39,11 @@ const PostPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user: authenticatedUser, loading: authLoading } = useUser();
-    const { addDeletedPostId } = useDeletedPosts(); // Use the hook to get the add function
+    const { addDeletedPostId } = useDeletedPosts();
 
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(null); // State to store the error object
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
@@ -70,11 +71,8 @@ const PostPage = () => {
             setPost(res.data);
         } catch (err) {
             console.error('Error fetching post:', err);
-            if (err.response && err.response.status === 404) {
-                setError('Post not found.');
-                toast.error('Post not found.');
-            } else {
-                setError('Failed to load post.');
+            setError(err); // Store the error object
+            if (err.status !== 404) {
                 toast.error('Failed to load post.');
             }
         } finally {
@@ -193,14 +191,9 @@ const PostPage = () => {
                 console.log(`Post with ID ${post.id} deleted successfully.`);
                 toast.success("Post deleted successfully!");
 
-                // --- Add the deleted post ID to the global context ---
                 addDeletedPostId(post.id);
-                // --- End of context update ---
 
-                // Navigate back
-                // Removed passing state via navigate, as the context handles the deletion status globally
                 navigate(-1);
-
 
             } else {
                 console.error('Error deleting post: Unexpected status', response.status);
@@ -208,40 +201,49 @@ const PostPage = () => {
             }
 
 
-        } catch (error) {
-            console.error('Error deleting post:', error);
+        } catch (err) {
+            console.error('Error deleting post:', err);
 
             let errorMessage = "An error occurred while trying to delete the post.";
 
-            if (axios.isAxiosError(error)) {
-                if (error.response) {
-                    console.error("Response data:", error.response.data);
-                    console.error("Response status:", error.response.status);
+            if (axios.isAxiosError(err)) {
+                if (err.response) {
+                    console.error("Response data:", err.response.data);
+                    console.error("Response status:", err.response.status);
 
-                    if (error.response.data && error.response.data.message) {
-                        errorMessage = `Failed to delete post: ${error.response.data.message}`;
-                    } else if (error.response.status === 403) {
+                    if (err.response.data && err.response.data.message) {
+                        errorMessage = `Failed to delete post: ${err.response.data.message}`;
+                    } else if (err.response.status === 403) {
                         errorMessage = "You do not have permission to delete this post.";
-                    } else if (error.response.status === 404) {
-                        errorMessage = "Post not found.";
+                    } else if (err.response.status === 404) {
+                        errorMessage = "Post not found (possibly already deleted).";
                     } else {
-                        errorMessage = `Failed to delete post: Server responded with status ${error.response.status}`;
+                        errorMessage = `Failed to delete post: Server responded with status ${err.response.status}`;
                     }
-                } else if (error.request) {
-                    console.error("No response received:", error.request);
+                } else if (err.request) {
+                    console.error("No response received:", err.request);
                     errorMessage = "No response received from server. Please try again.";
                 } else {
-                    console.error("Error setting up request:", error.message);
-                    errorMessage = `Error setting up request: ${error.message}`;
+                    console.error("Error setting up request:", err.message);
+                    errorMessage = `Error setting up request: ${err.message}`;
                 }
             } else {
-                errorMessage = `An unexpected error occurred: ${error.message}`;
+                errorMessage = `An unexpected error occurred: ${err.message}`;
             }
 
             toast.error(errorMessage);
         }
     };
 
+    // --- Render Logic ---
+
+    // Check specifically for a 404 error and render PostNotFound component
+    if (error && error.response && error.response.status === 404) {
+        return <PostNotFound />; // Render the PostNotFound component
+    }
+
+
+    // Show loader if loading or authLoading, or if post is null and there's no error
     if (loading || authLoading || (!post && !error)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
@@ -260,30 +262,40 @@ const PostPage = () => {
         );
     }
 
+    // Show generic error message if there's an error, but not a 404 (handled above)
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
                 <div className="p-6 bg-white rounded-md shadow-md text-center text-red-600">
-                    <p>{error}</p>
+                    <p>Failed to load post: {error.message || 'An unknown error occurred.'}</p>
+                    <Link to="/" className="text-blue-600 underline mt-4 block">
+                        Go back to Home
+                    </Link>
                 </div>
             </div>
         );
     }
 
+
+    // Only render the post content if post is successfully loaded and no error
     return (
         <div className="bg-background-light-gray text-black min-h-screen">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-grow">
+                        {/* Metadata and Dropdown - Ensure post data is available */}
                         {post && (
                             <div className="flex justify-between items-center mb-4">
                                 <div className="text-xs text-gray-600">
+                                    {/* Safely access category name */}
                                     {post.category?.name && (
                                         <Link to={`/categories/${post.category.slug}`} className="text-gray-800 font-medium hover:underline font-semibold">
                                             {post.category.name}
                                         </Link>
                                     )}
+                                    {/* Add separator only if category name was rendered and creator exists */}
                                     {post.category?.name && post.creator?.username && ' • '}
+                                    {/* Safely access creator username */}
                                     {post.creator?.username && (
                                         <Link to={`/users/${post.creator.username}`} className="hover:underline text-gray-600">
                                             {post.creator.username}
@@ -295,6 +307,7 @@ const PostPage = () => {
                                     )}
                                 </div>
 
+                                {/* Dropdown Button and Menu - Only show if post is loaded */}
                                 <div className="relative">
                                     <button
                                         ref={dropdownButtonRef}
@@ -371,7 +384,7 @@ const PostPage = () => {
                                                 <img
                                                     src={image.url}
                                                     alt={`slide-${index}`}
-                                                    className="max-w-full max-h-full object-contain relative z-10 cursor-pointer"
+                                                    className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
                                                     onClick={handleImageClick}
                                                 />
                                             )}

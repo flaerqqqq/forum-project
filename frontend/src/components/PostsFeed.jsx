@@ -273,6 +273,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 clearHomePostsCache(cacheKey, specificCachedData.sortBy);
 
             } else {
+                scrollTo(0, 0)
                 setPage(0);
                 setPosts([]);
                 setHasMore(true);
@@ -396,17 +397,16 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         <div className="space-y-1" ref={postsContainerRef}>
             <div className="flex justify-between items-center mb-4 space-x-4">
                 {!creatorPublicId && authToken && (
-                    <button
-                        className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-200 ${
-                            isFollowingFeed
-                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                        }`}
-                        onClick={handleToggleFollowingFeed}
-                        disabled={loading}
-                    >
-                        {isFollowingFeed ? 'Showing Following Feed' : 'Show Following Feed'}
-                    </button>
+                    <div className="flex items-center justify-center bg-gray-light rounded-full p-1 w-fit ">
+                        <button
+                            onClick={handleToggleFollowingFeed}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${!isFollowingFeed ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        >Home</button>
+                        <button
+                            onClick={handleToggleFollowingFeed}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${isFollowingFeed ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        >Following</button>
+                    </div>
                 )}
 
                 <div className="flex items-center space-x-4">

@@ -99,7 +99,7 @@ const CategoryView = ({ category}) => {
 
     return (
         <div
-            className={`bg-white rounded-md shadow-sm border border-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300`}
+            className={`bg-white rounded-2xl shadow-sm border border-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300`}
             onClick={navigateToCategoryPage}
         >
             <div className="flex p-4 space-x-4 items-center">
@@ -145,7 +145,7 @@ const CategoryView = ({ category}) => {
                                 }`}
                             >
                                 {loadingFollowStatus ? (
-                                    <Oval height={16} width={16} color={isFollowed ? '#000' : '#fff'} secondaryColor={isFollowed ? '#EAEAEA' : '#ffffff33'} strokeWidth={5} visible={true} />
+                                    !isFollowed ? 'Following' : 'Follow'
                                 ) : (
                                     isFollowed ? 'Following' : 'Follow'
                                 )}
