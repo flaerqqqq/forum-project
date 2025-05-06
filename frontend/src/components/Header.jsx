@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { isAuthenticated } from '../utils/auth';
-import AvatarMenu from "./AvatarMenu.jsx"; // Assuming AvatarMenu is styled separately
+import AvatarMenu from "./AvatarMenu.jsx";
+import SearchBar from "./SearchBar.jsx"; // Assuming AvatarMenu is styled separately
 
 const Header = () => {
     const auth = isAuthenticated();
@@ -12,6 +13,7 @@ const Header = () => {
                 <Link to="/" className="text-3xl font-noe-bold text-black hover:text-gray-darker transition-colors"> {/* Use heading font, black color, subtle hover */}
                     Forum
                 </Link>
+                <SearchBar />
                 <nav className="flex items-center space-x-4 sm:space-x-6"> {/* Adjust spacing */}
                     {!auth ? (
                         // Login Link - Style subtly

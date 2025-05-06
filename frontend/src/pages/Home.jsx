@@ -8,11 +8,13 @@ const Home = () => {
 
     const saveHomePostsCache = useCallback((key, sort, posts, loadedCount, scrollY, page, hasMore) => {
         homePostsCache[`${key}-${sort}`] = { posts, loadedCount, scrollY, page, hasMore, timestamp: Date.now(), sortBy: sort };
+        console.log('Saved to home posts cache:', key, homePostsCache[`${key}-${sort}`]);
     }, []);
 
     const getHomePostsCache = useCallback((key, sort) => {
         const cachedData = homePostsCache[`${key}-${sort}`];
         if (cachedData) {
+            console.log('Attempting to get from home posts cache:', key, cachedData);
             return cachedData;
         }
         return null;
@@ -48,7 +50,7 @@ const Home = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
+        <div className="min-h-screen bg-background-light-gray py-6">
             <div className="container max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
                     <PostsFeed
