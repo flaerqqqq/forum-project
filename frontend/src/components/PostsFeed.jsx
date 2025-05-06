@@ -5,6 +5,7 @@ import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
+import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
 
 const POSTS_PER_PAGE = 10;
 const SCROLL_THRESHOLD = 800;
@@ -82,6 +83,7 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
 
 const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache, creatorPublicId }) => {
     const { initialSortBy, initialIsFollowingFeed } = getInitialStateFromCache(getHomePostsCache, creatorPublicId);
+    const { deletedPostIds, addDeletedPostId } = useDeletedPosts();
 
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -158,21 +160,25 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 setHasMore(false);
                 return res.data.content;
             } else {
+                // Filter out deleted posts from the fetched data
+                const newPosts = res.data.content.filter(post => !deletedPostIds.includes(post.id));
+
                 if (append) {
                     setPosts(prev => {
-                        const existingPostIds = new Set(prev.map(p => p.id));
-                        const uniqueNewPosts = res.data.content.filter(p => !existingPostIds.has(p.id));
-                        return [...prev, ...uniqueNewPosts];
+                        // Ensure prev is an array before concatenating
+                        const prevArray = Array.isArray(prev) ? prev : [];
+                        const existingPostIds = new Set(prevArray.map(p => p.id));
+                        const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
+                        return [...prevArray, ...uniqueNewPosts];
                     });
-                    setLoadedPostCount(prevCount => prevCount + res.data.content.length);
+                    setLoadedPostCount(prevCount => prevCount + newPosts.length);
                 } else {
-                    const existingPostIds = new Set(posts.map(p => p.id));
-                    const uniqueNewPosts = res.data.content.filter(p => !existingPostIds.has(p.id));
+                    const uniqueNewPosts = newPosts;
                     setPosts(uniqueNewPosts);
                     setLoadedPostCount(uniqueNewPosts.length);
                 }
                 setHasMore(!res.data.last);
-                return res.data.content;
+                return newPosts; // Return filtered posts
             }
 
         } catch (err) {
@@ -191,7 +197,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 setLoading(false);
             }
         }
-    }, [sortBy, creatorPublicId, isFollowingFeed, authToken]);
+    }, [sortBy, creatorPublicId, isFollowingFeed, authToken, deletedPostIds]);
 
     const prevSortRef = useRef(sortBy);
     const prevCreatorRef = useRef(creatorPublicId);
@@ -227,13 +233,16 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             if (specificCachedData && specificCachedData.posts && specificCachedData.posts.length > 0) {
                 isRestoringFromCache.current = true;
 
-                setPosts(specificCachedData.posts);
-                setLoadedPostCount(specificCachedData.loadedCount);
+                // Filter out deleted posts from cache data
+                const filteredCachedPosts = specificCachedData.posts.filter(post => !deletedPostIds.includes(post.id));
 
-                const restoredPages = Math.ceil(specificCachedData.posts.length / POSTS_PER_PAGE) - 1;
+                setPosts(filteredCachedPosts);
+                setLoadedPostCount(filteredCachedPosts.length); // Update count based on filtered posts
+
+                const restoredPages = Math.ceil(filteredCachedPosts.length / POSTS_PER_PAGE) - 1;
                 setPage(Math.max(restoredPages, 0));
 
-                setHasMore(specificCachedData.hasMore);
+                setHasMore(specificCachedData.hasMore); // Keep original hasMore for now
                 setLoading(false);
 
                 if (specificCachedData.scrollY !== undefined) {
@@ -247,18 +256,18 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     isRestoringFromCache.current = false;
                     isRestoringScroll.current = false;
 
-                    if (specificCachedData.hasMore) {
-                        const currentScrollY = window.scrollY;
-                        const viewportHeight = window.innerHeight;
-                        const documentHeight = document.body.offsetHeight;
+                    // Re-evaluate if more content is needed after filtering cache
+                    const currentScrollY = window.scrollY;
+                    const viewportHeight = window.innerHeight;
+                    const documentHeight = document.body.offsetHeight;
+                    const isContentShorterThanViewport = documentHeight <= viewportHeight;
+                    const isNearBottomAfterRestore = (currentScrollY + viewportHeight) >= (documentHeight - SCROLL_THRESHOLD);
 
-                        const isContentShorterThanViewport = documentHeight <= viewportHeight;
-                        const isNearBottomAfterRestore = (currentScrollY + viewportHeight) >= (documentHeight - SCROLL_THRESHOLD);
-
-                        if (isContentShorterThanViewport || isNearBottomAfterRestore) {
-                            loadMore();
-                        }
+                    if (specificCachedData.hasMore && (isContentShorterThanViewport || isNearBottomAfterRestore)) {
+                        // If content is short or near bottom after filtering, load more
+                        loadMore();
                     }
+
                 }, specificCachedData.scrollY !== undefined ? 150 : 100);
 
                 clearHomePostsCache(cacheKey, specificCachedData.sortBy);
@@ -277,7 +286,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         prevIsFollowingFeedRef.current = isFollowingFeed;
         prevAuthTokenRef.current = authToken;
 
-    }, [sortBy, creatorPublicId, isFollowingFeed, authToken, fetchPosts, getHomePostsCache, clearHomePostsCache]);
+    }, [sortBy, creatorPublicId, isFollowingFeed, authToken, fetchPosts, getHomePostsCache, clearHomePostsCache, deletedPostIds]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
@@ -310,20 +319,25 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
     }, [handleScroll]);
 
     const saveCurrentStateToCache = useCallback(() => {
+        // When saving to cache, filter out deleted posts first
+        const postsToCache = posts.filter(post => !deletedPostIds.includes(post.id));
         const cacheKey = getCacheKey(creatorPublicId, isFollowingFeed);
-        if (posts.length > 0) {
+        if (postsToCache.length > 0) {
             saveHomePostsCache(
                 cacheKey,
                 sortBy,
-                posts,
-                posts.length,
+                postsToCache, // Save filtered posts
+                postsToCache.length, // Save filtered count
                 window.scrollY,
                 page,
                 hasMore,
                 isFollowingFeed
             );
+        } else {
+            // If all posts are filtered out, clear the cache for this key/sort
+            clearHomePostsCache(cacheKey, sortBy);
         }
-    }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId, isFollowingFeed]);
+    }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId, isFollowingFeed, deletedPostIds, clearHomePostsCache]);
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
@@ -356,10 +370,24 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         }
     };
 
+    // This function is still needed for deletions initiated *within* this feed component
     const handleDeletePost = useCallback((deletedPostId) => {
-        setPosts(currentPosts => currentPosts.filter(post => post.id !== deletedPostId));
-        setLoadedPostCount(prevCount => Math.max(0, prevCount - 1));
-    }, []);
+        // Ensure currentPosts is an array before filtering
+        setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => post.id !== deletedPostId) : []);
+        // When a post is deleted from here, also add it to the global context
+        addDeletedPostId(deletedPostId);
+    }, [addDeletedPostId]);
+
+    // Effect to filter posts whenever deletedPostIds changes
+    useEffect(() => {
+        // This effect runs when deletedPostIds changes (e.g., after returning from post detail page)
+        // Filter the currently displayed posts
+        // Ensure currentPosts is an array before filtering
+        setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)) : []);
+        // Recalculate loadedPostCount based on filtered posts
+        setLoadedPostCount(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)).length : 0);
+
+    }, [deletedPostIds]); // Dependency on deletedPostIds
 
     const showInitialLoading = loading && posts.length === 0 && !error;
     const showLoadingMore = loading && posts.length > 0 && hasMore;

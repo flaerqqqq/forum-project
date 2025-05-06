@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import { useUser } from '../contexts/UserContext';
+import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
 import Cookies from "js-cookie";
 
 const formatRelativeTime = (timestamp) => {
@@ -35,8 +36,9 @@ const formatRelativeTime = (timestamp) => {
 const PostPage = () => {
     const { postId } = useParams();
     const navigate = useNavigate();
-    const location = useLocation(); // Use useLocation here as well if needed for future state
+    const location = useLocation();
     const { user: authenticatedUser, loading: authLoading } = useUser();
+    const { addDeletedPostId } = useDeletedPosts(); // Use the hook to get the add function
 
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -50,7 +52,6 @@ const PostPage = () => {
     const dropdownRef = useRef(null);
     const dropdownButtonRef = useRef(null);
 
-    // State for the delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
 
@@ -83,7 +84,7 @@ const PostPage = () => {
 
     useEffect(() => {
         fetchPost();
-    }, [postId]); // Add postId as a dependency
+    }, [postId]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -125,17 +126,14 @@ const PostPage = () => {
         setShowPreview(false);
     };
 
-    // Handle Escape key for modals
     useEffect(() => {
         const handleEscapeKey = (event) => {
             if (event.key === 'Escape') {
-                // Close both preview and delete modal if open
                 closePreview();
                 setShowDeleteModal(false);
             }
         };
 
-        // Add/remove listener based on whether preview OR modal is open
         if (showPreview || showDeleteModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
@@ -145,7 +143,7 @@ const PostPage = () => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview, showDeleteModal]); // Add showDeleteModal to dependency array
+    }, [showPreview, showDeleteModal]);
 
 
     const showPrevButton = post?.images?.length > 1 && currentImageIndex > 0;
@@ -154,11 +152,8 @@ const PostPage = () => {
     const currentImageUrl = post?.images?.[currentImageIndex]?.url;
 
     const isPostOwner = authenticatedUser && post?.creator && authenticatedUser.publicId === post.creator.publicId;
-
     const isModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
-
     const canUpdatePost = !authLoading && (isPostOwner || isModerator);
-
     const canDeletePost = !authLoading && (isPostOwner || isModerator);
 
     const handleUpdatePostClick = () => {
@@ -168,26 +163,21 @@ const PostPage = () => {
         }
     };
 
-    // Function to request delete confirmation (opens the modal)
     const requestDeleteConfirmation = () => {
-        setShowDropdown(false); // Close dropdown
-        setShowDeleteModal(true); // Open modal
+        setShowDropdown(false);
+        setShowDeleteModal(true);
     };
 
-    // Function to actually perform the deletion
     const confirmDeletePost = async () => {
-        setShowDeleteModal(false); // Close modal immediately
+        setShowDeleteModal(false);
 
         try {
-            const token = Cookies.get('token'); // Get token from cookie as requested for this component
+            const token = Cookies.get('token');
             if (!token) {
                 toast.error("Authentication token not found. Please log in.");
-                // Optionally redirect to login
-                // navigate('/login');
                 return;
             }
 
-            // Ensure post and post.id exist before making the request
             if (!post?.id) {
                 toast.error("Post ID is missing.");
                 return;
@@ -195,22 +185,24 @@ const PostPage = () => {
 
             const response = await axios.delete(`http://localhost:8080/api/v1/posts/${post.id}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`, // Use token from cookie in header
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
-            // Backend returns 204 No Content on successful delete
             if (response.status === 204) {
                 console.log(`Post with ID ${post.id} deleted successfully.`);
-                toast.success("Post deleted successfully!"); // Show success toast
+                toast.success("Post deleted successfully!");
 
-                // Navigate back to the previous page AND pass state (deleted post ID)
-                // Safely access post?.id
-                navigate(-1, { state: { deletedPostId: post?.id } });
+                // --- Add the deleted post ID to the global context ---
+                addDeletedPostId(post.id);
+                // --- End of context update ---
+
+                // Navigate back
+                // Removed passing state via navigate, as the context handles the deletion status globally
+                navigate(-1);
 
 
             } else {
-                // This block might not be reached if axios throws on non-2xx, but good for safety
                 console.error('Error deleting post: Unexpected status', response.status);
                 toast.error(`Failed to delete post: Unexpected server response.`);
             }
@@ -246,12 +238,10 @@ const PostPage = () => {
                 errorMessage = `An unexpected error occurred: ${error.message}`;
             }
 
-            toast.error(errorMessage); // Show error toast
+            toast.error(errorMessage);
         }
     };
 
-    // --- Render Logic ---
-    // Show loader or error message if loading, authLoading, or post is null and no error
     if (loading || authLoading || (!post && !error)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
@@ -262,7 +252,6 @@ const PostPage = () => {
                             <p className="text-gray-medium">Loading post...</p>
                         </>
                     ) : (
-                        // This case might show briefly if loading finishes but post is null and no error
                         <p className="text-gray-medium">Preparing post...</p>
                     )
                     }
@@ -281,40 +270,31 @@ const PostPage = () => {
         );
     }
 
-
-    // Only render the post content if post is successfully loaded and not null/error
     return (
         <div className="bg-background-light-gray text-black min-h-screen">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-grow">
-                        {/* Metadata and Dropdown - Ensure post data is available */}
                         {post && (
                             <div className="flex justify-between items-center mb-4">
                                 <div className="text-xs text-gray-600">
-                                    {/* Safely access category name */}
                                     {post.category?.name && (
                                         <Link to={`/categories/${post.category.slug}`} className="text-gray-800 font-medium hover:underline font-semibold">
                                             {post.category.name}
                                         </Link>
                                     )}
-                                    {/* Add separator only if category name was rendered and creator exists */}
                                     {post.category?.name && post.creator?.username && ' • '}
-                                    {/* Safely access creator username */}
                                     {post.creator?.username && (
                                         <Link to={`/users/${post.creator.username}`} className="hover:underline text-gray-600">
                                             {post.creator.username}
                                         </Link>
                                     )}
-                                    {/* Add separator only if category/creator was rendered and date exists */}
                                     {(post.category?.name || post.creator?.username) && post.createdAt && ' • '}
-                                    {/* Safely access creation date */}
                                     {post.createdAt && (
                                         formatRelativeTime(post.createdAt)
                                     )}
                                 </div>
 
-                                {/* Dropdown Button and Menu - Only show if post is loaded */}
                                 <div className="relative">
                                     <button
                                         ref={dropdownButtonRef}
@@ -328,9 +308,8 @@ const PostPage = () => {
                                         <div
                                             ref={dropdownRef}
                                             className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
-                                            onClick={(e) => e.stopPropagation()} // Prevent clicks inside dropdown from closing it via global listener
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            {/* Update Post option (visible to owner OR moderator) */}
                                             {canUpdatePost && (
                                                 <button
                                                     onClick={handleUpdatePostClick}
@@ -339,24 +318,20 @@ const PostPage = () => {
                                                     Update post
                                                 </button>
                                             )}
-                                            {/* Delete Post option (visible to owner or moderator) */}
                                             {canDeletePost && (
                                                 <button
-                                                    onClick={requestDeleteConfirmation} // Call the function to open the modal
-                                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100" // Styling for delete button
+                                                    onClick={requestDeleteConfirmation}
+                                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
                                                 >
                                                     Delete post
                                                 </button>
                                             )}
-                                            {/* Add other post options here if needed */}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-
-                        {/* Post Title - Ensure post data is available */}
                         {post?.title && (
                             <h1
                                 className="text-black font-sans font-bold text-2xl mb-4 "
@@ -374,8 +349,6 @@ const PostPage = () => {
                             ></div>
                         )}
 
-
-                        {/* Images Section - Already checks post.images.length > 0, added optional chaining for safety */}
                         {post?.images && post.images.length > 0 && (
                             <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-6">
                                 <div
@@ -391,7 +364,7 @@ const PostPage = () => {
                                                 ></div>
                                             )}
                                             {image?.url && (
-                                                <div className="absolute inset-0 bg-black opacity-20"></div>
+                                                <div className="absolute inset-0 bg-black opacity-40"></div>
                                             )}
 
                                             {image && (
@@ -406,7 +379,6 @@ const PostPage = () => {
                                     ))}
                                 </div>
 
-                                {/* Prev/Next Buttons */}
                                 {showPrevButton && (
                                     <button
                                         onClick={showPrevImage}
@@ -424,7 +396,6 @@ const PostPage = () => {
                                     </button>
                                 )}
 
-
                                 {post.images.length > 1 && (
                                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20 bg-black/30 rounded-full px-3 py-1">
                                         {post.images.map((_, index) => (
@@ -440,22 +411,19 @@ const PostPage = () => {
                             </div>
                         )}
 
-                        {/* Comments Count - Uses optional chaining for safety */}
                         <div className="flex items-center text-sm text-gray-600 gap-2">
                             <MessageCircle size={16} className="mr-1" />
-                            <span>{post?.commentsCount || 0} comments</span> {/* Use post?.commentsCount */}
+                            <span>{post?.commentsCount || 0} comments</span>
                         </div>
 
                         <hr className="my-6 border-gray-300" />
 
-                        {/* Comment Section (Placeholder) */}
                         <div className="mt-6 text-gray-600 text-center py-4">
                             No commentaries found.
                         </div>
 
                     </div>
 
-                    {/* Category Sidebar - Ensure post.category exists */}
                     {post?.category && (
                         <div className="w-80 flex-shrink-0 sticky top-16 self-start">
                             <CategoryInfoSidebar category={post.category} />
@@ -464,11 +432,10 @@ const PostPage = () => {
                 </div>
             </div>
 
-            {/* Image Preview Modal */}
             {showPreview && currentImageUrl && (
                 <div
                     className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-[999] overflow-hidden"
-                    onClick={closePreview} // Click outside to close
+                    onClick={closePreview}
                 >
                     <div
                         className="absolute inset-0 bg-cover bg-center filter blur-xl transform scale-125"
@@ -481,7 +448,7 @@ const PostPage = () => {
                         src={currentImageUrl}
                         alt="Image Preview"
                         className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                        onClick={closePreview} // Click on image to close
+                        onClick={closePreview}
                     />
 
                     <button
@@ -494,28 +461,27 @@ const PostPage = () => {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
-                    onClick={() => setShowDeleteModal(false)} // Click outside to close modal
+                    onClick={() => setShowDeleteModal(false)}
                 >
                     <div
                         className="bg-white rounded-lg p-6 max-w-sm mx-4"
-                        onClick={(e) => e.stopPropagation()} // Prevent clicks inside the modal from closing it
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
                         <p className="text-gray-700 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
                         <div className="flex justify-end space-x-4">
                             <button
                                 className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
-                                onClick={() => setShowDeleteModal(false)} // Cancel button action
+                                onClick={() => setShowDeleteModal(false)}
                             >
                                 Cancel
                             </button>
                             <button
                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                                onClick={confirmDeletePost} // Confirm button action
+                                onClick={confirmDeletePost}
                             >
                                 Delete
                             </button>

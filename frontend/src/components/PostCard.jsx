@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
+import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
 import Cookies from "js-cookie";
 import axios from "axios";
 import {toast} from "react-toastify";
@@ -21,6 +22,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user: authenticatedUser, loading: authLoading } = useUser();
+    const { addDeletedPostId } = useDeletedPosts(); // Use the hook
 
     const getPlainText = (html) => {
         const div = document.createElement('div');
@@ -31,15 +33,12 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const snippet = getPlainText(body);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
-    // State for the delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-
 
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const dropdownButtonRef = useRef(null);
 
-    // Corrected ref name in handleClickOutside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -84,12 +83,10 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         const handleEscapeKey = (event) => {
             if (event.key === 'Escape') {
                 closePreview();
-                // Also close the delete modal if open
                 setShowDeleteModal(false);
             }
         };
 
-        // Add/remove listener based on whether preview OR modal is open
         if (showPreview || showDeleteModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
@@ -99,8 +96,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview, showDeleteModal]); // Add showDeleteModal to dependency array
-
+    }, [showPreview, showDeleteModal]);
 
     const postDetailUrl = `/categories/${category?.slug}/posts/${id}`;
 
@@ -118,16 +114,9 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const snippetLineClampClass = images.length > 0 ? 'line-clamp-2' : 'line-clamp-5';
 
     const isPostOwner = authenticatedUser && creator && authenticatedUser.publicId === creator.publicId;
-
-    // Check if the authenticated user has the MODERATOR role
     const isModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
-
-    // Determine if the delete option should be shown (Owner OR Moderator)
     const canDeletePost = !authLoading && (isPostOwner || isModerator);
-
-    // Determine if the update option should be shown (Owner OR Moderator)
     const canUpdatePost = !authLoading && (isPostOwner || isModerator);
-
 
     const handleUpdatePostClick = (e) => {
         e.preventDefault();
@@ -138,17 +127,15 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         }
     };
 
-    // Function to request delete confirmation (opens the modal)
     const requestDeleteConfirmation = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setShowDropdown(false); // Close dropdown
-        setShowDeleteModal(true); // Open modal
+        setShowDropdown(false);
+        setShowDeleteModal(true);
     };
 
-    // Function to actually perform the deletion
     const confirmDeletePost = async () => {
-        setShowDeleteModal(false); // Close modal immediately
+        setShowDeleteModal(false);
 
         try {
             const response = await axios.delete(`http://localhost:8080/api/v1/posts/${id}`, {
@@ -157,11 +144,14 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 }
             });
 
-            // Axios throws an error for non-2xx status codes, so no need to check response.ok
             console.log(`Post with ID ${id} deleted successfully.`);
-            toast.success("Post deleted successfully!"); // Show success toast
+            toast.success("Post deleted successfully!");
 
-            // Trigger a function provided by the parent to handle UI update
+            // --- Add the deleted post ID to the context ---
+            addDeletedPostId(id);
+            // --- End of context update ---
+
+            // If onDeleteSuccess prop exists (used in Feed components), call it
             if (onDeleteSuccess) {
                 onDeleteSuccess(id);
             }
@@ -197,10 +187,9 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 errorMessage = `An unexpected error occurred: ${error.message}`;
             }
 
-            toast.error(errorMessage); // Show error toast
+            toast.error(errorMessage);
         }
     };
-
 
     return (
         <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100 overflow-hidden">
@@ -221,7 +210,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             {new Date(createdAt).toLocaleDateString()}
                         </div>
 
-                        {/* Dropdown Button (visible to everyone) */}
                         <div className="relative">
                             <button
                                 ref={dropdownButtonRef}
@@ -235,14 +223,12 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             >
                                 <MoreHorizontal size={20} />
                             </button>
-                            {/* Dropdown Menu (visible when button clicked) */}
                             {showDropdown && (
                                 <div
                                     ref={dropdownRef}
                                     className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
-                                    onClick={(e) => e.stopPropagation()} // Stop propagation so clicking menu doesn't close dropdown via global listener
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    {/* Update Post option (visible to owner OR moderator) */}
                                     {canUpdatePost && (
                                         <button
                                             onClick={handleUpdatePostClick}
@@ -251,16 +237,14 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                                             Update post
                                         </button>
                                     )}
-                                    {/* Delete Post option (visible to owner or moderator) */}
                                     {canDeletePost && (
                                         <button
-                                            onClick={requestDeleteConfirmation} // Call the function to open the modal
+                                            onClick={requestDeleteConfirmation}
                                             className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
                                         >
                                             Delete post
                                         </button>
                                     )}
-                                    {/* Add other post options here if needed (e.g., Report, Share) */}
                                 </div>
                             )}
                         </div>
@@ -346,11 +330,10 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 )}
             </div>
 
-            {/* Image Preview Modal */}
             {showPreview && images[currentImageIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
-                    onClick={closePreview} // Click outside to close
+                    onClick={closePreview}
                 >
                     {currentImageUrl && (
                         <div
@@ -367,7 +350,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             src={currentImageUrl}
                             alt="Image Preview"
                             className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                            onClick={closePreview} // Click on image to close
+                            onClick={closePreview}
                         />
                     )}
 
@@ -381,28 +364,27 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
-                    onClick={() => setShowDeleteModal(false)} // Click outside to close modal
+                    onClick={() => setShowDeleteModal(false)}
                 >
                     <div
                         className="bg-white rounded-lg p-6 max-w-sm mx-4"
-                        onClick={(e) => e.stopPropagation()} // Prevent clicks inside the modal from closing it
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
                         <p className="text-gray-700 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
                         <div className="flex justify-end space-x-4">
                             <button
                                 className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
-                                onClick={() => setShowDeleteModal(false)} // Cancel button action
+                                onClick={() => setShowDeleteModal(false)}
                             >
                                 Cancel
                             </button>
                             <button
                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                                onClick={confirmDeletePost} // Confirm button action
+                                onClick={confirmDeletePost}
                             >
                                 Delete
                             </button>
