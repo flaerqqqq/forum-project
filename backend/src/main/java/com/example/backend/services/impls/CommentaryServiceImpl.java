@@ -47,6 +47,8 @@ public class CommentaryServiceImpl implements CommentaryService {
             commentary.setParent(parent);
         }
 
+        post.setCommentsCount(post.getCommentsCount() + 1);
+
         Commentary savedCommentary = commentaryRepository.save(commentary);
 
         return commentaryMapper.toDto(savedCommentary);
@@ -76,6 +78,10 @@ public class CommentaryServiceImpl implements CommentaryService {
     @Transactional
     public void deleteById(String publicId, Long commentaryId) {
         checkAuthorizedUser(publicId, commentaryId);
+
+        Post post = findCommentaryById(commentaryId).getPost();
+        post.setCommentsCount(post.getCommentsCount() - 1);
+
         commentaryRepository.deleteById(commentaryId);
     }
 
