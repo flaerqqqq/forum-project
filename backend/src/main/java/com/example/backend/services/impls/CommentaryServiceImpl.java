@@ -14,6 +14,8 @@ import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CommentaryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +55,12 @@ public class CommentaryServiceImpl implements CommentaryService {
     public CommentaryDto getById(Long commentaryId) {
         final Commentary commentary = findCommentaryById(commentaryId);
         return commentaryMapper.toDto(commentary);
+    }
+
+    @Override
+    @Transactional
+    public Page<CommentaryDto> getPage(Long postId, Long parentId, Pageable pageable) {
+        return null;
     }
 
     private Commentary findCommentaryById(Long commentaryId) {

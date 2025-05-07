@@ -7,6 +7,9 @@ import com.example.backend.mappers.CommentaryMapper;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CommentaryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,5 +38,16 @@ public class CommentaryController {
     public ResponseEntity<CommentaryResponseDto> getById(@PathVariable Long commentaryId) {
         CommentaryDto commentaryDto = commentaryService.getById(commentaryId);
         return ResponseEntity.ok(commentaryMapper.toResponseDto(commentaryDto));
+    }
+
+    @GetMapping()
+    public ResponseEntity<Page<CommentaryResponseDto>> getPage(@RequestParam(value = "parentId", required = false) Long parentId,
+                                                               @RequestParam("postId") Long postId,
+                                                               Pageable pageable) {
+        Page<CommentaryDto> pageOfCommentaries = commentaryService.getPage(postId, parentId, pageable);
+        if (pageOfCommentaries.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(pageOfCommentaries.map(commentaryMapper::toResponseDto));
     }
 }
