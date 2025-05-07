@@ -31,6 +31,6 @@ public class CommentaryController {
                                                         @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         CommentaryDto commentaryDto = commentaryService.create(request, customUserDetails.getPublicId());
         URI resourceLocation = URI.create(STR."/api/v1/commentaries/\{commentaryDto.getId()}");
-        return ResponseEntity.created(resourceLocation).body(commentaryMapper.toResonseDto(commentaryDto));
+        return ResponseEntity.created(resourceLocation).body(commentaryMapper.toResponseDto(commentaryDto));
     }
 }

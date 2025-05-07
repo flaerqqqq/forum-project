@@ -31,7 +31,7 @@ public class Commentary {
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id", nullable = false)
+    @JoinColumn(name = "parent_id")
     private Commentary parent;
 
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
