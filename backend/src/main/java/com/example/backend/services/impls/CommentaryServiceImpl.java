@@ -60,7 +60,15 @@ public class CommentaryServiceImpl implements CommentaryService {
     @Override
     @Transactional
     public Page<CommentaryDto> getPage(Long postId, Long parentId, Pageable pageable) {
-        return null;
+        Post post = findPostById(postId);
+        Page<Commentary> commentaries;
+        if (parentId != null) {
+            Commentary parent = findCommentaryById(parentId);
+            commentaries = commentaryRepository.findCommentariesByPostAndParent(post, parent, pageable);
+        } else {
+            commentaries = commentaryRepository.findCommentariesByPost(post, pageable);
+        }
+        return commentaries.map(commentary -> commentaryMapper.toDto(commentary, false));
     }
 
     private Commentary findCommentaryById(Long commentaryId) {

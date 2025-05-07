@@ -39,6 +39,19 @@ public abstract class CommentaryMapper {
     @Mapping(target = "replies", ignore = true)
     public abstract CommentaryDto toDto(Commentary entity);
 
+    public CommentaryDto toDto(Commentary entity, boolean includeReplies) {
+        CommentaryDto commentaryDto = toDto(entity);
+        if (includeReplies && entity.getReplies() != null && !entity.getReplies().isEmpty()) {
+            commentaryDto.setReplies(entity.getReplies().stream()
+                    .map(this::toDto)
+                    .toList()
+            );
+        } else {
+            commentaryDto.setReplies(null);
+        }
+        return commentaryDto;
+    }
+
     @Mapping(target = "username", ignore = true)
     @Mapping(source = "creatorPublicId", target = "userPublicId")
     @Mapping(target = "userDisplayName", ignore = true)
