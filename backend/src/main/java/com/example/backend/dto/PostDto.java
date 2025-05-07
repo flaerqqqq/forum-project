@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.example.backend.models.Commentary;
 import com.example.backend.models.PostImage;
 import com.example.backend.models.enums.PostType;
 import lombok.AllArgsConstructor;
@@ -35,4 +36,6 @@ public class PostDto {
     private Long creatorId;
 
     private Long categoryId;
+
+    private List<Commentary> commentaries;
 }

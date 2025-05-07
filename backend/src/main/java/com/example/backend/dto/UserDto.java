@@ -61,4 +61,6 @@ public class UserDto {
     private List<CategoryModeratorDto> moderatedCategories;
 
     private List<PostDto> posts;
+
+    private List<CommentaryDto> commentaries;
 }

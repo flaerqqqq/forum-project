@@ -16,7 +16,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(config = MapperConfig.class, uses = {
-        PostImageMapper.class
+        PostImageMapper.class,
+        CommentaryMapper.class
 })
 public abstract class PostMapper {
 

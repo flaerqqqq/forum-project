@@ -18,7 +18,7 @@ import org.mapstruct.Mapping;
         CategoryFollowMapper.class,
         CategoryModeratorMapper.class,
         PostMapper.class,
-        PostMapper.class
+        CommentaryMapper.class
 })
 public interface UserMapper {
 
