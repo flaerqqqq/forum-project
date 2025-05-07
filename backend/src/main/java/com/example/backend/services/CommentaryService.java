@@ -11,4 +11,6 @@ public interface CommentaryService {
     CommentaryDto getById(Long commentaryId);
 
     Page<CommentaryDto> getPage(Long postId, Long parentId, Pageable pageable);
+
+    void deleteById(String publicId, Long commentaryId);
 }

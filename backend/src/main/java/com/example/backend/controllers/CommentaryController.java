@@ -50,4 +50,12 @@ public class CommentaryController {
         }
         return ResponseEntity.ok(pageOfCommentaries.map(commentaryMapper::toResponseDto));
     }
+
+    @DeleteMapping("/{commentaryId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Void> deleteById(@PathVariable Long commentaryId,
+                                           @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        commentaryService.deleteById(customUserDetails.getPublicId(), commentaryId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }

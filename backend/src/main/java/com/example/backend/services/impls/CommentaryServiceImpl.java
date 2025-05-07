@@ -8,6 +8,7 @@ import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CommentaryMapper;
 import com.example.backend.models.Commentary;
 import com.example.backend.models.Post;
+import com.example.backend.models.Role;
 import com.example.backend.models.User;
 import com.example.backend.repositories.CommentaryRepository;
 import com.example.backend.repositories.PostRepository;
@@ -16,6 +17,7 @@ import com.example.backend.services.CommentaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +71,26 @@ public class CommentaryServiceImpl implements CommentaryService {
             commentaries = commentaryRepository.findCommentariesByPost(post, pageable);
         }
         return commentaries.map(commentary -> commentaryMapper.toDto(commentary, false));
+    }
+
+    @Override
+    public void deleteById(String publicId, Long commentaryId) {
+        checkAuthorizedUser(publicId, commentaryId);
+        commentaryRepository.deleteById(commentaryId);
+    }
+
+    private void checkAuthorizedUser(String publicId, Long commentaryId) {
+        User user = findUserByPublicId(publicId);
+        Commentary commentary = findCommentaryById(commentaryId);
+        
+        boolean isAllowed = false;
+
+        if (commentary.getCreatedBy().equals(user)) isAllowed = true;
+        if (user.getRoles().stream()
+                .anyMatch(role -> role.getName() == Role.RoleName.ROLE_MODERATOR)) isAllowed = true;
+
+        if (!isAllowed)
+            throw new AccessDeniedException(STR."User with such publicId=\{publicId} now allowed to delete commentary with id=\{commentaryId}");
     }
 
     private Commentary findCommentaryById(Long commentaryId) {
