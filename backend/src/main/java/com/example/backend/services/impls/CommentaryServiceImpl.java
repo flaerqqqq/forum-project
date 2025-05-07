@@ -15,6 +15,7 @@ import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.CommentaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +26,11 @@ public class CommentaryServiceImpl implements CommentaryService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
 
+    @Override
+    @Transactional
     public CommentaryDto create(CommentaryCreateRequestDto request, String creatorPublicId) {
         User creator = findUserByPublicId(creatorPublicId);
-        Post post = findPostById(request);
+        Post post = findPostById(request.getPostId());
 
         Commentary commentary = Commentary.builder()
                 .content(request.getContent())
@@ -46,9 +49,20 @@ public class CommentaryServiceImpl implements CommentaryService {
         return commentaryMapper.toDto(savedCommentary);
     }
 
-    private Post findPostById(CommentaryCreateRequestDto request) {
-        return postRepository.findById(request.getPostId()).orElseThrow(() ->
-                new PostNotFoundException(STR."Post with such id=\{request.getPostId()} not found"));
+    @Override
+    public CommentaryDto getById(Long commentaryId) {
+        final Commentary commentary = findCommentaryById(commentaryId);
+        return commentaryMapper.toDto(commentary);
+    }
+
+    private Commentary findCommentaryById(Long commentaryId) {
+        return commentaryRepository.findById(commentaryId).orElseThrow(() ->
+                new CommentaryNotFoundException(STR."Commentary with such id=\{commentaryId} not found"));
+    }
+
+    private Post findPostById(Long postId) {
+        return postRepository.findById(postId).orElseThrow(() ->
+                new PostNotFoundException(STR."Post with such id=\{postId} not found"));
     }
 
     private User findUserByPublicId(String creatorPublicId) {

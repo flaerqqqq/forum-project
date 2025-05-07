@@ -10,10 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
@@ -32,5 +29,11 @@ public class CommentaryController {
         CommentaryDto commentaryDto = commentaryService.create(request, customUserDetails.getPublicId());
         URI resourceLocation = URI.create(STR."/api/v1/commentaries/\{commentaryDto.getId()}");
         return ResponseEntity.created(resourceLocation).body(commentaryMapper.toResponseDto(commentaryDto));
+    }
+
+    @GetMapping("/{commentaryId}")
+    public ResponseEntity<CommentaryResponseDto> getById(@PathVariable Long commentaryId) {
+        CommentaryDto commentaryDto = commentaryService.getById(commentaryId);
+        return ResponseEntity.ok(commentaryMapper.toResponseDto(commentaryDto));
     }
 }

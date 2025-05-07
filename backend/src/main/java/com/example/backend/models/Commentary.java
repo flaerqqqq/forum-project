@@ -34,7 +34,7 @@ public class Commentary {
     @JoinColumn(name = "parent_id")
     private Commentary parent;
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Commentary> replies;
 
     @ManyToOne

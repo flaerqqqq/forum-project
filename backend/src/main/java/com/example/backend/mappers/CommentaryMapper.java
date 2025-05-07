@@ -13,11 +13,13 @@ import com.example.backend.repositories.CommentaryRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
+@Slf4j
 @Mapper(config = MapperConfig.class)
 @RequiredArgsConstructor
 public abstract class CommentaryMapper {
