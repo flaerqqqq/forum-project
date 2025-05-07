@@ -3,14 +3,12 @@ package com.example.backend.services.impls;
 import com.example.backend.dto.CommentaryCreateRequestDto;
 import com.example.backend.dto.CommentaryDto;
 import com.example.backend.dto.CommentaryUpdateRequestDto;
+import com.example.backend.dto.UserCommentaryResponseDto;
 import com.example.backend.exceptions.CommentaryNotFoundException;
 import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CommentaryMapper;
-import com.example.backend.models.Commentary;
-import com.example.backend.models.Post;
-import com.example.backend.models.Role;
-import com.example.backend.models.User;
+import com.example.backend.models.*;
 import com.example.backend.repositories.CommentaryRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
@@ -75,12 +73,14 @@ public class CommentaryServiceImpl implements CommentaryService {
     }
 
     @Override
+    @Transactional
     public void deleteById(String publicId, Long commentaryId) {
         checkAuthorizedUser(publicId, commentaryId);
         commentaryRepository.deleteById(commentaryId);
     }
 
     @Override
+    @Transactional
     public CommentaryDto update(Long commentaryId, CommentaryUpdateRequestDto request, String publicId) {
         checkAuthorizedUser(publicId, commentaryId);
 
@@ -90,6 +90,32 @@ public class CommentaryServiceImpl implements CommentaryService {
         Commentary updatedCommentary = commentaryRepository.save(commentary);
 
         return commentaryMapper.toDto(updatedCommentary, false);
+    }
+
+    @Override
+    @Transactional
+    public Page<UserCommentaryResponseDto> getUserCommentaries(String publicId, Pageable pageable) {
+        User user = findUserByPublicId(publicId);
+
+        Page<UserCommentaryResponseDto> userCommentaries = commentaryRepository.findByCreatedBy(user, pageable).map(com -> {
+            Post post = com.getPost();
+            Category category = post.getCategory();
+
+            return UserCommentaryResponseDto.builder()
+                    .id(com.getId())
+                    .content(com.getContent())
+                    .createdAt(com.getCreatedAt())
+                    .updatedAt(com.getUpdatedAt())
+                    .categorySlug(category.getSlug())
+                    .categoryName(category.getName())
+                    .categoryIconUrl(category.getIconUrl())
+                    .postId(post.getId())
+                    .postTitle(post.getTitle())
+                    .parentCommentUsername(com.getParent() != null ? com.getParent().getCreatedBy().getUsername() : null)
+                    .build();
+        });
+
+        return userCommentaries;
     }
 
     private void checkAuthorizedUser(String publicId, Long commentaryId) {

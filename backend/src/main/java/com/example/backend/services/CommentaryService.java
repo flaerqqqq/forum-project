@@ -3,6 +3,7 @@ package com.example.backend.services;
 import com.example.backend.dto.CommentaryCreateRequestDto;
 import com.example.backend.dto.CommentaryDto;
 import com.example.backend.dto.CommentaryUpdateRequestDto;
+import com.example.backend.dto.UserCommentaryResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -16,4 +17,6 @@ public interface CommentaryService {
     void deleteById(String publicId, Long commentaryId);
 
     CommentaryDto update(Long commentaryId, CommentaryUpdateRequestDto request, String publicId);
+
+    Page<UserCommentaryResponseDto> getUserCommentaries(String publicId, Pageable pageable);
 }

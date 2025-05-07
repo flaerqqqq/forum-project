@@ -2,6 +2,7 @@ package com.example.backend.repositories;
 
 import com.example.backend.models.Commentary;
 import com.example.backend.models.Post;
+import com.example.backend.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,6 @@ public interface CommentaryRepository extends JpaRepository<Commentary, Long> {
             AND (c.parent IS NULL)
             """)
     Page<Commentary> findCommentariesByPost(@Param("post") Post post, Pageable pageable);
+
+    Page<Commentary> findByCreatedBy(User user, Pageable pageable);
 }

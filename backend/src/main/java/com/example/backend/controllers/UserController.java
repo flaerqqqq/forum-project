@@ -29,6 +29,7 @@ public class UserController {
     private final UserService userService;
     private final PostService postService;
     private final CategoryFollowService categoryFollowService;
+    private final CommentaryService commentaryService;
     private final UserMapper userMapper;
     private final PostMapper postMapper;
     private final ReactionService reactionService;
@@ -143,5 +144,16 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return ResponseEntity.ok(postsFromFollowing.map(postMapper::toResponseDto));
+    }
+
+    @GetMapping("/me/comments")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Page<UserCommentaryResponseDto>> getUserCommentaries(Pageable pageable,
+                                                                               @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        Page<UserCommentaryResponseDto> userCommentaries = commentaryService.getUserCommentaries(customUserDetails.getPublicId(), pageable);
+        if (userCommentaries.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(userCommentaries);
     }
 }
