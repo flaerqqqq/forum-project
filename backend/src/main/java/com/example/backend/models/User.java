@@ -93,4 +93,7 @@ public class User {
 
     @OneToMany(mappedBy = "creator")
     private List<Post> posts;
+
+    @OneToMany(mappedBy = "createdBy")
+    private List<Commentary> commentaries;
 }
