@@ -62,9 +62,9 @@ public abstract class CommentaryMapper {
     }
 
     @AfterMapping
-    public void mapEntityRepliesToDto(@MappingTarget CommentaryDto dto, Commentary entity) {
+    public void mapEntityRepliesToDto(@MappingTarget CommentaryDto.CommentaryDtoBuilder dto, Commentary entity) {
         if (entity.getReplies() != null && !entity.getReplies().isEmpty()) {
-            dto.setReplies(entity.getReplies().stream()
+            dto.replies(entity.getReplies().stream()
                     .map(this::toDto)
                     .toList()
             );
@@ -72,20 +72,20 @@ public abstract class CommentaryMapper {
     }
 
     @AfterMapping
-    public void mapDtoRepliesToEntity(@MappingTarget Commentary entity, CommentaryDto target) {
+    public void mapDtoRepliesToEntity(@MappingTarget Commentary.CommentaryBuilder entity, CommentaryDto target) {
         if (target.getReplies() != null && !target.getReplies().isEmpty()) {
-            entity.setReplies(target.getReplies().stream()
+            entity.replies(target.getReplies().stream()
                     .map(this::toEntity)
-                    .peek(reply -> reply.setParent(entity))
+                    .peek(reply -> reply.setParent(entity.build()))
                     .toList()
             );
         }
     }
 
     @AfterMapping
-    public void mapDtoRepliesToResponse(@MappingTarget CommentaryResponseDto responseDto, CommentaryDto dto) {
+    public void mapDtoRepliesToResponse(@MappingTarget CommentaryResponseDto.CommentaryResponseDtoBuilder responseDto, CommentaryDto dto) {
         if (dto.getReplies() != null && !dto.getReplies().isEmpty()) {
-            responseDto.setReplies(dto.getReplies().stream()
+            responseDto.replies(dto.getReplies().stream()
                     .map(this::toResponseDto)
                     .toList()
             );
@@ -93,14 +93,14 @@ public abstract class CommentaryMapper {
     }
 
     @AfterMapping
-    public void mapUserInfo(@MappingTarget CommentaryResponseDto responseDto, CommentaryDto dto) {
+    public void mapUserInfo(@MappingTarget CommentaryResponseDto.CommentaryResponseDtoBuilder responseDto, CommentaryDto dto) {
         if (dto.getCreatorPublicId() != null) {
             userRepository.findByPublicId(dto.getCreatorPublicId())
                     .ifPresent(user -> {
-                        responseDto.setUsername(user.getUsername());
-                        responseDto.setUserDisplayName(user.getDisplayName());
+                        responseDto.username(user.getUsername());
+                        responseDto.userDisplayName(user.getDisplayName());
                         if (user.getAvatar() != null && user.getAvatar().getUrl() != null) {
-                            responseDto.setUserAvatarUrl(user.getAvatar().getUrl());
+                            responseDto.userAvatarUrl(user.getAvatar().getUrl());
                         }
                     });
         }
