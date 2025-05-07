@@ -2,6 +2,7 @@ package com.example.backend.services.impls;
 
 import com.example.backend.dto.CommentaryCreateRequestDto;
 import com.example.backend.dto.CommentaryDto;
+import com.example.backend.dto.CommentaryUpdateRequestDto;
 import com.example.backend.exceptions.CommentaryNotFoundException;
 import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.exceptions.UserNotFoundException;
@@ -56,7 +57,7 @@ public class CommentaryServiceImpl implements CommentaryService {
     @Override
     public CommentaryDto getById(Long commentaryId) {
         final Commentary commentary = findCommentaryById(commentaryId);
-        return commentaryMapper.toDto(commentary);
+        return commentaryMapper.toDto(commentary, false);
     }
 
     @Override
@@ -77,6 +78,18 @@ public class CommentaryServiceImpl implements CommentaryService {
     public void deleteById(String publicId, Long commentaryId) {
         checkAuthorizedUser(publicId, commentaryId);
         commentaryRepository.deleteById(commentaryId);
+    }
+
+    @Override
+    public CommentaryDto update(Long commentaryId, CommentaryUpdateRequestDto request, String publicId) {
+        checkAuthorizedUser(publicId, commentaryId);
+
+        Commentary commentary = findCommentaryById(commentaryId);
+        commentary.setContent(request.getContent());
+
+        Commentary updatedCommentary = commentaryRepository.save(commentary);
+
+        return commentaryMapper.toDto(updatedCommentary, false);
     }
 
     private void checkAuthorizedUser(String publicId, Long commentaryId) {

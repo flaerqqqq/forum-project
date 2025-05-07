@@ -3,6 +3,7 @@ package com.example.backend.controllers;
 import com.example.backend.dto.CommentaryCreateRequestDto;
 import com.example.backend.dto.CommentaryDto;
 import com.example.backend.dto.CommentaryResponseDto;
+import com.example.backend.dto.CommentaryUpdateRequestDto;
 import com.example.backend.mappers.CommentaryMapper;
 import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CommentaryService;
@@ -57,5 +58,14 @@ public class CommentaryController {
                                            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         commentaryService.deleteById(customUserDetails.getPublicId(), commentaryId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping("/{commentaryId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<CommentaryResponseDto> update(@PathVariable Long commentaryId,
+                                       @RequestBody CommentaryUpdateRequestDto request,
+                                       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        CommentaryDto updatedCommentary = commentaryService.update(commentaryId, request, customUserDetails.getPublicId());
+        return ResponseEntity.ok(commentaryMapper.toResponseDto(updatedCommentary));
     }
 }
