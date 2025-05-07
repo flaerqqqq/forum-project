@@ -35,12 +35,11 @@ public class CategorySearchServiceImpl implements CategorySearchService {
         Query query = nativeQueryBuilder.withQuery(QueryBuilders.multiMatch(builder ->
                 builder
                         .query(queryString)
-                        .fields(List.of("slug", "name", "description"))
-                        .type(TextQueryType.BoolPrefix)
-                        .fuzziness("AUTO")
+                        .fields("name^2", "slug", "description")
+                        .type(TextQueryType.BestFields)
                         .operator(Operator.And)
+                        .fuzziness("AUTO")
                         .autoGenerateSynonymsPhraseQuery(true)
-
         )).build();
 
         SearchHits<Category> searchHits = elasticsearchOperations.search(query, Category.class);

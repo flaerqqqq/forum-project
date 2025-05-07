@@ -79,13 +79,13 @@ const PopularCategoriesSidebar = () => {
 
     return (
         <div className="rounded-lg ">
-            <h2 className="text-xl font-heading text-black px-2 ">Popular</h2>
-            <ul className="space-y-1">
+            <p className="block text-[13px] px-6 pt-3 pb-2 font-normal text-gray-dark mb-1 uppercase tracking-wide">Popular</p>
+            <ul className="">
                 {popularCategories.map(category => (
                     <li key={category.id}>
                         <button
                             onClick={() => handleCategoryClick(category.slug)}
-                            className="w-full flex items-center space-x-3 text-left text-gray-darker hover:text-black hover:bg-gray-lighter rounded-md transition-colors px-1 py-1.5"
+                            className="w-full flex px-6 items-center space-x-3 text-left text-gray-darker hover:text-black hover:bg-[#f6f8f9] rounded-lg transition-colors px-1 py-1.5"
                         >
                             {category.iconUrl ? (
                                 <img
@@ -99,7 +99,7 @@ const PopularCategoriesSidebar = () => {
                                 </div>
                             )}
                             <div className="flex flex-col flex-grow">
-                                <span className="text-sm font-sans text-black">c/{category.name}</span>
+                                <span className="text-sm font-light text-[#505050]">c/{category.name}</span>
                             </div>
                         </button>
                     </li>

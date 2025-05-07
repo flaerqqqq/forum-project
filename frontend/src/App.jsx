@@ -21,11 +21,13 @@ import Moderator from "./pages/Moderator.jsx";
 import PostPage from "./pages/PostPage.jsx";
 import UpdatePostPage from "./pages/UpdatePostPage.jsx";
 import SearchResultsPage from "./pages/SearchResultsPage.jsx";
+import {DeletedPostsProvider} from "./contexts/DeletedPostsContext.jsx";
 
 function App() {
     return (
         <ErrorBoundary>
             <UserProvider>
+                <DeletedPostsProvider>
                 <BrowserRouter>
                     <Routes>
                         <Route element={<MainLayout />}>
@@ -76,6 +78,7 @@ function App() {
                         hideProgressBar={false}
                     />
                 </BrowserRouter>
+                </DeletedPostsProvider>
             </UserProvider>
         </ErrorBoundary>
     );

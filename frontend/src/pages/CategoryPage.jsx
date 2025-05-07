@@ -257,10 +257,10 @@ const CategoryPage = () => {
                                         isFollowed
                                             ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
                                             : 'bg-accent-green hover:bg-green-700 text-white'
-                                    } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center`}
+                                    } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 text-sm flex items-center justify-center`}
                                 >
                                     {loadingFollowStatus ? (
-                                        <Oval height={16} width={16} color={isFollowed ? '#000' : '#fff'} secondaryColor={isFollowed ? '#EAEAEA' : '#ffffff33'} strokeWidth={5} visible={true} />
+                                        !isFollowed ? 'Following' : 'Follow'
                                     ) : (
                                         isFollowed ? 'Following' : 'Follow'
                                     )}

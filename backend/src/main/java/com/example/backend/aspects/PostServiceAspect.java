@@ -37,9 +37,9 @@ public class PostServiceAspect {
                         .id(result.getId())
                         .title(result.getTitle())
                         .body(result.getBody())
+                        .createdAt(result.getCreatedAt())
                         .build();
-                Post saved = postDocumentRepository.save(post);
-                log.info("post sved {}", saved);
+                postDocumentRepository.save(post);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
