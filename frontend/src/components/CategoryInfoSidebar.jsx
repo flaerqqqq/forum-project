@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
@@ -245,11 +245,12 @@ const CategoryInfoSidebar = ({ category }) => {
                             <div className="mt-4 text-center space-y-2">
                                 <Link
                                     to={`/categories/${category.slug}/moderators`}
-                                    className="inline-block px-4 py-2 text-sm text-white bg-accent-green rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors"
+                                    className='no-underline font-medium px-6 py-2 rounded-full focus:outline-none transition-colors duration-300 bg-accent-green hover:bg-green-700 text-white'
                                 >
                                     View all moderators
                                 </Link>
                             </div>
+
                         )}
                     </div>
                 </div>

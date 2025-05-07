@@ -85,6 +85,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
             return [];
         } finally {
             if (!isRestoringFromCache.current && !isRestoringScroll.current) {
+                scrollTo(0, 0);
                 setLoading(false);
             }
         }
