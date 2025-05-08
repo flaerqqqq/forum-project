@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
@@ -56,6 +56,10 @@ const PostPage = () => {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+    // State for category moderator check
+    const [isUserCategoryModerator, setIsUserCategoryModerator] = useState(false);
+    const [checkingCategoryModerator, setCheckingCategoryModerator] = useState(false);
+
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -73,7 +77,7 @@ const PostPage = () => {
         } catch (err) {
             console.error('Error fetching post:', err);
             setError(err); // Store the error object
-            if (err.status !== 404) {
+            if (err.response && err.response.status !== 404) {
                 toast.error('Failed to load post.');
             }
         } finally {
@@ -84,6 +88,56 @@ const PostPage = () => {
     useEffect(() => {
         fetchPost();
     }, [postId]);
+
+    // Effect to check if the authenticated user is a moderator for the post's category
+    useEffect(() => {
+        const checkCategoryModeratorStatus = async () => {
+            // Only check if user is authenticated, auth loading is done,
+            // user publicId is available, post data is loaded, and category slug is available
+            if (!authenticatedUser || authLoading || !authenticatedUser.publicId || !post?.category?.slug) {
+                setIsUserCategoryModerator(false); // Ensure it's false if conditions change
+                return;
+            }
+
+            // Avoid re-checking if already determined to be a moderator for this category
+            // If you need to handle dynamic changes in moderator status, remove this check
+            if (isUserCategoryModerator) {
+                return;
+            }
+
+            setCheckingCategoryModerator(true);
+            try {
+                const token = Cookies.get('token'); // Get token if needed by the API
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                // Make the API call to check moderator status by category slug and user public ID
+                const res = await axios.get(`http://localhost:8080/api/v1/categories/${post.category.slug}/moderators/${authenticatedUser.publicId}`, {
+                    headers: headers
+                });
+
+                // The API returns a list. If the list is not empty, the user is a moderator.
+                if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+                    setIsUserCategoryModerator(true);
+                } else {
+                    setIsUserCategoryModerator(false);
+                }
+
+            } catch (err) {
+                console.error('Error checking category moderator status:', err);
+                // On error, assume the user is not a category moderator for safety.
+                setIsUserCategoryModerator(false);
+                // Decide if you want to show a toast for this specific error,
+                // or just handle it silently as it's a permission check.
+                // toast.error('Failed to verify category moderator status.');
+            } finally {
+                setCheckingCategoryModerator(false);
+            }
+        };
+
+        // Trigger the check when authenticatedUser, authLoading, or post changes
+        checkCategoryModeratorStatus();
+
+    }, [authenticatedUser, authLoading, post, post?.category?.slug]); // Dependencies for the effect
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -151,9 +205,13 @@ const PostPage = () => {
     const currentImageUrl = post?.images?.[currentImageIndex]?.url;
 
     const isPostOwner = authenticatedUser && post?.creator && authenticatedUser.publicId === post.creator.publicId;
-    const isModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
-    const canUpdatePost = !authLoading && (isPostOwner || isModerator);
-    const canDeletePost = !authLoading && (isPostOwner || isModerator);
+    const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
+
+    // Updated canDeletePost condition to include category moderator status
+    const canDeletePost = !authLoading && !checkingCategoryModerator && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
+    // Keep canUpdatePost as owner or global moderator as per previous logic
+    const canUpdatePost = !authLoading && (isPostOwner);
+
 
     const handleUpdatePostClick = () => {
         if (post?.category?.slug && post?.id) {
@@ -194,7 +252,7 @@ const PostPage = () => {
 
                 addDeletedPostId(post.id);
 
-                navigate(-1);
+                navigate(-1); // Navigate back to the previous page (e.g., category page)
 
             } else {
                 console.error('Error deleting post: Unexpected status', response.status);
@@ -244,15 +302,18 @@ const PostPage = () => {
     }
 
 
-    // Show loader if loading or authLoading, or if post is null and there's no error
-    if (loading || authLoading || (!post && !error)) {
+    // Show loader if loading or authLoading, or if post is null and there's no error,
+    // or if post is loaded but we are still checking category moderator status.
+    if (loading || authLoading || (!post && !error) || (post && checkingCategoryModerator)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
                 <div className="flex flex-col items-center gap-4">
-                    {loading || authLoading ? (
+                    {(loading || authLoading || (post && checkingCategoryModerator)) ? (
                         <>
                             <Oval height={50} width={50} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} visible={true} />
-                            <p className="text-gray-medium">Loading post...</p>
+                            <p className="text-gray-medium">
+                                {loading ? 'Loading post...' : authLoading ? 'Authenticating user...' : 'Checking permissions...'}
+                            </p>
                         </>
                     ) : (
                         <p className="text-gray-medium">Preparing post...</p>
@@ -308,41 +369,43 @@ const PostPage = () => {
                                     )}
                                 </div>
 
-                                {/* Dropdown Button and Menu - Only show if post is loaded */}
-                                <div className="relative">
-                                    <button
-                                        ref={dropdownButtonRef}
-                                        className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
-                                        onClick={() => setShowDropdown(prev => !prev)}
-                                        aria-label="Post options"
-                                    >
-                                        <MoreHorizontal size={20} />
-                                    </button>
-                                    {showDropdown && (
-                                        <div
-                                            ref={dropdownRef}
-                                            className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
-                                            onClick={(e) => e.stopPropagation()}
+                                {/* Dropdown Button and Menu - Only show if post is loaded and there's an action available */}
+                                { (canUpdatePost || canDeletePost) && (
+                                    <div className="relative">
+                                        <button
+                                            ref={dropdownButtonRef}
+                                            className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
+                                            onClick={() => setShowDropdown(prev => !prev)}
+                                            aria-label="Post options"
                                         >
-                                            {canUpdatePost && (
-                                                <button
-                                                    onClick={handleUpdatePostClick}
-                                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
-                                                >
-                                                    Update post
-                                                </button>
-                                            )}
-                                            {canDeletePost && (
-                                                <button
-                                                    onClick={requestDeleteConfirmation}
-                                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
-                                                >
-                                                    Delete post
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                            <MoreHorizontal size={20} />
+                                        </button>
+                                        {showDropdown && (
+                                            <div
+                                                ref={dropdownRef}
+                                                className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {canUpdatePost && (
+                                                    <button
+                                                        onClick={handleUpdatePostClick}
+                                                        className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                    >
+                                                        Update post
+                                                    </button>
+                                                )}
+                                                {canDeletePost && (
+                                                    <button
+                                                        onClick={requestDeleteConfirmation}
+                                                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                                                    >
+                                                        Delete post
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -432,18 +495,26 @@ const PostPage = () => {
                         <hr className="my-6 border-gray-300" />
 
                         {/* Integrate the PostCommentaries component here */}
-                        {post?.id && <PostCommentaries postId={post.id} />}
+                        {/* Ensure PostCommentaries accepts and passes down categoryId and isUserCategoryModerator */}
+                        {post?.id && post.category && ( // Ensure post.category is available
+                            <PostCommentaries
+                                postId={post.id}
+                                categoryId={post.category?.id} // Pass down categoryId (assuming it exists)
+                                isUserCategoryModerator={isUserCategoryModerator} // Pass down moderator status
+                            />
+                        )}
 
                     </div>
 
                     {post?.category && (
-                        <div className="w-80 flex-shrink-0 sticky top-16 self-start">
+                        <div className="w-80 flex-shrink-0 sticky top-16 self-start hidden lg:block"> {/* Hide sidebar on smaller screens */}
                             <CategoryInfoSidebar category={post.category} />
                         </div>
                     )}
                 </div>
             </div>
 
+            {/* Image Preview Modal */}
             {showPreview && currentImageUrl && (
                 <div
                     className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-[999] overflow-hidden"
@@ -460,7 +531,7 @@ const PostPage = () => {
                         src={currentImageUrl}
                         alt="Image Preview"
                         className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                        onClick={closePreview}
+                        onClick={closePreview} // Allow closing by clicking the image
                     />
 
                     <button
@@ -473,14 +544,15 @@ const PostPage = () => {
                 </div>
             )}
 
+            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
-                    onClick={() => setShowDeleteModal(false)}
+                    onClick={() => setShowDeleteModal(false)} // Close modal when clicking outside
                 >
                     <div
                         className="bg-white rounded-lg p-6 max-w-sm mx-4"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing modal
                     >
                         <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
                         <p className="text-gray-700 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>

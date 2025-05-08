@@ -2,10 +2,11 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
-import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
+import { useDeletedPosts } from '../contexts/DeletedPostsContext';
 import Cookies from "js-cookie";
 import axios from "axios";
 import {toast} from "react-toastify";
+import {useModeratedCategories} from "../contexts/ModeratedCategoriesContext.jsx";
 
 const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const {
@@ -22,7 +23,9 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user: authenticatedUser, loading: authLoading } = useUser();
-    const { addDeletedPostId } = useDeletedPosts(); // Use the hook
+    const { addDeletedPostId } = useDeletedPosts();
+    // Use the hook to get moderated categories status and loading state from context
+    const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
 
     const getPlainText = (html) => {
         const div = document.createElement('div');
@@ -39,6 +42,11 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const dropdownRef = useRef(null);
     const dropdownButtonRef = useRef(null);
 
+    // Remove local state for category moderator check - this is now handled by context
+    // const [isUserCategoryModerator, setIsUserCategoryModerator] = useState(false);
+    // const [checkingCategoryModerator, setCheckingCategoryModerator] = useState(false);
+
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -52,6 +60,48 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    // Remove the useEffect hook that was fetching moderator status locally
+    /*
+    useEffect(() => {
+        const checkCategoryModeratorStatus = async () => {
+            if (!authenticatedUser || authLoading || !authenticatedUser.publicId || !category?.slug) {
+                setIsUserCategoryModerator(false);
+                return;
+            }
+
+            if (isUserCategoryModerator) {
+                return;
+            }
+
+
+            setCheckingCategoryModerator(true);
+            try {
+                const token = Cookies.get('token');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                const res = await axios.get(`http://localhost:8080/api/v1/categories/${post.category.id}/moderators/${authenticatedUser.publicId}/roles`, {
+                    headers: headers
+                });
+
+                if (res.data && res.data.roles.some(role => role === 'MODERATOR')) {
+                    setIsUserCategoryModerator(true);
+                } else {
+                    setIsUserCategoryModerator(false);
+                }
+
+            } catch (err) {
+                console.error('Error checking category moderator status in PostCard:', err);
+                setIsUserCategoryModerator(false);
+            } finally {
+                setCheckingCategoryModerator(false);
+            }
+        };
+
+        checkCategoryModeratorStatus();
+
+    }, [authenticatedUser, authLoading, category?.slug]);
+    */
 
     const showPrevImage = (e) => {
         e.stopPropagation();
@@ -114,9 +164,16 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const snippetLineClampClass = images.length > 0 ? 'line-clamp-2' : 'line-clamp-5';
 
     const isPostOwner = authenticatedUser && creator && authenticatedUser.publicId === creator.publicId;
-    const isModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
-    const canDeletePost = !authLoading && (isPostOwner || isModerator);
-    const canUpdatePost = !authLoading && (isPostOwner || isModerator);
+    const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
+
+    // Determine if the user is a moderator for *this post's* category using the context list
+    // Ensure category and slug exist before checking includes
+    const isUserCategoryModerator = moderatedCategorySlugs.includes(category?.slug);
+
+    // Update canDeletePost to use loadingModeratedCategories from context and derived isUserCategoryModerator
+    const canDeletePost = !authLoading && !loadingModeratedCategories && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
+    const canUpdatePost = !authLoading && (isPostOwner);
+
 
     const handleUpdatePostClick = (e) => {
         e.preventDefault();
@@ -147,11 +204,8 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
             console.log(`Post with ID ${id} deleted successfully.`);
             toast.success("Post deleted successfully!");
 
-            // --- Add the deleted post ID to the context ---
             addDeletedPostId(id);
-            // --- End of context update ---
 
-            // If onDeleteSuccess prop exists (used in Feed components), call it
             if (onDeleteSuccess) {
                 onDeleteSuccess(id);
             }
@@ -210,44 +264,49 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             {new Date(createdAt).toLocaleDateString()}
                         </div>
 
-                        <div className="relative">
-                            <button
-                                ref={dropdownButtonRef}
-                                className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setShowDropdown(prev => !prev);
-                                }}
-                                aria-label="Post options"
-                            >
-                                <MoreHorizontal size={20} />
-                            </button>
-                            {showDropdown && (
-                                <div
-                                    ref={dropdownRef}
-                                    className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
-                                    onClick={(e) => e.stopPropagation()}
+                        {/* Show dropdown only if any action is available (update or delete) */}
+                        { (canUpdatePost || canDeletePost) && (
+                            <div className="relative">
+                                <button
+                                    ref={dropdownButtonRef}
+                                    className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowDropdown(prev => !prev);
+                                    }}
+                                    aria-label="Post options"
                                 >
-                                    {canUpdatePost && (
-                                        <button
-                                            onClick={handleUpdatePostClick}
-                                            className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
-                                        >
-                                            Update post
-                                        </button>
-                                    )}
-                                    {canDeletePost && (
-                                        <button
-                                            onClick={requestDeleteConfirmation}
-                                            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
-                                        >
-                                            Delete post
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                    <MoreHorizontal size={20} />
+                                </button>
+                                {showDropdown && (
+                                    <div
+                                        ref={dropdownRef}
+                                        className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {/* Conditionally render Update button */}
+                                        {canUpdatePost && (
+                                            <button
+                                                onClick={handleUpdatePostClick}
+                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                            >
+                                                Update post
+                                            </button>
+                                        )}
+                                        {/* Conditionally render Delete button */}
+                                        {canDeletePost && (
+                                            <button
+                                                onClick={requestDeleteConfirmation}
+                                                className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                                            >
+                                                Delete post
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-black font-semibold text-xl mb-1 no-underline hover:underline break-words" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
@@ -320,6 +379,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                     )}
                 </Link>
             )}
+
 
             <div className="flex items-center text-sm text-gray-600 gap-2 mt-2">
                 {category?.slug && (

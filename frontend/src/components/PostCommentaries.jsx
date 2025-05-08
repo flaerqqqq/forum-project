@@ -42,7 +42,7 @@ const SORT_PARAMS = {
 };
 
 
-const PostCommentaries = ({ postId }) => {
+const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
     const { user } = useUser();
 
     const [rootComments, setRootComments] = useState([]);
@@ -452,6 +452,7 @@ const PostCommentaries = ({ postId }) => {
                         postId={postId}
                         isInitialRender={true}
                         shouldExpandSmallTrees={true}
+                        isUserCategoryModerator={isUserCategoryModerator}
                         onCommentDeleted={handleRootCommentDeleted}
                         sortOrder={SORT_PARAMS[sortOrder] || SORT_PARAMS['newest']}
                     />

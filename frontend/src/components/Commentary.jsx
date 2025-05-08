@@ -3,7 +3,7 @@ import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
-import { ChevronDown, ChevronUp, MoreHorizontal } from 'lucide-react';
+import {ChevronDown, ChevronUp, MessageCircle, MoreHorizontal} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from "../contexts/UserContext.jsx";
 import Cookies from "js-cookie";
@@ -101,7 +101,7 @@ const getInitials = (name) => {
 };
 
 
-const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSmallTrees = true, depth = 0, onCommentDeleted, sortOrder }) => {
+const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, isInitialRender = true, shouldExpandSmallTrees = true, depth = 0, onCommentDeleted, sortOrder }) => {
     const { user } = useUser();
     const navigate = useNavigate();
     const { deletedCommentIds, addDeletedCommentId } = useContext(DeletedCommentsContext);
@@ -130,12 +130,18 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
     const [showDropdown, setShowDropdown] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-
     const dropdownRef = useRef(null);
     const replyEditorRef = useRef(null);
     const editingEditorRef = useRef(null);
     const prevSortOrderRef = useRef(sortOrder);
 
+    // Determine if the user has the global MODERATOR role
+    const isGlobalModerator = user?.roles?.some(role => role.name === 'ROLE_MODERATOR') || false;
+
+    // Conditions for editing and deleting
+    const isAuthor = user && user.username === commentary.username;
+    const canEditComment = isAuthor; // Only author can edit
+    const canDeleteComment = isAuthor || isGlobalModerator || isUserCategoryModerator; // Author, global moderator, or category moderator can delete
 
     const quillModules = {
         toolbar: [
@@ -335,12 +341,16 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
                 };
                 setReplyContent('');
                 setIsReplying(false);
+                // Increment the parent's reply count
                 setCurrentRepliesCount(prevCount => prevCount + 1);
+                // Immediately show replies and fetch them again to include the new one and maintain sort order
                 setShowReplies(true);
+                // Reset replies state and pagination to force a refetch from the beginning
                 setReplies([]);
                 setReplyPage(0);
-                setHasMoreReplies(true);
+                setHasMoreReplies(true); // Assume there might be more replies after adding one
                 fetchReplies(0, REPLIES_PER_PAGE);
+
             } else {
                 toast.error('Failed to post reply.');
             }
@@ -360,20 +370,28 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
         setShowDropdown(false);
         switch (action) {
             case 'edit':
-                setIsEditing(true);
-                setEditingContent(commentaryDisplayContent);
-                setIsReplying(false);
+                if (canEditComment) {
+                    setIsEditing(true);
+                    setEditingContent(commentaryDisplayContent);
+                    setIsReplying(false);
+                }
                 break;
             case 'delete':
-                setShowDeleteModal(true);
+                if (canDeleteComment) {
+                    setShowDeleteModal(true);
+                }
                 break;
             case 'report':
-                toast.info('Report functionality not implemented yet.');
+                if (!isAuthor && user) { // Allow reporting if logged in and not the author
+                    toast.info('Report functionality not implemented yet.');
+                } else if (!user) {
+                    toast.info('You must be logged in to report a comment.');
+                }
                 break;
             default:
                 break;
         }
-    }, [commentaryDisplayContent]);
+    }, [commentaryDisplayContent, canEditComment, canDeleteComment, isAuthor, user]);
 
     const handleSaveEdit = async () => {
         const normalizedPlainTextContent = getNormalizedTextLength(editingContent);
@@ -460,7 +478,6 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
         };
     };
 
-    const isAuthor = user && user.id === commentary.userId;
 
     return (
         <div
@@ -523,6 +540,7 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
                             onClick={handleReplyClick}
                             className="flex text-sm items-center hover:underline hover:bg-gray-200 rounded-3xl py-1 px-3 text-gray-600 hover:text-gray-900"
                         >
+                            <MessageCircle size={14} className="mr-1" />
                             Reply
                         </button>
                     )}
@@ -546,7 +564,8 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
                         </button>
                     )}
 
-                    {!isEditing && !isReplying && (
+                    {/* Show dropdown button only if there are actions available */}
+                    {(canEditComment || canDeleteComment || (user && !isAuthor)) && (
                         <div ref={dropdownRef} className="relative">
                             <button
                                 onClick={() => setShowDropdown(!showDropdown)}
@@ -558,23 +577,24 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
 
                             {showDropdown && (
                                 <div className="absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                    {isAuthor && (
-                                        <>
-                                            <button
-                                                onClick={() => handleDropdownItemClick('edit')}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => handleDropdownItemClick('delete')}
-                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                            >
-                                                Delete
-                                            </button>
-                                        </>
+                                    {canEditComment && ( // Conditionally render Edit button
+                                        <button
+                                            onClick={() => handleDropdownItemClick('edit')}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Edit
+                                        </button>
                                     )}
-                                    {!isAuthor && (
+                                    {canDeleteComment && ( // Conditionally render Delete button
+                                        <button
+                                            onClick={() => handleDropdownItemClick('delete')}
+                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                        >
+                                            Delete
+                                        </button>
+                                    )}
+                                    {/* Show Report if logged in and not the author */}
+                                    {user && !isAuthor && (
                                         <button
                                             onClick={() => handleDropdownItemClick('report')}
                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -655,6 +675,8 @@ const Commentary = ({ commentary, postId, isInitialRender = true, shouldExpandSm
                             key={reply.id}
                             commentary={reply}
                             postId={postId}
+                            categoryId={categoryId} // Pass down categoryId
+                            isUserCategoryModerator={isUserCategoryModerator} // Pass down moderator status
                             isInitialRender={false}
                             shouldExpandSmallTrees={shouldExpandSmallTrees}
                             depth={depth + 1}
