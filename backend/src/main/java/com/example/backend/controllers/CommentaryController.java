@@ -49,7 +49,7 @@ public class CommentaryController {
         if (pageOfCommentaries.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return ResponseEntity.ok(pageOfCommentaries.map(commentaryMapper::toResponseDto));
+        return ResponseEntity.ok(pageOfCommentaries.map(com -> commentaryMapper.toResponseDto(com, false)));
     }
 
     @DeleteMapping("/{commentaryId}")
@@ -66,6 +66,6 @@ public class CommentaryController {
                                        @RequestBody CommentaryUpdateRequestDto request,
                                        @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         CommentaryDto updatedCommentary = commentaryService.update(commentaryId, request, customUserDetails.getPublicId());
-        return ResponseEntity.ok(commentaryMapper.toResponseDto(updatedCommentary));
+        return ResponseEntity.ok(commentaryMapper.toResponseDto(updatedCommentary, false));
     }
 }

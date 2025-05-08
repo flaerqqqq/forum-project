@@ -39,17 +39,17 @@ public abstract class CommentaryMapper {
     @Mapping(target = "replies", ignore = true)
     public abstract CommentaryDto toDto(Commentary entity);
 
-    public CommentaryDto toDto(Commentary entity, boolean includeReplies) {
-        CommentaryDto commentaryDto = toDto(entity);
-        if (includeReplies && entity.getReplies() != null && !entity.getReplies().isEmpty()) {
-            commentaryDto.setReplies(entity.getReplies().stream()
-                    .map(this::toDto)
+    public CommentaryResponseDto toResponseDto(CommentaryDto dto, boolean includeReplies) {
+        CommentaryResponseDto commentaryResponseDto = toResponseDto(dto);
+        if (includeReplies && dto.getReplies() != null && !dto.getReplies().isEmpty()) {
+            commentaryResponseDto.setReplies(dto.getReplies().stream()
+                    .map(this::toResponseDto)
                     .toList()
             );
         } else {
-            commentaryDto.setReplies(null);
+            commentaryResponseDto.setReplies(null);
         }
-        return commentaryDto;
+        return commentaryResponseDto;
     }
 
     @Mapping(target = "username", ignore = true)
@@ -57,6 +57,8 @@ public abstract class CommentaryMapper {
     @Mapping(target = "userDisplayName", ignore = true)
     @Mapping(target = "userAvatarUrl", ignore = true)
     @Mapping(target = "replies", ignore = true)
+    @Mapping(target = "hasReplies", expression = "java(dto.getReplies() != null ? dto.getReplies().size() > 0 : false)")
+    @Mapping(target = "repliesCount", expression = "java(dto.getReplies() != null ? dto.getReplies().size() : null)")
     public abstract CommentaryResponseDto toResponseDto(CommentaryDto dto);
 
     public abstract Commentary toEntity(CommentaryDto dto);

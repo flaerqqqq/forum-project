@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -32,14 +33,11 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     @Override
     @Transactional
     public CategoryModeratorDto addModerator(String ownerPublicId, String newModPublicId, Long categoryId) {
-        User owner = userRepository.findByPublicId(ownerPublicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(ownerPublicId)));
+        User owner = findUserByPublicId(ownerPublicId);
 
-        User newMod = userRepository.findByPublicId(newModPublicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(newModPublicId)));
+        User newMod = findUserByPublicId(newModPublicId);
 
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        Category category = findCategoryById(categoryId);
 
         if (!categoryModeratorRepository.isCategoryOwner(owner, category)) {
             throw new UserNotCategoryOwnerException("User with a publicId=%s not an owner of category with id=%d".formatted(ownerPublicId, categoryId));
@@ -62,14 +60,11 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     @Override
     @Transactional
     public void deleteModerator(String publicId, String moderatorPublicId, Long categoryId) {
-        User owner = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+        User owner = findUserByPublicId(publicId);
 
-        User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+        User moderator = findUserByPublicId(moderatorPublicId);
 
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        Category category = findCategoryById(categoryId);
 
         if (!categoryModeratorRepository.isCategoryOwner(owner, category)) {
             throw new UserNotCategoryOwnerException("User with a publicId=%s not an owner of category with id=%d".formatted(publicId, categoryId));
@@ -88,19 +83,17 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
 
     @Override
     public Page<CategoryModeratorDto> getCategoryModerators(Long categoryId, Pageable pageable) {
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        Category category = findCategoryById(categoryId);
 
         return categoryModeratorRepository.findAllByCategory(category, pageable).map(categoryModeratorMapper::toDto);
     }
 
     @Override
+    @Transactional
     public List<CategoryModeratorDto> getModeratorByPublicId(String moderatorPublicId, Long categoryId) {
-        User moderator = userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+        User moderator = findUserByPublicId(moderatorPublicId);
 
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
-                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+        Category category = findCategoryById(categoryId);
 
         List<CategoryModerator> categoryModeratorsByUser = categoryModeratorRepository.findAllByUserAndCategory(moderator, category);
 
@@ -111,12 +104,50 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
         return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();
     }
 
+    private Category findCategoryById(Long categoryId) {
+        return categoryRepository.findById(categoryId).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
+    }
+
+    private Category findCategoryBySlug(String categorySlug) {
+        return categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a slug=%d not found".formatted(categorySlug)));
+    }
+
+    private User findUserByPublicId(String moderatorPublicId) {
+        return userRepository.findByPublicId(moderatorPublicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(moderatorPublicId)));
+    }
+
     @Override
+    @Transactional
     public ModeratorRoleInfoDto getModeratorRoles(String moderatorPublicId, Long categoryId) {
         List<CategoryModeratorDto> categoryModeratorRoles = getModeratorByPublicId(moderatorPublicId, categoryId);
 
         return ModeratorRoleInfoDto.builder()
                 .roles(categoryModeratorRoles.stream().map(CategoryModeratorDto::getRole).toList())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public List<CategoryModeratorDto> getModeratorByPublicId(String moderatorPublicId, String categorySlug) {
+        User moderator = findUserByPublicId(moderatorPublicId);
+
+        Category category = findCategoryBySlug(categorySlug);
+
+        List<CategoryModerator> categoryModeratorsByUser = categoryModeratorRepository.findAllByUserAndCategory(moderator, category);
+
+        if (categoryModeratorsByUser.isEmpty()) {
+            throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an slug=%d".formatted(moderatorPublicId, categorySlug));
+        }
+
+        return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();
+    }
+
+    @Override
+    public Set<String> findUserModeratedCategories(String publicId) {
+        User user = findUserByPublicId(publicId);
+        return categoryModeratorRepository.findUserModeratedCategories(user);
     }
 }

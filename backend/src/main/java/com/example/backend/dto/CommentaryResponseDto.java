@@ -1,5 +1,6 @@
 package com.example.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +31,11 @@ public class CommentaryResponseDto {
 
     private LocalDateTime updatedAt;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<CommentaryResponseDto> replies;
 
+    private Boolean hasReplies;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Integer repliesCount;
 }

@@ -161,6 +161,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{categorySlug}/moderators/{moderatorPublicId}")
+    public ResponseEntity<List<CategoryModeratorDto>> getModeratorsBySlug(@PathVariable String categorySlug,
+                                                                       @PathVariable String moderatorPublicId) {
+        List<CategoryModeratorDto> response = categoryModeratorService.getModeratorByPublicId(moderatorPublicId, categorySlug);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{categoryId:\\d+}/moderators/{moderatorPublicId}/roles")
     public ResponseEntity<ModeratorRoleInfoDto> getModeratorRoles(@PathVariable Long categoryId,
                                                                   @PathVariable String moderatorPublicId) {

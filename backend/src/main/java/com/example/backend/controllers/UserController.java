@@ -20,6 +20,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.Set;
+
 @CrossOrigin
 @RestController
 @RequestMapping("/api/v1/users")
@@ -36,6 +39,7 @@ public class UserController {
     private final ReportService reportService;
     private final CategoryService categoryService;
     private final CategoryMapper categoryMapper;
+    private final CategoryModeratorService categoryModeratorService;
 
     @GetMapping("/{userPublicId}")
     public ResponseEntity<UserResponseDto> getUserInfo(@PathVariable String userPublicId) {
@@ -155,5 +159,15 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return ResponseEntity.ok(userCommentaries);
+    }
+
+    @GetMapping("/me/moderators")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Set<String>> getCategoriesModeratedByUser(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        Set<String> moderatedCategories = categoryModeratorService.findUserModeratedCategories(customUserDetails.getPublicId());
+        if (moderatedCategories.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(moderatedCategories);
     }
 }

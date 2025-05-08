@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CategoryModeratorRepository extends JpaRepository<CategoryModerator, Long> {
 
@@ -36,4 +37,11 @@ public interface CategoryModeratorRepository extends JpaRepository<CategoryModer
     Page<CategoryModerator> findAllByCategory(Category category, Pageable pageable);
 
     List<CategoryModerator> findAllByUserAndCategory(User moderator, Category category);
+
+    @Query("""
+    SELECT cm.category.slug
+    FROM CategoryModerator cm
+    WHERE cm.user = :user
+    """)
+    Set<String> findUserModeratedCategories(@Param("user") User user);
 }

@@ -57,7 +57,7 @@ public class CommentaryServiceImpl implements CommentaryService {
     @Override
     public CommentaryDto getById(Long commentaryId) {
         final Commentary commentary = findCommentaryById(commentaryId);
-        return commentaryMapper.toDto(commentary, false);
+        return commentaryMapper.toDto(commentary);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class CommentaryServiceImpl implements CommentaryService {
         } else {
             commentaries = commentaryRepository.findCommentariesByPost(post, pageable);
         }
-        return commentaries.map(commentary -> commentaryMapper.toDto(commentary, false));
+        return commentaries.map(commentary -> commentaryMapper.toDto(commentary));
     }
 
     @Override
@@ -95,7 +95,7 @@ public class CommentaryServiceImpl implements CommentaryService {
 
         Commentary updatedCommentary = commentaryRepository.save(commentary);
 
-        return commentaryMapper.toDto(updatedCommentary, false);
+        return commentaryMapper.toDto(updatedCommentary);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class CommentaryServiceImpl implements CommentaryService {
     private void checkAuthorizedUser(String publicId, Long commentaryId) {
         User user = findUserByPublicId(publicId);
         Commentary commentary = findCommentaryById(commentaryId);
-        
+
         boolean isAllowed = false;
 
         if (commentary.getCreatedBy().equals(user)) isAllowed = true;
