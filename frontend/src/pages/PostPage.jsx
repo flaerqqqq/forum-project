@@ -363,29 +363,28 @@ const PostPage = () => {
                             ></div>
                         )}
 
-                        {post?.images && post.images.length > 0 && (
-                            <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-6">
+                        {post?.images.length > 0 && (
+                            <div className="relative w-full aspect-video rounded-md overflow-hidden group mb-3">
                                 <div
                                     className="flex h-full transition-transform ease-in-out duration-300 relative z-10"
                                     style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                                 >
-                                    {post.images.map((image, index) => (
+                                    {post?.images.map((image, index) => (
                                         <div key={index} className="w-full h-full flex-shrink-0 flex justify-center items-center relative">
                                             {image?.url && (
                                                 <div
-                                                    className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-125"
+                                                    className="absolute inset-0 bg-cover bg-center filter blur-lg transform scale-110"
                                                     style={{ backgroundImage: `url(${image.url})` }}
                                                 ></div>
                                             )}
                                             {image?.url && (
-                                                <div className="absolute inset-0 bg-black opacity-40"></div>
+                                                <div className="absolute inset-0 bg-black opacity-20"></div>
                                             )}
-
                                             {image && (
                                                 <img
                                                     src={image.url}
                                                     alt={`slide-${index}`}
-                                                    className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
+                                                    className="max-w-full max-h-full object-contain relative z-10 cursor-pointer"
                                                     onClick={handleImageClick}
                                                 />
                                             )}
@@ -396,23 +395,23 @@ const PostPage = () => {
                                 {showPrevButton && (
                                     <button
                                         onClick={showPrevImage}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
                                     >
-                                        <ChevronLeft size={24} />
+                                        <ChevronLeft size={20} />
                                     </button>
                                 )}
                                 {showNextButton && (
                                     <button
                                         onClick={showNextImage}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition z-20"
                                     >
-                                        <ChevronRight size={24} />
+                                        <ChevronRight size={20} />
                                     </button>
                                 )}
 
-                                {post.images.length > 1 && (
-                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20 bg-black/30 rounded-full px-3 py-1">
-                                        {post.images.map((_, index) => (
+                                {post?.images.length > 1 && (
+                                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-20 bg-black/30 rounded-full px-2 py-1">
+                                        {post?.images.map((_, index) => (
                                             <div
                                                 key={index}
                                                 className={`w-2 h-2 rounded-full ${

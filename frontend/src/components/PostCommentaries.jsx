@@ -427,13 +427,6 @@ const PostCommentaries = ({ postId }) => {
                 </button>
             </div>
 
-
-            {error && (
-                <div className="p-4 bg-red-100 rounded-md border border-red-400 text-center text-red-700">
-                    {error}
-                </div>
-            )}
-
             {/* Initial Loading Spinner - Only shown when comments list is empty on initial load */}
             {isLoadingInitial && rootComments.length === 0 && !error && (
                 <div className="w-full flex items-center justify-center py-8">

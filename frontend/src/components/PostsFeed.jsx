@@ -5,7 +5,7 @@ import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
+import { useDeletedPosts } from '../contexts/DeletedPostsContext';
 
 const POSTS_PER_PAGE = 10;
 const SCROLL_THRESHOLD = 800;
@@ -78,6 +78,7 @@ const getInitialStateFromCache = (getHomePostsCache, creatorPublicId) => {
         }
     }
 
+
     return { initialSortBy: restoredSortBy, initialIsFollowingFeed: restoredIsFollowingFeed };
 };
 
@@ -110,6 +111,11 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             return [];
         }
 
+        if (!append) {
+            setLoading(true);
+        }
+
+
         if (currentIsFollowingFeed && !currentAuthToken) {
             console.warn("Cannot fetch following feed without authentication token.");
             setError("Authentication required for following feed.");
@@ -120,9 +126,6 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             return [];
         }
 
-        if (!append) {
-            setLoading(true);
-        }
 
         setError(null);
 
@@ -160,12 +163,10 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 setHasMore(false);
                 return res.data.content;
             } else {
-                // Filter out deleted posts from the fetched data
                 const newPosts = res.data.content.filter(post => !deletedPostIds.includes(post.id));
 
                 if (append) {
                     setPosts(prev => {
-                        // Ensure prev is an array before concatenating
                         const prevArray = Array.isArray(prev) ? prev : [];
                         const existingPostIds = new Set(prevArray.map(p => p.id));
                         const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
@@ -178,7 +179,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     setLoadedPostCount(uniqueNewPosts.length);
                 }
                 setHasMore(!res.data.last);
-                return newPosts; // Return filtered posts
+                return newPosts;
             }
 
         } catch (err) {
@@ -193,9 +194,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             setHasMore(false);
             return [];
         } finally {
-            if (!append) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
     }, [sortBy, creatorPublicId, isFollowingFeed, authToken, deletedPostIds]);
 
@@ -233,16 +232,15 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             if (specificCachedData && specificCachedData.posts && specificCachedData.posts.length > 0) {
                 isRestoringFromCache.current = true;
 
-                // Filter out deleted posts from cache data
                 const filteredCachedPosts = specificCachedData.posts.filter(post => !deletedPostIds.includes(post.id));
 
                 setPosts(filteredCachedPosts);
-                setLoadedPostCount(filteredCachedPosts.length); // Update count based on filtered posts
+                setLoadedPostCount(filteredCachedPosts.length);
 
                 const restoredPages = Math.ceil(filteredCachedPosts.length / POSTS_PER_PAGE) - 1;
                 setPage(Math.max(restoredPages, 0));
 
-                setHasMore(specificCachedData.hasMore); // Keep original hasMore for now
+                setHasMore(specificCachedData.hasMore);
                 setLoading(false);
 
                 if (specificCachedData.scrollY !== undefined) {
@@ -256,7 +254,6 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     isRestoringFromCache.current = false;
                     isRestoringScroll.current = false;
 
-                    // Re-evaluate if more content is needed after filtering cache
                     const currentScrollY = window.scrollY;
                     const viewportHeight = window.innerHeight;
                     const documentHeight = document.body.offsetHeight;
@@ -264,7 +261,6 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     const isNearBottomAfterRestore = (currentScrollY + viewportHeight) >= (documentHeight - SCROLL_THRESHOLD);
 
                     if (specificCachedData.hasMore && (isContentShorterThanViewport || isNearBottomAfterRestore)) {
-                        // If content is short or near bottom after filtering, load more
                         loadMore();
                     }
 
@@ -292,13 +288,14 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
         if (!loading && hasMore && !isRestoringScroll.current && !isRestoringFromCache.current) {
+            setLoading(true);
             fetchPosts(nextPage, POSTS_PER_PAGE, sortBy, true, isFollowingFeed, authToken);
             setPage(nextPage);
         }
     }, [loading, hasMore, page, sortBy, fetchPosts, isFollowingFeed, authToken]);
 
     const handleScroll = useCallback(() => {
-        if (isRestoringScroll.current || isRestoringFromCache.current) {
+        if (isRestoringScroll.current || isRestoringFromCache.current || loading) {
             return;
         }
 
@@ -307,10 +304,16 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         const viewportHeight = window.innerHeight;
         const isContentScrollable = containerHeight > viewportHeight;
 
-        if (isNearBottom && hasMore && !loading && isContentScrollable) {
+
+        if (isNearBottom && hasMore && isContentScrollable) {
+            loadMore();
+        } else if (!isContentScrollable && hasMore && posts.length > 0) {
+
             loadMore();
         }
-    }, [hasMore, loading, loadMore]);
+
+    }, [hasMore, loading, loadMore, posts.length]);
+
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll);
@@ -319,23 +322,35 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         };
     }, [handleScroll]);
 
+    useEffect(() => {
+        if (!loading && hasMore && posts.length > 0) {
+            const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
+            const viewportHeight = window.innerHeight;
+            const isContentScrollable = containerHeight > viewportHeight;
+
+            if (!isContentScrollable) {
+
+                loadMore();
+            }
+        }
+    }, [posts.length, loading, hasMore, loadMore]);
+
+
     const saveCurrentStateToCache = useCallback(() => {
-        // When saving to cache, filter out deleted posts first
         const postsToCache = posts.filter(post => !deletedPostIds.includes(post.id));
         const cacheKey = getCacheKey(creatorPublicId, isFollowingFeed);
         if (postsToCache.length > 0) {
             saveHomePostsCache(
                 cacheKey,
                 sortBy,
-                postsToCache, // Save filtered posts
-                postsToCache.length, // Save filtered count
+                postsToCache,
+                postsToCache.length,
                 window.scrollY,
                 page,
                 hasMore,
                 isFollowingFeed
             );
         } else {
-            // If all posts are filtered out, clear the cache for this key/sort
             clearHomePostsCache(cacheKey, sortBy);
         }
     }, [sortBy, posts, page, hasMore, saveHomePostsCache, creatorPublicId, isFollowingFeed, deletedPostIds, clearHomePostsCache]);
@@ -371,27 +386,19 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
         }
     };
 
-    // This function is still needed for deletions initiated *within* this feed component
     const handleDeletePost = useCallback((deletedPostId) => {
-        // Ensure currentPosts is an array before filtering
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => post.id !== deletedPostId) : []);
-        // When a post is deleted from here, also add it to the global context
         addDeletedPostId(deletedPostId);
     }, [addDeletedPostId]);
 
-    // Effect to filter posts whenever deletedPostIds changes
     useEffect(() => {
-        // This effect runs when deletedPostIds changes (e.g., after returning from post detail page)
-        // Filter the currently displayed posts
-        // Ensure currentPosts is an array before filtering
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)) : []);
-        // Recalculate loadedPostCount based on filtered posts
         setLoadedPostCount(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)).length : 0);
-
-    }, [deletedPostIds]); // Dependency on deletedPostIds
+    }, [deletedPostIds]);
 
     const showInitialLoading = loading && posts.length === 0 && !error;
     const showLoadingMore = loading && posts.length > 0 && hasMore;
+
 
     return (
         <div className="space-y-1" ref={postsContainerRef}>

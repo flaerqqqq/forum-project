@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { toast } from 'react-toastify'; // Importing toast for notifications
-import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { X } from 'lucide-react';
 
 const formatReason = (reason) => {
+    if (!reason) return '';
     return reason
-        .replace('_', ' ') // Replace underscores with spaces
+        .replace(/_/g, ' ')
         .toLowerCase()
-        .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase()); // Capitalize first letter of each word
+        .replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
 };
 
 const ReportUserModal = ({ targetPublicId, onClose }) => {
@@ -18,12 +20,13 @@ const ReportUserModal = ({ targetPublicId, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const modalRef = useRef(null);
+
     if (error) {
         throw error;
     }
 
     useEffect(() => {
-        // Fetch report reasons from backend
         const fetchReasons = async () => {
             try {
                 const response = await axios.get('http://localhost:8080/api/v1/reports/reasons');
@@ -41,12 +44,17 @@ const ReportUserModal = ({ targetPublicId, onClose }) => {
         setError(null);
 
         const token = Cookies.get('token');
+        if (!token) {
+            toast.error("Authentication token not found. Please log in.");
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await axios.post(
                 `http://localhost:8080/api/v1/reports`,
                 {
-                    targetType: 'USER', // Assuming the target type is 'USER'
+                    targetType: 'USER',
                     targetId: targetPublicId,
                     reason: selectedReason,
                     description,
@@ -60,85 +68,101 @@ const ReportUserModal = ({ targetPublicId, onClose }) => {
 
             if (response.status === 201) {
                 toast.success("Report Submitted! We'll review your report shortly.");
-                onClose(); // Close the modal after submitting the report
+                onClose();
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail || 'Error reporting user. Please try again.';
+            console.error('Error reporting user:', err);
+            const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Error reporting user. Please try again.';
             toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
-    // Close the modal when clicking outside
     const handleClickOutside = (event) => {
-        if (event.target === event.currentTarget) {
+        if (modalRef.current && !modalRef.current.contains(event.target)) {
             onClose();
         }
     };
 
     useEffect(() => {
-        // Adding event listener to close the modal when clicking outside
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, []);
+    }, [onClose]);
+
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [onClose]);
+
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-50"
-            onClick={handleClickOutside}
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
         >
-            <div className="bg-white p-6 rounded-lg w-80" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold text-gray-700">Report User</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+            <div ref={modalRef} className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-800">Report User</h3>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" aria-label="Close modal">
+                        <X size={20} />
                     </button>
                 </div>
 
-                <p className="text-sm text-gray-500 mt-2">Please select a reasong.</p>
+                <p className="text-sm text-gray-600 mb-4">Please select a reason for reporting this user.</p>
 
-                <div className="mt-4">
+                <div className="mt-2">
                     <select
-                        className="w-full p-2 border rounded-md"
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         value={selectedReason}
                         onChange={(e) => setSelectedReason(e.target.value)}
                     >
                         <option value="">Select a reason</option>
                         {reasons.map((reason) => (
                             <option key={reason} value={reason}>
-                                {formatReason(reason)} {/* Format the reason */}
+                                {formatReason(reason)}
                             </option>
                         ))}
                     </select>
                 </div>
 
                 {selectedReason && (
-                    <>
-                        <div className="mt-4">
-                            <textarea
-                                className="w-full p-2 mt-4 border rounded-md"
-                                placeholder="Enter your description..."
-                                rows="4"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            ></textarea>
-                        </div>
-                    </>
+                    <div className="mt-4">
+                         <textarea
+                             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-y"
+                             placeholder="Provide a detailed description (optional)"
+                             rows="4"
+                             value={description}
+                             onChange={(e) => setDescription(e.target.value)}
+                         ></textarea>
+                    </div>
                 )}
 
-                <div className="mt-4 flex justify-end gap-2">
-                    <button onClick={onClose} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading}
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={handleReport}
-                        disabled={loading || !description}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-blue-300"
+                        disabled={loading || !selectedReason}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? 'Submitting...' : 'Submit Report'}
+                        {loading ? (
+                            <Oval height={16} width={16} color="#fff" secondaryColor="#EAEAEA" strokeWidth={5} />
+                        ) : 'Submit Report'}
                     </button>
                 </div>
             </div>

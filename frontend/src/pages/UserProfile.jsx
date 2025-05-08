@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -233,7 +233,7 @@ const UserProfile = () => {
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 mb-6 border-b border-border">
                     <div className="flex flex-col flex-grow border-r border-border pr-6">
-                        <div className="flex items-center mb-4">
+                        <div className="flex items-center ">
                             <h1 className="text-3xl sm:text-4xl font-heading text-black mr-4 flex-grow">
                                 {profileUser.displayName}
                             </h1>
@@ -271,6 +271,11 @@ const UserProfile = () => {
                             </div>
                         </div>
 
+                        {profileUser.description && (
+                            <p className="text-gray-700 text-base mb-4 pr-6">
+                                {profileUser.description}
+                            </p>
+                        )}
                         <div className="flex space-x-6 font-medium text-gray-darker">
                             <button
                                 className={`pb-2 border-b-2 ${activeSection === 'posts' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
@@ -303,7 +308,7 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center flex-shrink-0 mt-6 sm:mt-0 pl-6">
+                    <div className="flex flex-col items-center flex-shrink-0 mt-6 sm:mt-6 pl-6">
                         <div className={`w-16 h-16 rounded-full ${profileUser.username ? getAvatarColorClass(profileUser.username) : 'bg-gray-medium'} flex items-center justify-center text-white text-2xl font-bold mb-2 overflow-hidden`}>
                             {profileUser.avatarUrl ? (
                                 <img src={profileUser.avatarUrl} alt="avatar" className="w-full h-full object-cover" />

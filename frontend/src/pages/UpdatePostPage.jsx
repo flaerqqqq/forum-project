@@ -18,8 +18,8 @@ const UpdatePostPage = () => {
     const { categorySlug, postId } = useParams();
     const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors }, reset, control, setValue, watch } = useForm();
-    const [images, setImages] = useState([]);
-    const [existingImages, setExistingImages] = useState([]);
+    // Combine existing and new images into a single state
+    const [allImages, setAllImages] = useState([]);
     const [previewIndex, setPreviewIndex] = useState(null);
     const [titleLength, setTitleLength] = useState(0);
     const [bodyTextLength, setBodyTextLength] = useState(0);
@@ -50,7 +50,8 @@ const UpdatePostPage = () => {
                 setValue('body', postData.body);
                 setValue('type', postData.type);
 
-                setExistingImages(postData.images || []);
+                // Initialize allImages with existing images, marking them
+                setAllImages(postData.images.map(img => ({ ...img, isExisting: true })));
 
                 setTitleLength(postData.title.length);
                 const div = document.createElement('div');
@@ -73,21 +74,20 @@ const UpdatePostPage = () => {
     }, [postId, setValue]);
 
     const onDrop = useCallback((acceptedFiles) => {
-        const filesWithSequentialName = acceptedFiles.map(file => {
+        const filesWithMetadata = acceptedFiles.map(file => {
             const sequentialName = `file${nextFileNumber.current++}`;
             return Object.assign(file, {
-                sequentialName: sequentialName
+                sequentialName: sequentialName,
+                isExisting: false // Mark as new
             });
         });
-        setImages((prev) => [...prev, ...filesWithSequentialName]);
-    }, []);
+        // Add new files to the single allImages state
+        setAllImages((prev) => [...prev, ...filesWithMetadata]);
+    }, [nextFileNumber]); // Added nextFileNumber to dependency array
 
-    const removeImage = (index, isExisting = false) => {
-        if (isExisting) {
-            setExistingImages((prev) => prev.filter((_, i) => i !== index));
-        } else {
-            setImages((prev) => prev.filter((_, i) => i !== index));
-        }
+    // Modify removeImage to operate on the single allImages state
+    const removeImage = (index) => {
+        setAllImages((prev) => prev.filter((_, i) => i !== index));
     };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -95,35 +95,24 @@ const UpdatePostPage = () => {
         accept: { 'image/*': [] },
     });
 
+    // Modify handleImageReorder to operate on the single allImages state
     const handleImageReorder = (draggedIndex, targetIndex) => {
         if (draggedIndex === targetIndex) return;
 
-        const allImages = [...existingImages, ...images];
-        const [movedImage] = allImages.splice(draggedIndex, 1);
-        allImages.splice(targetIndex, 0, movedImage);
-
-        const reorderedExisting = [];
-        const reorderedNew = [];
-
-        allImages.forEach(item => {
-            if (item.url !== undefined) {
-                reorderedExisting.push(item);
-            } else if (item.sequentialName !== undefined) {
-                reorderedNew.push(item);
-            }
+        setAllImages(prev => {
+            const newAllImages = [...prev];
+            const [movedImage] = newAllImages.splice(draggedIndex, 1);
+            newAllImages.splice(targetIndex, 0, movedImage);
+            return newAllImages;
         });
-
-        setExistingImages(reorderedExisting);
-        setImages(reorderedNew);
     };
-
 
     const onSubmit = async (data) => {
         setIsSubmitting(true);
         const formData = new FormData();
 
-        const allImagesInOrder = [...existingImages, ...images];
-        const imageOrder = allImagesInOrder.map(item => item.url || item.sequentialName);
+        // allImages state is already in the desired order after reordering
+        const imageOrder = allImages.map(item => item.isExisting ? item.url : item.sequentialName);
 
         const postUpdateData = {
             categorySlug: data.categorySlug,
@@ -135,11 +124,15 @@ const UpdatePostPage = () => {
 
         formData.append('data', new Blob([JSON.stringify(postUpdateData)], { type: 'application/json' }));
 
-        images.forEach((file) => {
-            const renamedFile = new File([file], file.sequentialName, { type: file.type });
-            formData.append('newImages', renamedFile);
+        // Append only the new image files to the formData
+        allImages.forEach(item => {
+            // Check if the item is a File object (which indicates it's a new image)
+            // and that it was marked as not existing. This provides a robust check.
+            if (item instanceof File && !item.isExisting) {
+                const renamedFile = new File([item], item.sequentialName, { type: item.type });
+                formData.append('newImages', renamedFile);
+            }
         });
-
 
         try {
             const response = await axios.put(`http://localhost:8080/api/v1/posts/${postId}`, formData, {
@@ -152,7 +145,7 @@ const UpdatePostPage = () => {
             toast.success('Post updated successfully!');
             navigate(`/categories/${categorySlug}/posts/${updatedPostId}`);
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail?.split(":")[1] || 'Failed to update post';
+            const errorMessage = err.response?.data?.body?.detail || 'Failed to update post';
             toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
@@ -199,10 +192,9 @@ const UpdatePostPage = () => {
         'link', 'image'
     ];
 
-    const allImages = [...existingImages, ...images];
-
+    // Determine the preview image URL from the single allImages state
     const previewImageUrl = previewIndex !== null && allImages[previewIndex]
-        ? (allImages[previewIndex].url || (allImages[previewIndex].sequentialName ? URL.createObjectURL(allImages[previewIndex]) : null))
+        ? (allImages[previewIndex].isExisting ? allImages[previewIndex].url : URL.createObjectURL(allImages[previewIndex]))
         : null;
 
 
@@ -289,6 +281,7 @@ const UpdatePostPage = () => {
 
                 <div className="space-y-2">
                     <label className="block">Images</label>
+                    {/* Render dropzone only if no images are present initially */}
                     {(allImages.length === 0) && (
                         <div
                             {...getRootProps()}
@@ -305,18 +298,21 @@ const UpdatePostPage = () => {
                         </div>
                     )}
 
+                    {/* Render image grid if there are images */}
                     {allImages.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 border p-2 rounded">
                             {allImages.map((item, index) => (
                                 <DraggableImage
-                                    key={item.url || item.sequentialName}
+                                    // Use a stable key that uniquely identifies each image
+                                    key={item.isExisting ? item.url : item.sequentialName}
                                     index={index}
                                     item={item}
                                     moveImage={handleImageReorder}
-                                    removeImage={removeImage}
+                                    removeImage={removeImage} // removeImage now only needs the index
                                     onClick={() => setPreviewIndex(index)}
                                 />
                             ))}
+                            {/* Render add button if less than 10 images */}
                             {allImages.length < 10 && (
                                 <div
                                     {...getRootProps()}
@@ -347,19 +343,21 @@ const UpdatePostPage = () => {
             {previewIndex !== null && allImages[previewIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-                    onClick={closePreview}
+                    onClick={closePreview} // Close preview when clicking the background
                 >
+                    {/* Blurred background based on the preview image */}
                     {previewImageUrl && (
                         <div
                             className="absolute inset-0 bg-cover bg-center filter blur-xl transform scale-125"
                             style={{ backgroundImage: `url(${previewImageUrl})` }}
-                            onClick={closePreview}
+                            onClick={closePreview} // Allow closing by clicking blurred background
                         ></div>
                     )}
+                    {/* Dark overlay */}
                     {previewImageUrl && (
                         <div
                             className="absolute inset-0 bg-black opacity-40"
-                            onClick={closePreview}
+                            onClick={closePreview} // Allow closing by clicking overlay
                         ></div>
                     )}
 
@@ -368,7 +366,7 @@ const UpdatePostPage = () => {
                             src={previewImageUrl}
                             alt="Image Preview"
                             className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                            onClick={closePreview}
+                            onClick={closePreview} // Allow closing by clicking the image
                         />
                     )}
 
@@ -400,7 +398,8 @@ const DraggableImage = ({ item, index, moveImage, removeImage, onClick }) => {
         },
     });
 
-    const displayUrl = item.url || (item.sequentialName ? URL.createObjectURL(item) : '');
+    // Determine the display URL based on whether it's an existing image or a new file
+    const displayUrl = item.isExisting ? item.url : (item.sequentialName ? URL.createObjectURL(item) : '');
 
     return (
         <div
@@ -419,7 +418,7 @@ const DraggableImage = ({ item, index, moveImage, removeImage, onClick }) => {
                 type="button"
                 onClick={(e) => {
                     e.stopPropagation();
-                    removeImage(index, item.url !== undefined);
+                    removeImage(index); // Call removeImage with the index
                 }}
                 className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
             >

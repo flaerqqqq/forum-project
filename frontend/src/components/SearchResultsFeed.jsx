@@ -39,7 +39,6 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
         const params = {
             page: pageNumber,
             size: size,
-            sort: currentSortBy,
             query: searchQuery
         };
 
@@ -284,23 +283,6 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
         <div className="space-y-1" ref={postsContainerRef}>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-xl font-bold">Search Results for: "{searchQuery}"</h1>
-                <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-600">Sort By:</span>
-                    <button
-                        className={`text-sm ${sortBy === 'created_at,desc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
-                        onClick={() => handleSortChange('created_at,desc')}
-                        disabled={loading}
-                    >
-                        Newest
-                    </button>
-                    <button
-                        className={`text-sm ${sortBy === 'created_at,asc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
-                        onClick={() => handleSortChange('created_at,asc')}
-                        disabled={loading}
-                    >
-                        Oldest
-                    </button>
-                </div>
             </div>
 
             {(posts.length > 0 || showLoadingMore) && <hr className="border-gray-300 my-2" />}
