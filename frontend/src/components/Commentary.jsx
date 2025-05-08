@@ -3,12 +3,45 @@ import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
-import {ChevronDown, ChevronUp, MessageCircle, MoreHorizontal} from 'lucide-react';
+import {ChevronDown, ChevronUp, MessageCircle, MoreHorizontal, PlusCircle} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from "../contexts/UserContext.jsx";
 import Cookies from "js-cookie";
 import DOMPurify from 'dompurify';
 import { DeletedCommentsContext } from '../contexts/DeletedCommentsContext';
+
+import UserHoverCard from './UserHoverCard';
+
+const getAvatarColorClass = (username) => {
+    if (!username) return 'bg-gray-medium';
+    const firstLetter = username.charAt(0).toUpperCase();
+    const asciiCode = firstLetter.charCodeAt(0);
+    const colorIndex = asciiCode % 10;
+
+    const avatarColors = [
+        'bg-accent-green',
+        'bg-gray-darker',
+        'bg-indigo-600',
+        'bg-blue-600',
+        'bg-purple-600',
+        'bg-pink-600',
+        'bg-teal-600',
+        'bg-orange-600',
+        'bg-red-600',
+        'bg-gray-medium',
+    ];
+    return avatarColors[colorIndex];
+};
+
+const getInitials = (name) => {
+    if (!name) return '';
+    const parts = name.split(' ');
+    if (parts.length === 1) {
+        return parts[0].charAt(0).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
 
 const getNormalizedTextLength = (html) => {
     if (!html) return 0;
@@ -69,39 +102,8 @@ const DeleteConfirmModal = ({ isOpen, onConfirm, onCancel, message }) => {
     );
 };
 
-const getAvatarColorClass = (username) => {
-    if (!username) return 'bg-gray-medium';
-    const firstLetter = username.charAt(0).toUpperCase();
-    const asciiCode = firstLetter.charCodeAt(0);
-    const colorIndex = asciiCode % 10;
 
-    const avatarColors = [
-        'bg-accent-green',
-        'bg-gray-darker',
-        'bg-indigo-600',
-        'bg-blue-600',
-        'bg-purple-600',
-        'bg-pink-600',
-        'bg-teal-600',
-        'bg-orange-600',
-        'bg-red-600',
-        'bg-gray-medium',
-    ];
-
-    return avatarColors[colorIndex];
-};
-
-const getInitials = (name) => {
-    if (!name) return '';
-    const parts = name.split(' ');
-    if (parts.length === 1) {
-        return parts[0].charAt(0).toUpperCase();
-    }
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-};
-
-
-const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, isInitialRender = true, shouldExpandSmallTrees = true, depth = 0, onCommentDeleted, sortOrder }) => {
+const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, isInitialRender = true, shouldExpandSmallTrees = true, depth = 0, onCommentDeleted, sortOrder, isParentShowing = true, onReplyAdded }) => {
     const { user } = useUser();
     const navigate = useNavigate();
     const { deletedCommentIds, addDeletedCommentId } = useContext(DeletedCommentsContext);
@@ -130,18 +132,20 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
     const [showDropdown, setShowDropdown] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+    const [showHoverCard, setShowHoverCard] = useState(false);
+    const hoverTimeoutRef = useRef(null);
+    const showDelay = 500;
+
+
     const dropdownRef = useRef(null);
     const replyEditorRef = useRef(null);
     const editingEditorRef = useRef(null);
     const prevSortOrderRef = useRef(sortOrder);
 
-    // Determine if the user has the global MODERATOR role
     const isGlobalModerator = user?.roles?.some(role => role.name === 'ROLE_MODERATOR') || false;
-
-    // Conditions for editing and deleting
     const isAuthor = user && user.username === commentary.username;
-    const canEditComment = isAuthor; // Only author can edit
-    const canDeleteComment = isAuthor || isGlobalModerator || isUserCategoryModerator; // Author, global moderator, or category moderator can delete
+    const canEditComment = isAuthor;
+    const canDeleteComment = isAuthor || isGlobalModerator || isUserCategoryModerator;
 
     const quillModules = {
         toolbar: [
@@ -250,18 +254,24 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
     }, [commentary.id, postId, deletedCommentIds, sortOrder]);
 
     useEffect(() => {
-        if (initialLoadDone &&
-            isInitialRender &&
-            shouldExpandSmallTrees &&
-            commentary.hasReplies &&
-            currentRepliesCount > 0 &&
+        const shouldTriggerFetch = (initialLoadDone || showReplies) &&
+            (commentary.hasReplies || currentRepliesCount > 0) &&
             replies.length === 0 &&
             !loadingReplies &&
-            currentRepliesCount < LOAD_ALL_THRESHOLD) {
+            currentRepliesCount > 0 &&
+            currentRepliesCount < LOAD_ALL_THRESHOLD &&
+            shouldExpandSmallTrees;
+
+
+        if (shouldTriggerFetch) {
+            if (!showReplies) {
+                setShowReplies(true);
+            }
             fetchReplies(0, currentRepliesCount);
-            setShowReplies(true);
         }
-    }, [initialLoadDone, isInitialRender, shouldExpandSmallTrees, commentary.id, commentary.hasReplies, currentRepliesCount, replies.length, loadingReplies, fetchReplies, depth, sortOrder]);
+
+    }, [initialLoadDone, showReplies, commentary.id, commentary.hasReplies, currentRepliesCount, replies.length, loadingReplies, fetchReplies, shouldExpandSmallTrees, LOAD_ALL_THRESHOLD]);
+
 
     useEffect(() => {
         if (initialLoadDone && prevSortOrderRef.current !== sortOrder && (commentary.hasReplies || currentRepliesCount > 0)) {
@@ -272,6 +282,20 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
         }
         prevSortOrderRef.current = sortOrder;
     }, [sortOrder, commentary.id, commentary.hasReplies, currentRepliesCount, fetchReplies, initialLoadDone]);
+
+    const handleReplySuccess = useCallback((newReplyData) => {
+        setCurrentRepliesCount(prevCount => prevCount + 1);
+        setShowReplies(true);
+        setReplies([]);
+        setReplyPage(0);
+        setHasMoreReplies(true);
+
+        if (onReplyAdded) {
+            onReplyAdded(commentary.id, newReplyData);
+        }
+
+        fetchReplies(0, REPLIES_PER_PAGE);
+    }, [commentary.id, onReplyAdded, fetchReplies]);
 
 
     const handleToggleReplies = useCallback(() => {
@@ -341,26 +365,15 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 };
                 setReplyContent('');
                 setIsReplying(false);
-                // Increment the parent's reply count
-                setCurrentRepliesCount(prevCount => prevCount + 1);
-                // Immediately show replies and fetch them again to include the new one and maintain sort order
-                setShowReplies(true);
-                // Reset replies state and pagination to force a refetch from the beginning
-                setReplies([]);
-                setReplyPage(0);
-                setHasMoreReplies(true); // Assume there might be more replies after adding one
-                fetchReplies(0, REPLIES_PER_PAGE);
+                handleReplySuccess(newReply);
 
             } else {
                 toast.error('Failed to post reply.');
             }
         } catch (err) {
             console.error('Error submitting reply:', err);
-            if (err.response?.data?.body?.detail) {
-                toast.error(`Failed to post reply: ${err.response.data.body.detail}`);
-            } else {
-                toast.error('Failed to post reply.');
-            }
+            const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Failed to post reply.';
+            toast.error(errorMessage);
         } finally {
             setSubmittingReply(false);
         }
@@ -382,7 +395,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 }
                 break;
             case 'report':
-                if (!isAuthor && user) { // Allow reporting if logged in and not the author
+                if (!isAuthor && user) {
                     toast.info('Report functionality not implemented yet.');
                 } else if (!user) {
                     toast.info('You must be logged in to report a comment.');
@@ -478,6 +491,49 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
         };
     };
 
+    const handleMouseEnter = () => {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setShowHoverCard(true);
+        }, showDelay);
+    };
+
+    const handleMouseLeave = () => {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setShowHoverCard(false);
+        }, 100);
+    };
+
+    useEffect(() => {
+        return () => {
+            clearTimeout(hoverTimeoutRef.current);
+        };
+    }, []);
+
+    const handleChildReplyAdded = useCallback((childCommentId, newReplyData) => {
+        // Find the child comment in THIS comment's replies state and update its count/hasReplies flag
+        setReplies(prevReplies => {
+            return prevReplies.map(reply => {
+                if (reply.id === childCommentId) {
+                    return {
+                        ...reply,
+                        repliesCount: (reply.repliesCount || 0) + 1,
+                        hasReplies: true,
+                    };
+                }
+                return reply;
+            });
+        });
+        // Do NOT increment THIS comment's direct reply count here, as the new reply was to a child
+
+
+        // If this comment has a parent, inform the parent that one of its children received a reply
+        if (onReplyAdded) {
+            onReplyAdded(commentary.id, newReplyData);
+        }
+    }, [setReplies, commentary.id, onReplyAdded]);
+
 
     return (
         <div
@@ -491,16 +547,20 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
             )}
 
             <div className={`${depth > 0 ? 'pl-2 md:pl-3' : ''}`}>
-                <div className="flex items-center space-x-2 text-xs text-gray-600 mb-1">
+                <div
+                    className="flex items-center space-x-2 text-xs text-gray-600 mb-1 relative"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                >
                     {commentary.userAvatarUrl ? (
                         <img
                             src={commentary.userAvatarUrl}
                             alt={commentary.username}
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                         />
                     ) : (
                         <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden ${getAvatarColorClass(commentary.username)}`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ${getAvatarColorClass(commentary.username)}`}
                         >
                             <span>{getInitials(commentary.userDisplayName || commentary.username)}</span>
                         </div>
@@ -513,6 +573,10 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                     </span>
                     <span className="mx-1">•</span>
                     <span>{formatDistanceToNow(new Date(commentary.createdAt), { addSuffix: true })}</span>
+
+                    {showHoverCard && (
+                        <UserHoverCard username={commentary.username} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} />
+                    )}
                 </div>
 
                 <div className="commentary-content pl-10 text-gray-800 break-words text-[16px]" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
@@ -564,7 +628,6 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                         </button>
                     )}
 
-                    {/* Show dropdown button only if there are actions available */}
                     {(canEditComment || canDeleteComment || (user && !isAuthor)) && (
                         <div ref={dropdownRef} className="relative">
                             <button
@@ -577,7 +640,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
 
                             {showDropdown && (
                                 <div className="absolute left-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10 py-1 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                    {canEditComment && ( // Conditionally render Edit button
+                                    {canEditComment && (
                                         <button
                                             onClick={() => handleDropdownItemClick('edit')}
                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -585,7 +648,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                                             Edit
                                         </button>
                                     )}
-                                    {canDeleteComment && ( // Conditionally render Delete button
+                                    {canDeleteComment && (
                                         <button
                                             onClick={() => handleDropdownItemClick('delete')}
                                             className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -593,7 +656,6 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                                             Delete
                                         </button>
                                     )}
-                                    {/* Show Report if logged in and not the author */}
                                     {user && !isAuthor && (
                                         <button
                                             onClick={() => handleDropdownItemClick('report')}
@@ -675,8 +737,8 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                             key={reply.id}
                             commentary={reply}
                             postId={postId}
-                            categoryId={categoryId} // Pass down categoryId
-                            isUserCategoryModerator={isUserCategoryModerator} // Pass down moderator status
+                            categoryId={categoryId}
+                            isUserCategoryModerator={isUserCategoryModerator}
                             isInitialRender={false}
                             shouldExpandSmallTrees={shouldExpandSmallTrees}
                             depth={depth + 1}
@@ -688,22 +750,32 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                                 }
                             }}
                             sortOrder={sortOrder}
+                            isParentShowing={showReplies}
+                            onReplyAdded={handleChildReplyAdded}
                         />
                     ))}
 
                     {loadingReplies && (
                         <div className="w-full flex items-center justify-center py-2">
-                            <Oval height={20} width={20} color="#1DB954" secondaryColor="#EAEAEA" strokeWidth={5} />
+                            <Oval height={20} width={20} color="#1DB950" secondaryColor="#EAEAEA" strokeWidth={5} />
                         </div>
                     )}
 
                     {!loadingReplies && hasMoreReplies && (
                         <button
                             onClick={handleLoadMoreReplies}
-                            className="text-sm text-blue-500 hover:underline mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center text-sm pl-[18px] text-gray-500 hover:underline  mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loadingReplies}
                         >
-                            Load More Replies
+                            {currentRepliesCount - replies.length > 5 ? (
+                                <>
+                                    <PlusCircle size={14} className="mr-1" /> next 5 replies from {currentRepliesCount - replies.length}
+                                </>
+                            ) : (
+                            <>
+                                <PlusCircle size={14} className="mr-1" /> {currentRepliesCount - replies.length} more replies
+                            </>)
+                            }
                         </button>
                     )}
 
