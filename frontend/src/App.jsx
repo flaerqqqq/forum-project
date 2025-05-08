@@ -22,11 +22,13 @@ import PostPage from "./pages/PostPage.jsx";
 import UpdatePostPage from "./pages/UpdatePostPage.jsx";
 import SearchResultsPage from "./pages/SearchResultsPage.jsx";
 import {DeletedPostsProvider} from "./contexts/DeletedPostsContext.jsx";
+import {DeletedCommentsProvider} from "./contexts/DeletedCommentsContext.jsx";
 
 function App() {
     return (
         <ErrorBoundary>
             <UserProvider>
+                <DeletedCommentsProvider>
                 <DeletedPostsProvider>
                 <BrowserRouter>
                     <Routes>
@@ -79,6 +81,7 @@ function App() {
                     />
                 </BrowserRouter>
                 </DeletedPostsProvider>
+                </DeletedCommentsProvider>
             </UserProvider>
         </ErrorBoundary>
     );

@@ -9,6 +9,7 @@ import { useUser } from '../contexts/UserContext';
 import { useDeletedPosts } from '../contexts/DeletedPostsContext';
 import Cookies from "js-cookie";
 import PostNotFound from '../components/PostNotFound.jsx'; // Import the new component
+import PostCommentaries from '../components/PostCommentaries.jsx'; // Corrected import path to .jsx
 
 const formatRelativeTime = (timestamp) => {
     const now = new Date();
@@ -431,9 +432,8 @@ const PostPage = () => {
 
                         <hr className="my-6 border-gray-300" />
 
-                        <div className="mt-6 text-gray-600 text-center py-4">
-                            No commentaries found.
-                        </div>
+                        {/* Integrate the PostCommentaries component here */}
+                        {post?.id && <PostCommentaries postId={post.id} />}
 
                     </div>
 

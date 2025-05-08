@@ -34,18 +34,21 @@ export default {
         border: '#EAEAEA', // Default border color
       },
       fontFamily: {
-        // Using the specific font names provided, with standard fallbacks
+        // Added Noto Sans and Roboto as primary sans-serif fonts,
+        // followed by your existing fonts and default fallbacks.
         sans: [
-          'Kievit', // Primary sans-serif (Note: Ensure this font is available/loaded)
-          'Marat Sans', // Another sans-serif option
-          'Sohne', // Subheading sans-serif, good for general sans too
+          'Noto Sans', // Added Noto Sans (Reddit's primary)
+          'Roboto',    // Added Roboto (Reddit's fallback)
+          'Kievit',
+          'Marat Sans',
+          'Sohne',
           'Helvetica Neue',
           'Arial',
           ...defaultTheme.fontFamily.sans, // Include default system sans-serifs as final fallbacks
         ],
         serif: [
-          'Charter', // Primary serif (Note: Ensure this font is available/loaded)
-          'Noe', // Another serif option
+          'Charter', // Primary serif
+          'Noe',
           'Georgia',
           'Cambria',
           'Times New Roman',
@@ -53,13 +56,13 @@ export default {
         ],
         // Specific families for headings if you want to enforce those exact fonts
         heading: [
-          'Fell', // Heading font (Note: Ensure this font is available/loaded)
+          'Fell', // Heading font
           'Georgia', // Fallback serif for headings
           'Cambria',
           ...defaultTheme.fontFamily.serif,
         ],
         subheading: [
-          'Sohne', // Subheading font (Note: Ensure this font is available/loaded)
+          'Sohne', // Subheading font
           'Helvetica Neue', // Fallback for subheadings
           ...defaultTheme.fontFamily.sans,
         ],
