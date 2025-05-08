@@ -260,7 +260,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
             !loadingReplies &&
             currentRepliesCount > 0 &&
             currentRepliesCount < LOAD_ALL_THRESHOLD &&
-            shouldExpandSmallTrees;
+            shouldExpandSmallTrees && depth < 2;
 
 
         if (shouldTriggerFetch) {
@@ -546,7 +546,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 ></div>
             )}
 
-            <div className={`${depth > 0 ? 'pl-2 md:pl-3' : ''}`}>
+            <div className={`${depth > 0 ? 'pl-2 md:pl-2' : ''}`}>
                 <div
                     className="flex items-center space-x-2 text-xs text-gray-600 mb-1 relative"
                     onMouseEnter={handleMouseEnter}
@@ -731,7 +731,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
             </div>
 
             {showReplies && !isEditing && !isReplying && (
-                <div className={`commentary-replies ${depth === 0 ? 'pl-4' : 'pl-7' } mt-2`}>
+                <div className={`commentary-replies ${depth === 0 ? 'pl-4' : 'pl-6' } mt-2`}>
                     {replies.filter(reply => !deletedCommentIds.includes(reply.id)).map(reply => (
                         <Commentary
                             key={reply.id}
