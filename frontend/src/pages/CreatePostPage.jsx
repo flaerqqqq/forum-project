@@ -80,7 +80,7 @@ const CreatePostPage = () => {
             setBodyTextLength(0);
             navigate(`/categories/${categorySlug}/posts/${postId}`);
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail?.split(":")[1] || 'Failed to create post';
+            const errorMessage = err.response?.data?.body?.detail || 'Failed to create post';
             toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);

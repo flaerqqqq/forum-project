@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class CategoryFollowServiceImpl implements CategoryFollowService {
@@ -29,8 +31,7 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
     @Override
     @Transactional
     public CategoryFollowDto follow(String publicId, Long categoryId) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+        User user = findUserByPublicId(publicId);
 
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
@@ -69,8 +70,7 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
 
     @Override
     public Page<CategoryFollowDto> getUserFollows(String publicId, Pageable pageable) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+        User user = findUserByPublicId(publicId);
         return categoryFollowRepository.findAllByUser(user, pageable).map(categoryFollowMapper::toDto);
     }
 
@@ -90,14 +90,24 @@ public class CategoryFollowServiceImpl implements CategoryFollowService {
         return categoryFollowMapper.toDto(userCategoryFollow);
     }
 
+    @Override
+    public Set<String> findFollowedCategoriesByUser(String publicId) {
+        User user = findUserByPublicId(publicId);
+        return categoryFollowRepository.findFollowedCategoriesByUser(user);
+    }
+
     private CategoryFollow getAndValidateCategoryFollow(String publicId, Long categoryId) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+        User user = findUserByPublicId(publicId);
 
         Category category = categoryRepository.findById(categoryId).orElseThrow(() ->
                 new CategoryNotFoundException("Category with such a id=%d not found".formatted(categoryId)));
 
         return categoryFollowRepository.findByUserAndCategory(user, category).orElseThrow(() ->
                 new UserNotFollowCategoryException("User with publicId=%s do not follow category with id=%d".formatted(publicId, categoryId)));
+    }
+
+    private User findUserByPublicId(String publicId) {
+        return userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
     }
 }

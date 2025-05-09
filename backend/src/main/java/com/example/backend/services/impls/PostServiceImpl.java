@@ -62,6 +62,7 @@ public class PostServiceImpl implements PostService {
             post.setPostImages(createAndUploadPostImages(images, post));
         }
 
+        user.setPostsCount(user.getPostsCount() + 1);
         Post savedPost = postRepository.save(post);
 
         return postMapper.toDto(savedPost);
@@ -173,6 +174,7 @@ public class PostServiceImpl implements PostService {
 
         checkAuthorizedUser(user, post);
 
+        user.setPostsCount(user.getPostsCount() - 1);
         postRepository.delete(post);
     }
 

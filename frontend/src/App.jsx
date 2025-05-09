@@ -1,5 +1,6 @@
+import React from 'react';
 import {BrowserRouter, Routes, Route, ScrollRestoration} from 'react-router-dom';
-import { ToastContainer } from 'react-toastify'; // Import ToastContainer
+import { ToastContainer } from 'react-toastify';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -24,66 +25,71 @@ import SearchResultsPage from "./pages/SearchResultsPage.jsx";
 import {DeletedPostsProvider} from "./contexts/DeletedPostsContext.jsx";
 import {DeletedCommentsProvider} from "./contexts/DeletedCommentsContext.jsx";
 import {ModeratedCategoriesProvider} from "./contexts/ModeratedCategoriesContext.jsx";
+import {FollowedCategoriesProvider} from "./contexts/FollowedCategoriesContext.jsx"; // Keep the import
 
 function App() {
     return (
         <ErrorBoundary>
             <UserProvider>
                 <ModeratedCategoriesProvider>
-                <DeletedCommentsProvider>
-                <DeletedPostsProvider>
-                <BrowserRouter>
-                    <Routes>
-                        <Route element={<MainLayout />}>
-                            <Route path="/email-verify-notice" element={<EmailVerificationNotice />} />
-                            <Route path="/users/:username" element={<UserProfile />} />
-                            <Route path="/" element={<Home />} />
-                            <Route path="/categories/:categorySlug" element={<CategoryPage />} />
-                            <Route path="/categories" element={<ExploreCategories />} />
-                            <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
-                            <Route path="/categories/:categorySlug/posts/:postId" element={<PostPage />} />
-                            <Route path="/posts/search" element={<SearchResultsPage />} />
+                    <DeletedCommentsProvider>
+                        <DeletedPostsProvider>
+                            <BrowserRouter>
+                                {/* Wrap the MainLayout route with FollowedCategoriesProvider */}
+                                <FollowedCategoriesProvider>
+                                    <Routes>
+                                        <Route element={<MainLayout />}>
+                                            <Route path="/email-verify-notice" element={<EmailVerificationNotice />} />
+                                            {/* Routes that need FollowedCategoriesContext */}
+                                            <Route path="/users/:username" element={<UserProfile />} />
+                                            <Route path="/" element={<Home />} />
+                                            <Route path="/categories/:categorySlug" element={<CategoryPage />} />
+                                            <Route path="/categories" element={<ExploreCategories />} />
+                                            <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
+                                            <Route path="/categories/:categorySlug/posts/:postId" element={<PostPage />} />
+                                            <Route path="/posts/search" element={<SearchResultsPage />} />
 
-                            <Route path="/categories/:categorySlug/create-post" element={
-                                <AuthOnlyRoute>
-                                    <CreatePostPage />
-                                </AuthOnlyRoute>
-                            } />
-                            <Route path="/categories/:categorySlug/posts/:postId/edit" element={
-                                <AuthOnlyRoute>
-                                    <UpdatePostPage />
-                                </AuthOnlyRoute>
-                            } />
-                            <Route path="/moderator" element={
-                                <ModeratorOnlyRoute>
-                                    <Moderator />
-                                </ModeratorOnlyRoute>
-                            } />
-                            <Route path="/settings" element={
-                                <AuthOnlyRoute>
-                                    <Settings />
-                                </AuthOnlyRoute>
-                            } />
-                            <Route path="/register" element={
-                                <GuestOnlyRoute>
-                                    <Register />
-                                </GuestOnlyRoute>
-                            } />
-                            <Route path="/login" element={
-                                <GuestOnlyRoute>
-                                    <Login />
-                                </GuestOnlyRoute>
-                            } />
-                        </Route>
-                    </Routes>
-                    <ToastContainer
-                        position="bottom-right"
-                        autoClose={3000}
-                        hideProgressBar={false}
-                    />
-                </BrowserRouter>
-                </DeletedPostsProvider>
-                </DeletedCommentsProvider>
+                                            <Route path="/categories/:categorySlug/create-post" element={
+                                                <AuthOnlyRoute>
+                                                    <CreatePostPage />
+                                                </AuthOnlyRoute>
+                                            } />
+                                            <Route path="/categories/:categorySlug/posts/:postId/edit" element={
+                                                <AuthOnlyRoute>
+                                                    <UpdatePostPage />
+                                                </AuthOnlyRoute>
+                                            } />
+                                            <Route path="/moderator" element={
+                                                <ModeratorOnlyRoute>
+                                                    <Moderator />
+                                                </ModeratorOnlyRoute>
+                                            } />
+                                            <Route path="/settings" element={
+                                                <AuthOnlyRoute>
+                                                    <Settings />
+                                                </AuthOnlyRoute>
+                                            } />
+                                            <Route path="/register" element={
+                                                <GuestOnlyRoute>
+                                                    <Register />
+                                                </GuestOnlyRoute>
+                                            } />
+                                            <Route path="/login" element={
+                                                <GuestOnlyRoute>
+                                                    <Login />
+                                                </GuestOnlyRoute>
+                                            } />
+                                        </Route>
+                                    </Routes>
+                                </FollowedCategoriesProvider> {/* Close the provider here */}
+                                <ToastContainer
+                                    position="bottom-right"
+                                    autoClose={3000}
+                                    hideProgressBar={false}
+                                />
+                            </BrowserRouter>
+                        </DeletedPostsProvider>
+                    </DeletedCommentsProvider>
                 </ModeratedCategoriesProvider>
             </UserProvider>
         </ErrorBoundary>

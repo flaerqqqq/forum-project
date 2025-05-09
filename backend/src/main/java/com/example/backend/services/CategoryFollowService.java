@@ -5,6 +5,8 @@ import com.example.backend.dto.CategoryFollowUpdateRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Set;
+
 public interface CategoryFollowService {
 
     CategoryFollowDto follow(String publicId, Long categoryId);
@@ -18,4 +20,6 @@ public interface CategoryFollowService {
     CategoryFollowDto updateFollow(String publicId, Long categoryId, CategoryFollowUpdateRequestDto request);
 
     CategoryFollowDto getUserCategoryFollow(Long categoryId, String publicId);
+
+    Set<String> findFollowedCategoriesByUser(String publicId);
 }

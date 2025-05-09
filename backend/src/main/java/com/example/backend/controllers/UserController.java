@@ -20,7 +20,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Set;
 
 @CrossOrigin
@@ -169,5 +168,15 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return ResponseEntity.ok(moderatedCategories);
+    }
+
+    @GetMapping("/me/follows/slug")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Set<String>> getFollowedCategoriesByUser(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        Set<String> followedCategories = categoryFollowService.findFollowedCategoriesByUser(customUserDetails.getPublicId());
+        if (followedCategories.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(followedCategories);
     }
 }
