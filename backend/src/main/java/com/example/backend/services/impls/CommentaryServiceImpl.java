@@ -20,6 +20,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.stream.Stream;
+
 @Service
 @RequiredArgsConstructor
 public class CommentaryServiceImpl implements CommentaryService {
@@ -79,8 +81,9 @@ public class CommentaryServiceImpl implements CommentaryService {
     public void deleteById(String publicId, Long commentaryId) {
         checkAuthorizedUser(publicId, commentaryId);
 
-        Post post = findCommentaryById(commentaryId).getPost();
-        post.setCommentsCount(post.getCommentsCount() - 1);
+        Commentary commentary = findCommentaryById(commentaryId);
+        Post post = commentary.getPost();
+        post.setCommentsCount(post.getCommentsCount() - countNestedComments(commentary));
 
         commentaryRepository.deleteById(commentaryId);
     }
@@ -152,4 +155,19 @@ public class CommentaryServiceImpl implements CommentaryService {
         return userRepository.findByPublicId(creatorPublicId).orElseThrow(() ->
                 new UserNotFoundException(STR."User with such publicId=\{creatorPublicId} not found"));
     }
+
+    private long countNestedComments(Commentary root) {
+        return Stream.concat(
+                Stream.of(root),
+                root.getReplies().stream().flatMap(this::flatten)
+        ).count();
+    }
+
+    private Stream<Commentary> flatten(Commentary commentary) {
+        return Stream.concat(
+                Stream.of(commentary),
+                commentary.getReplies().stream().flatMap(this::flatten)
+        );
+    }
+
 }
