@@ -118,7 +118,7 @@ const UpdatePostPage = () => {
             categorySlug: data.categorySlug,
             title: data.title,
             body: data.body,
-            type: data.type,
+            type: 'DISCUSSION',
             imageOrder: imageOrder,
         };
 
@@ -221,18 +221,6 @@ const UpdatePostPage = () => {
                 <h2 className="text-2xl font-bold mb-4 text-center">Update Post</h2>
 
                 <input type="hidden" value={categorySlug} {...register('categorySlug')} />
-
-                <div>
-                    <label className="block">Post Type</label>
-                    <select
-                        className="border rounded w-full p-2"
-                        {...register('type', { required: 'Post type is required' })}
-                    >
-                        <option value="DISCUSSION">Discussion</option>
-                        <option value="QUESTION">Question</option>
-                    </select>
-                    {errors.type && <p className="text-red-500 text-sm">{errors.type.message}</p>}
-                </div>
 
                 <div>
                     <label htmlFor="title-input" className="block">Title</label>

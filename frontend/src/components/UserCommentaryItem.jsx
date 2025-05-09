@@ -62,8 +62,8 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
         };
     }, []);
 
-    const displayName = commentary.userDisplayName || commentary.username || 'User';
-    const avatarClass = getAvatarColorClass(commentary.username);
+    const displayName = profileUser.displayName || profileUser.username || 'User';
+    const avatarClass = getAvatarColorClass(displayName);
     const initials = getInitials(displayName);
 
     return (
