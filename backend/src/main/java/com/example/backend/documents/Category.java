@@ -36,4 +36,7 @@ public class Category {
 
     @Field(type = FieldType.Long, name = "followers_count")
     private Long followersCount = 0L;
+
+    @Field(type = FieldType.Keyword, name = "creator_public_id")
+    private String creatorPublicId;
 }

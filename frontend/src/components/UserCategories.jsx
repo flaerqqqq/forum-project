@@ -166,6 +166,7 @@ const UserCategories = ({ userPublicId }) => {
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/categories/search`, {
                 params: { query },
+                creatorPublicId: user?.publicId,
             });
 
             setCategories(res.data || []);
@@ -313,7 +314,7 @@ const UserCategories = ({ userPublicId }) => {
                                     </Link>
                                     {/* Followers count */}
                                     <p className="text-sm text-gray-darker">
-                                        {category.followersCount} {category.followersCount === 1 ? 'member' : 'members'}
+                                        {category.followersCount} {category.followersCount === 1 ? 'follower' : 'followers'}
                                     </p>
                                 </div>
                             </div>

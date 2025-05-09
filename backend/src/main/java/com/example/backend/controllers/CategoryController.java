@@ -176,8 +176,9 @@ public class CategoryController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<CategoryResponseDto>> searchCategory(@RequestParam("query") String rawQuery) {
-        List<CategoryDto> listOfCategories = categorySearchService.searchCategoriesBySlugOrName(rawQuery);
+    public ResponseEntity<List<CategoryResponseDto>> searchCategory(@RequestParam("query") String rawQuery,
+                                                                    @RequestParam(value = "creatorPublicId", required = false) String creatorPublicId) {
+        List<CategoryDto> listOfCategories = categorySearchService.searchCategoriesBySlugOrName(rawQuery, creatorPublicId);
         if (listOfCategories.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }

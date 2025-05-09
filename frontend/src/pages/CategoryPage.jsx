@@ -12,7 +12,6 @@ import CategoryPosts from "../components/CategoryPosts.jsx";
 import CategoryUpdateModal from '../components/CategoryUpdateModal';
 import { ArrowUp } from 'lucide-react';
 
-// Import the useFollowedCategories hook
 import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
 
 
@@ -28,18 +27,9 @@ const CategoryPage = () => {
     const [notFound, setNotFound] = useState(false);
 
     const { user, loading: userLoading } = useUser();
-    // Use the hook to get followed categories state and update functions
     const { followedCategorySlugs, loadingFollowedCategories, addFollowedCategory, removeFollowedCategory } = useFollowedCategories();
 
-    // Determine if the current category is followed based on the context state
-    // Ensure followedCategorySlugs is an array before calling .includes()
     const isFollowed = Array.isArray(followedCategorySlugs) && followedCategorySlugs.includes(category?.slug);
-
-    // Remove local state for follow status and loading
-    // const [isFollowed, setIsFollowed] = useState(false);
-    // const [loadingFollowStatus, setLoadingFollowStatus] = useState(true);
-    // const [followActionError, setFollowActionError] = useState(null);
-
 
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
@@ -109,31 +99,20 @@ const CategoryPage = () => {
         fetchCategoryDetails();
     }, [categorySlug]);
 
-    // Remove the useEffect that fetches initial follow status
-    // useEffect(() => { ... }, [category?.id, user?.publicId, userLoading, category]);
-
-
     const handleFollowClick = async () => {
-        // If user is still loading or not logged in, redirect to login
         if (userLoading || !user) {
             navigate('/login');
             return;
         }
 
-        // Use the loading state from the context to prevent multiple clicks
         if (loadingFollowedCategories) {
             return;
         }
-
-        // No need for local loading state here, rely on context loading
-        // setLoadingFollowStatus(true);
-        // setFollowActionError(null);
 
         const token = Cookies.get('token');
         if (!token) {
             console.error("No JWT token found.");
             navigate('/login');
-            // setLoadingFollowStatus(false);
             return;
         }
 
@@ -144,27 +123,28 @@ const CategoryPage = () => {
                 },
             };
 
-            // Use the current `isFollowed` state derived from context
             if (isFollowed) {
                 await axios.delete(`http://localhost:8080/api/v1/categories/${category.id}/follows`, config);
-                // Update context state
                 removeFollowedCategory(category.slug);
                 toast.success(`Unfollowed ${category.name}`);
+                setCategory(prevCategory => ({
+                    ...prevCategory,
+                    followersCount: Math.max(0, (prevCategory?.followersCount || 0) - 1)
+                }));
             } else {
                 await axios.post(`http://localhost:8080/api/v1/categories/${category.id}/follows`, {}, config);
-                // Update context state
                 addFollowedCategory(category.slug);
                 toast.success(`Followed ${category.name}`);
+                setCategory(prevCategory => ({
+                    ...prevCategory,
+                    followersCount: (prevCategory?.followersCount || 0) + 1
+                }));
             }
         } catch (err) {
             console.error("Failed to follow/unfollow category.", err);
             const errorMessage = err.response?.data?.message || 'Failed to update follow status.';
             toast.error(errorMessage);
-            // If API fails, context state might be out of sync.
-            // Consider calling refreshFollowedCategories() from context here if needed.
         } finally {
-            // No need to reset local loading state
-            // setLoadingFollowStatus(false);
         }
     };
 
@@ -175,7 +155,6 @@ const CategoryPage = () => {
         }
     };
 
-    // Combine loading states: category details, user, and followed categories context
     const overallLoading = loadingCategory || userLoading || loadingFollowedCategories;
 
 
@@ -246,19 +225,16 @@ const CategoryPage = () => {
                         )}
 
                         <div className="flex items-center gap-4 mb-8">
-                            {/* Show follow button only if user is logged in */}
-                            {user && (
+                            {user && category && (
                                 <button
                                     onClick={handleFollowClick}
-                                    // Disable button if overall loading or context loading
                                     disabled={overallLoading}
                                     className={`${
-                                        isFollowed // Button style depends on context state
+                                        isFollowed
                                             ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
                                             : 'bg-accent-green hover:bg-green-700 text-white'
                                     } font-medium px-4 py-2 rounded-full transition duration-300 disabled:opacity-50 text-sm flex items-center justify-center`}
                                 >
-                                    {/* Show spinner if overall loading */}
                                     {overallLoading ? (
                                         <Oval height={16} width={16} color={isFollowed ? "#4A5568" : "#fff"} secondaryColor={isFollowed ? "#E2E8F0" : "#EAEAEA"} strokeWidth={5} />
                                     ) : (

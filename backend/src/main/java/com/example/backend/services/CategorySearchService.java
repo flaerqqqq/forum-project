@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface CategorySearchService {
 
-    List<CategoryDto> searchCategoriesBySlugOrName(String rawQuery);
+    List<CategoryDto> searchCategoriesBySlugOrName(String rawQuery, String creatorPublicId);
 }

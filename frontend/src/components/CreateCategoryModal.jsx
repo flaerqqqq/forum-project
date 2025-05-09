@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Oval } from 'react-loader-spinner';
 import {useNavigate} from 'react-router-dom';
 import {useFollowedCategories} from '../contexts/FollowedCategoriesContext.jsx'
+import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext.jsx';
 
 const POST_PERMISSION = {
     EVERYONE: 'EVERYONE',
@@ -36,6 +37,7 @@ const CategoryCreateModal = ({ onClose }) => {
     const [previewBanner, setPreviewBanner] = useState(null);
     const navigate = useNavigate();
     const {addFollowedCategory} = useFollowedCategories();
+    const {addModeratedCategory} = useModeratedCategories();
 
     const iconUrlRef = useRef(null);
     const bannerUrlRef = useRef(null);
@@ -132,6 +134,7 @@ const CategoryCreateModal = ({ onClose }) => {
                 if (previewBanner) URL.revokeObjectURL(previewBanner);
                 onClose();
                 addFollowedCategory(categoryData.slug);
+                addModeratedCategory(categoryData.slug);
                 navigate('/categories/' + categoryData.slug);
             } else {
                 toast.warning(

@@ -28,19 +28,39 @@ public class CategorySearchServiceImpl implements CategorySearchService {
     private final CategoryMapper categoryMapper;
 
     @Override
-    public List<CategoryDto> searchCategoriesBySlugOrName(String rawQuery) {
+    public List<CategoryDto> searchCategoriesBySlugOrName(String rawQuery, String creatorPublicId) {
         String queryString = rawQuery.startsWith("c/") ? rawQuery.substring(2) : rawQuery;
         NativeQueryBuilder nativeQueryBuilder = new NativeQueryBuilder();
 
-        Query query = nativeQueryBuilder.withQuery(QueryBuilders.multiMatch(builder ->
-                builder
-                        .query(queryString)
-                        .fields("name^2", "slug", "description")
-                        .type(TextQueryType.BestFields)
-                        .operator(Operator.And)
-                        .fuzziness("AUTO")
-                        .autoGenerateSynonymsPhraseQuery(true)
-        )).build();
+        Query query = null;
+
+        if (creatorPublicId != null) {
+            query = nativeQueryBuilder.withQuery(QueryBuilders.bool(builder ->
+                    builder
+                            .must(must -> must.multiMatch(mm -> mm
+                                    .query(queryString)
+                                    .fields("name^2", "slug", "description")
+                                    .type(TextQueryType.BestFields)
+                                    .operator(Operator.And)
+                                    .fuzziness("AUTO")
+                                    .autoGenerateSynonymsPhraseQuery(true)
+                            ))
+                            .filter(f -> f.term(t -> t
+                                    .field("creator_public_id")
+                                    .value(creatorPublicId)
+                            ))
+            )).build();
+        } else {
+            query = nativeQueryBuilder.withQuery(QueryBuilders.multiMatch(builder ->
+                    builder
+                            .query(queryString)
+                            .fields("name^2", "slug", "description")
+                            .type(TextQueryType.BestFields)
+                            .operator(Operator.And)
+                            .fuzziness("AUTO")
+                            .autoGenerateSynonymsPhraseQuery(true)
+            )).build();
+        }
 
         SearchHits<Category> searchHits = elasticsearchOperations.search(query, Category.class);
         return  searchHits.stream()

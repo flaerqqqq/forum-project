@@ -41,6 +41,7 @@ public class CategoryServiceAspect {
                         .postPermission(result.getPostPermission())
                         .followersCount(result.getFollowersCount())
                         .visibility(result.getVisibility())
+                        .creatorPublicId(result.getCreatorId())
                         .build();
                 elasticsearchOperations.save(category);
             } catch (Exception e) {
