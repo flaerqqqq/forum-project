@@ -2,9 +2,17 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
-const CategoryCard = ({ category, isFollowed, onUnfollow, profilePublicId }) => {
+import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
+
+const CategoryCard = ({ category, profilePublicId }) => {
+    const { followedCategorySlugs, removeFollowedCategory } = useFollowedCategories();
+
     const [loading, setLoading] = useState(false);
+
+    const isFollowed = Array.isArray(followedCategorySlugs) && followedCategorySlugs.includes(category?.slug);
+
 
     const handleUnfollow = async (e) => {
         e.stopPropagation();
@@ -14,6 +22,7 @@ const CategoryCard = ({ category, isFollowed, onUnfollow, profilePublicId }) => 
             const token = Cookies.get('token');
             if (!token) {
                 toast.error('Please login to unfollow.');
+                setLoading(false);
                 return;
             }
 
@@ -24,40 +33,42 @@ const CategoryCard = ({ category, isFollowed, onUnfollow, profilePublicId }) => 
                 }
             );
 
+            removeFollowedCategory(category.slug);
             toast.success(`Unfollowed ${category.name}`);
-            onUnfollow(category.id); // Trigger parent to remove category from list
         } catch (err) {
             console.error('Failed to unfollow category', err);
-            toast.error('Failed to unfollow category');
+            const errorMessage = err.response?.data?.body.detail || 'Failed to unfollow category';
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
+    const isButtonDisabled = loading;
+
+
     return (
-        <div className="p-4 bg-gray-50 rounded-lg shadow hover:shadow-md transition-shadow relative">
+        <Link
+            to={`/categories/${category.slug}`}
+            className="p-4 bg-gray-50 rounded-lg shadow hover:shadow-md transition-shadow relative block no-underline text-black"
+        >
             <h3 className="text-lg font-semibold mb-2">
-                <a
-                    href={`/categories/${category.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                >
-                    {category.name}
-                </a>
+                {category.name}
             </h3>
             <p className="text-sm text-gray-600 mb-2">Slug: {category.slug}</p>
 
             {isFollowed && (
                 <button
                     onClick={handleUnfollow}
-                    disabled={loading}
-                    className="absolute top-2 right-2 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                    disabled={isButtonDisabled}
+                    className={`absolute top-2 right-2 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition-colors duration-200
+                       ${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
                 >
                     {loading ? '...' : 'Unfollow'}
                 </button>
             )}
-        </div>
+        </Link>
     );
 };
 

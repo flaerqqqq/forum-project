@@ -4,6 +4,8 @@ import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Oval } from 'react-loader-spinner';
+import {useNavigate} from 'react-router-dom';
+import {useFollowedCategories} from '../contexts/FollowedCategoriesContext.jsx'
 
 const POST_PERMISSION = {
     EVERYONE: 'EVERYONE',
@@ -32,6 +34,8 @@ const CategoryCreateModal = ({ onClose }) => {
     const [loading, setLoading] = useState(false);
     const [previewIcon, setPreviewIcon] = useState(null);
     const [previewBanner, setPreviewBanner] = useState(null);
+    const navigate = useNavigate();
+    const {addFollowedCategory} = useFollowedCategories();
 
     const iconUrlRef = useRef(null);
     const bannerUrlRef = useRef(null);
@@ -127,6 +131,8 @@ const CategoryCreateModal = ({ onClose }) => {
                 if (previewIcon) URL.revokeObjectURL(previewIcon);
                 if (previewBanner) URL.revokeObjectURL(previewBanner);
                 onClose();
+                addFollowedCategory(categoryData.slug);
+                navigate('/categories/' + categoryData.slug);
             } else {
                 toast.warning(
                     `Category creation returned unexpected status: ${response.status}`
