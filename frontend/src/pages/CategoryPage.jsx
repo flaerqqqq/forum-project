@@ -10,7 +10,7 @@ import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
 import CategoryPosts from "../components/CategoryPosts.jsx";
 import CategoryUpdateModal from '../components/CategoryUpdateModal';
-import { ArrowUp } from 'lucide-react';
+import {ArrowUp, HammerIcon, PlusCircleIcon} from 'lucide-react';
 
 import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
 
@@ -224,7 +224,7 @@ const CategoryPage = () => {
                             </p>
                         )}
 
-                        <div className="flex items-center gap-4 mb-8">
+                        <div className="flex items-center gap-2 mb-8">
                             {user && category && (
                                 <button
                                     onClick={handleFollowClick}
@@ -248,7 +248,11 @@ const CategoryPage = () => {
                                     to={`/categories/${categorySlug}/create-post`}
                                     className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1 hover:no-underline"
                                 >
-                                    + Create Post
+                                    <div className="flex items-center">
+                                        <PlusCircleIcon size={16} />
+                                        <span className="pl-1">  Create Post
+                                        </span>
+                                    </div>
                                 </Link>
                             )}
 
@@ -257,7 +261,11 @@ const CategoryPage = () => {
                                     onClick={() => setIsUpdateModalOpen(true)}
                                     className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1"
                                 >
-                                    Update category
+                                    <div className="flex items-center">
+                                        <HammerIcon size={16} />
+                                        <span className="pl-1"> Update Category
+                                        </span>
+                                    </div>
                                 </button>
                             )}
                         </div>

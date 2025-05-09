@@ -13,6 +13,9 @@ import { isModerator } from "../utils/Auth.js";
 import UserCategories from "../components/UserCategories.jsx";
 import PostsFeed from '../components/PostsFeed.jsx';
 import { ArrowUp } from 'lucide-react';
+// Import the UserCommentaries component
+import UserCommentaries from '../components/UserCommentaries.jsx';
+
 
 const userPostsCache = {};
 
@@ -343,11 +346,9 @@ const UserProfile = () => {
                             creatorPublicId={profileUser.publicId}
                         />
                     )}
-                    {activeSection === 'comments' && (
-                        <div>
-                            <h2 className="text-2xl font-heading text-black mb-4">Comments</h2>
-                            <div className="text-gray-medium">No comments found.</div>
-                        </div>
+                    {/* Render the UserCommentaries component when activeSection is 'comments' */}
+                    {activeSection === 'comments' && profileUser?.publicId && (
+                        <UserCommentaries userPublicId={profileUser.publicId} profileUser={profileUser} />
                     )}
 
                     {activeSection === 'categories' && profileUser?.publicId && (

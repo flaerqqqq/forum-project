@@ -252,8 +252,11 @@ const PostPage = () => {
 
                 addDeletedPostId(post.id);
 
-                navigate(-1); // Navigate back to the previous page (e.g., category page)
-
+                if (window.history.length <= 1) {
+                    navigate('/');
+                } else {
+                    navigate(-1); // Navigate back to the previous page (e.g., category page)
+                }
             } else {
                 console.error('Error deleting post: Unexpected status', response.status);
                 toast.error(`Failed to delete post: Unexpected server response.`);

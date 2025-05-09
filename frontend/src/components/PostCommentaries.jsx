@@ -409,17 +409,17 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
             )}
 
             {/* Sorting Options */}
-            <div className="flex items-center space-x-4 mb-4 justify-end">
+            <div className="flex items-center space-x-1 mb-4 justify-end">
                 <span className="text-sm text-gray-600">Sort By:</span>
                 <button
-                    className={`text-sm ${sortOrder === 'newest' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortOrder === 'newest' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                     onClick={() => handleSortChange('newest')}
                     disabled={isLoading}
                 >
                     Newest
                 </button>
                 <button
-                    className={`text-sm ${sortOrder === 'oldest' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortOrder === 'oldest' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                     onClick={() => handleSortChange('oldest')}
                     disabled={isLoading}
                 >
@@ -436,7 +436,8 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
 
             {/* No Comments Message - Only shown when NOT loading and list is empty */}
             {!isLoadingInitial && !isRefetching && rootComments.length === 0 && !error && (
-                <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
+                <div className="text-center text-gray-medium">
+                    <hr className="my-4 border-gray-300" />
                     No comments yet. Be the first to comment!
                 </div>
             )}
@@ -444,7 +445,6 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
             {/* Render Comments List */}
             {/* *** Attach the ref here and conditionally render based on initial loading state *** */}
             <div ref={rootCommentariesRef} className="root-commentaries">
-                {/* Only render comments if the initial load is done OR we are just refetching */}
                 {(!isLoadingInitial || rootComments.length > 0) && rootComments.map(commentary => (
                     <Commentary
                         key={commentary.id}

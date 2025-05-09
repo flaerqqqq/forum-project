@@ -139,7 +139,7 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
         List<CategoryModerator> categoryModeratorsByUser = categoryModeratorRepository.findAllByUserAndCategory(moderator, category);
 
         if (categoryModeratorsByUser.isEmpty()) {
-            throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an slug=%d".formatted(moderatorPublicId, categorySlug));
+            throw new UserNotCategoryModeratorException("User with a publicId=%s not a moderator of category with an slug=%s".formatted(moderatorPublicId, categorySlug));
         }
 
         return categoryModeratorsByUser.stream().map(categoryModeratorMapper::toDto).toList();

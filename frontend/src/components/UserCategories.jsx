@@ -273,7 +273,7 @@ const UserCategories = ({ userPublicId }) => {
                     placeholder="Enter category name or slug"
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    className="block w-full sm:w-auto bg-transparent border-0 border-b border-border focus:outline-none focus:border-black py-2 text-sm text-gray-darker placeholder-gray-medium"
+                    className="block w-[186px] bg-transparent border-0 border-b border-border focus:outline-none focus:border-black py-2 text-sm text-gray-darker placeholder-gray-medium"
                 />
             </div>
 

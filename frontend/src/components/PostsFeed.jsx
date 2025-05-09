@@ -416,17 +416,17 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                     </div>
                 )}
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1">
                     <span className="text-sm text-gray-600">Sort By:</span>
                     <button
-                        className={`text-sm ${sortBy === 'createdAt,desc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortBy === 'createdAt,desc' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                         onClick={() => handleSortChange('createdAt,desc')}
                         disabled={loading}
                     >
                         Newest
                     </button>
                     <button
-                        className={`text-sm ${sortBy === 'createdAt,asc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortBy === 'createdAt,asc' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                         onClick={() => handleSortChange('createdAt,asc')}
                         disabled={loading}
                     >

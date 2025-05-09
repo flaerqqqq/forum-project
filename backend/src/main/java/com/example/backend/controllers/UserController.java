@@ -150,10 +150,9 @@ public class UserController {
     }
 
     @GetMapping("/me/comments")
-    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Page<UserCommentaryResponseDto>> getUserCommentaries(Pageable pageable,
-                                                                               @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-        Page<UserCommentaryResponseDto> userCommentaries = commentaryService.getUserCommentaries(customUserDetails.getPublicId(), pageable);
+                                                                               @RequestParam("publicId") String publicId) {
+        Page<UserCommentaryResponseDto> userCommentaries = commentaryService.getUserCommentaries(publicId, pageable);
         if (userCommentaries.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }

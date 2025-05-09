@@ -60,7 +60,7 @@ export const ModeratedCategoriesProvider = ({ children }) => {
 
                 // Make the API call to fetch moderated categories for the authenticated user
                 // Assuming the endpoint returns an array of slugs
-                const response = await axios.get('http://localhost:8080/api/v1/users/me/moderators/slug', {
+                const response = await axios.get('http://localhost:8080/api/v1/users/me/moderators', {
                     headers: {
                         'Authorization': `Bearer ${token}`, // Include the JWT token in the Authorization header
                     },

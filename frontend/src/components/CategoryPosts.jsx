@@ -147,8 +147,8 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
                         setTimeout(() => {
                             isRestoringFromCache.current = false;
-                        }, 500);
-                    }, 100);
+                        }, 0);
+                    }, 0);
                 } else {
                     setTimeout(() => {
                         if (cachedDataToUse.hasMore) {
@@ -162,8 +162,8 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
                         setTimeout(() => {
                             isRestoringFromCache.current = false;
-                        }, 500);
-                    }, 100);
+                        }, 0);
+                    }, 0);
                 }
 
                 clearCategoryPostsCache(categorySlug, cachedDataToUse.sortBy);
@@ -288,17 +288,17 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
     return (
         <div className="space-y-1" ref={postsContainerRef}>
-            <div className="flex justify-end items-center mb-4 space-x-4">
+            <div className="flex justify-end items-center mb-4 space-x-1">
                 <span className="text-sm text-gray-600">Sort By:</span>
                 <button
-                    className={`text-sm ${sortBy === 'createdAt,desc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortBy === 'createdAt,desc' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                     onClick={() => handleSortChange('createdAt,desc')}
                     disabled={loading}
                 >
                     Newest
                 </button>
                 <button
-                    className={`text-sm ${sortBy === 'createdAt,asc' ? 'font-bold text-black underline' : 'text-gray-600 hover:underline'}`}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${sortBy === 'createdAt,asc' ? 'bg-accent-green text-white' : 'bg-gray-light text-gray-darker hover:bg-gray-medium'}`}
                     onClick={() => handleSortChange('createdAt,asc')}
                     disabled={loading}
                 >
@@ -307,12 +307,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             </div>
 
             {(posts.length > 0 || showLoadingMore) && <hr className="border-gray-300 my-2" />}
-
-            {showInitialLoading && (
-                <div className="w-full flex items-center justify-center py-8">
-                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
-                </div>
-            )}
 
             {!loading && posts.length === 0 && !error && (
                 <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">

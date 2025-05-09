@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 👈 Import this
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 
 const popularCategoriesCache = {};
 const CACHE_KEY = 'popular_categories';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const PopularCategoriesSidebar = () => {
     const [popularCategories, setPopularCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate(); // 👈 Get navigate function
 
     useEffect(() => {
         const fetchPopularCategories = async () => {
@@ -49,8 +51,10 @@ const PopularCategoriesSidebar = () => {
         fetchPopularCategories();
     }, []);
 
+    // 🔄 Use SPA navigation
     const handleCategoryClick = (slug) => {
-        window.location.href = `/categories/${slug}`;
+        navigate(`/categories/${slug}`);
+        window.scrollTo({ top: 0, behavior: 'instant' }); // or 'smooth'
     };
 
     if (loading) {
@@ -76,11 +80,10 @@ const PopularCategoriesSidebar = () => {
         );
     }
 
-
     return (
-        <div className="rounded-lg ">
+        <div className="rounded-lg">
             <p className="block text-[13px] px-6 pt-3 pb-2 font-normal text-gray-dark mb-1 uppercase tracking-wide">Popular</p>
-            <ul className="">
+            <ul>
                 {popularCategories.map(category => (
                     <li key={category.id}>
                         <button
@@ -99,7 +102,7 @@ const PopularCategoriesSidebar = () => {
                                 </div>
                             )}
                             <div className="flex flex-col flex-grow">
-                                <span className="text-sm font-light text-[#505050]">c/{category.name}</span>
+                                <span className="text-sm font-light text-[#505050]">{category.name}</span>
                             </div>
                         </button>
                     </li>
