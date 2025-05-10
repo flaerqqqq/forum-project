@@ -5,7 +5,7 @@ import Cookies from 'js-cookie';
 import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
 import UserNotFound from "../components/UserNotFound.jsx";
-// Import the new ReportContentModal component
+// Import the ReportContentModal component
 import ReportContentModal from '../components/ReportContentModal.jsx';
 import UserReports from '../components/UserReports';
 import { toast, ToastContainer } from 'react-toastify';
@@ -16,6 +16,8 @@ import PostsFeed from '../components/PostsFeed.jsx';
 import { ArrowUp } from 'lucide-react';
 // Import the UserCommentaries component
 import UserCommentaries from '../components/UserCommentaries.jsx';
+// Import the BanUserModal component
+import BanUserModal from '../components/BanUserModal.jsx';
 
 
 const userPostsCache = {};
@@ -30,6 +32,9 @@ const UserProfile = () => {
     const [failedToLoad, setFailedToLoad] = useState(false);
     const [notFound, setNotFound] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    // State to control the visibility of the BanUserModal
+    const [showBanModal, setShowBanModal] = useState(false);
+
     const [activeSection, setActiveSection] = useState('posts');
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -173,6 +178,9 @@ const UserProfile = () => {
     }
 
     const isOwnProfile = authenticatedUser?.username === profileUsername;
+    // Check if the authenticated user is a global moderator
+    const isAuthGlobalModerator = isModerator();
+
 
     const getInitials = (name) => {
         if (!name) return '';
@@ -191,6 +199,17 @@ const UserProfile = () => {
         setShowReportModal(true);
         setShowDropdown(false);
     };
+
+    // Handler to open the Ban User modal
+    const handleBanClick = () => {
+        setShowBanModal(true);
+        setShowDropdown(false);
+    };
+
+    const handleBanModalClose = () => {
+        setShowBanModal(false);
+    };
+
 
     const handleEditClick = () => {
         navigate('/settings');
@@ -230,6 +249,10 @@ const UserProfile = () => {
         return avatarColors[colorIndex];
     };
 
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+    }; // Empty dependency array as setShowReportModal is stable
+
 
     return (
         <div className="bg-background-light-gray min-h-screen font-sans text-black">
@@ -263,12 +286,24 @@ const UserProfile = () => {
                                                 Edit profile
                                             </button>
                                         ) : (
-                                            <button
-                                                onClick={handleReportClick}
-                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
-                                            >
-                                                Report User
-                                            </button>
+                                            <>
+                                                {/* Report User button */}
+                                                <button
+                                                    onClick={handleReportClick}
+                                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                >
+                                                    Report User
+                                                </button>
+                                                {/* Ban User button - only for global moderators viewing others' profiles */}
+                                                {isAuthGlobalModerator && (
+                                                    <button
+                                                        onClick={handleBanClick}
+                                                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                                                    >
+                                                        Ban User
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 )}
@@ -361,13 +396,25 @@ const UserProfile = () => {
 
             </div>
 
+            {/* Use the new ReportContentModal */}
             {showReportModal && profileUser?.publicId && (
                 <ReportContentModal
                     targetType="USER" // Specify the target type as 'USER'
                     targetId={profileUser.publicId} // Pass the user's publicId as the targetId
-                    onClose={() => setShowReportModal(false)}
+                    onClose={handleReportModalClose} // Use the useCallback wrapped close handler
                 />
             )}
+
+            {/* Render the BanUserModal */}
+            {showBanModal && profileUser?.publicId && (
+                <BanUserModal
+                    isOpen={showBanModal}
+                    onClose={handleBanModalClose}
+                    targetPublicId={profileUser.publicId} // Pass the publicId of the user to ban
+                    // onBanSuccess={...} // Optional: add a handler if needed after ban success
+                />
+            )}
+
 
             {showScrollToTop && (
                 <button

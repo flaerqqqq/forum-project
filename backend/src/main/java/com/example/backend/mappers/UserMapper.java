@@ -18,7 +18,8 @@ import org.mapstruct.Mapping;
         CategoryFollowMapper.class,
         CategoryModeratorMapper.class,
         PostMapper.class,
-        CommentaryMapper.class
+        CommentaryMapper.class,
+        UserBanDataMapper.class
 })
 public interface UserMapper {
 
@@ -30,6 +31,9 @@ public interface UserMapper {
 
     @Mapping(source = "avatarDto", target = "avatarUrl")
     UserResponseDto toResponseDto(UserDto userDto);
+
+    @Mapping(target = "avatarUrl", expression = "java(entity.getAvatar() != null ? entity.getAvatar().getUrl() : null)")
+    UserResponseDto toResponseDto(User entity);
 
     default String resolveAvatarUrl(AvatarDto avatarDto) {
         if (avatarDto == null) {

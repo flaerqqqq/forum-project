@@ -195,4 +195,41 @@ public class UserController {
         }
         return ResponseEntity.ok(followedCategories);
     }
+
+    @PostMapping("/{targetPublicId}/ban")
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
+    public ResponseEntity<UserBanDataResponseDto> banUser(@RequestBody UserBanRequestDto request,
+                                                  @PathVariable String targetPublicId,
+                                                  @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        UserBanDataResponseDto userBanData = userService.ban(request, customUserDetails.getPublicId(), targetPublicId);
+        return ResponseEntity.ok(userBanData);
+    }
+
+    @DeleteMapping("/{targetPublicId}/unban")
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
+    public ResponseEntity<Void> unbanUser(@PathVariable String targetPublicId) {
+        userService.unban(targetPublicId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/banned")
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
+    public ResponseEntity<Page<UserBanDataResponseDto>> getBannedUsers(Pageable pageable,
+                                                         @RequestParam(value = "username", required = false) String username) {
+        Page<UserBanDataResponseDto> bannedUsers = userService.findBannedUsers(pageable, username);
+        if (bannedUsers.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(bannedUsers);
+    }
+
+    @PutMapping("/{targetPublicId}/update")
+    @PreAuthorize("hasRole('ROLE_MODERATOR')")
+    public ResponseEntity<UserBanDataResponseDto> updateBanData(@RequestBody UserBanRequestDto request,
+                                                                @PathVariable String targetPublicId) {
+
+        UserBanDataResponseDto userBanData = userService.updateBanData(request, targetPublicId);
+        return ResponseEntity.ok(userBanData);
+    }
+
 }

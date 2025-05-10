@@ -1,21 +1,26 @@
 package com.example.backend.services.impls;
 
-import com.example.backend.dto.UpdateUserProfileDto;
-import com.example.backend.dto.UserDto;
+import com.example.backend.dto.*;
 import com.example.backend.exceptions.UserNotFoundException;
+import com.example.backend.mappers.UserBanDataMapper;
 import com.example.backend.mappers.UserMapper;
 import com.example.backend.models.Avatar;
 import com.example.backend.models.Category;
 import com.example.backend.models.User;
+import com.example.backend.models.UserBanData;
+import com.example.backend.repositories.UserBanDataRepository;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.services.S3Service;
 import com.example.backend.services.UserService;
 import com.example.backend.utils.ImageValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 
 
 @Service
@@ -26,11 +31,12 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final ImageValidator imageValidator;
+    private final UserBanDataRepository userBanDataRepository;
+    private final UserBanDataMapper userBanDataMapper;
 
     @Override
     public UserDto findByPublicId(String publicId) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
+        User user = getByPublicId(publicId);
         return userMapper.toDto(user);
     }
 
@@ -43,8 +49,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto updateUser(String publicId, UpdateUserProfileDto updateDto) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
+        User user = getByPublicId(publicId);
 
         if (updateDto.getDisplayName() != null) {
             user.setDisplayName(updateDto.getDisplayName());
@@ -74,8 +79,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public String addAvatar(String publicId, MultipartFile file) {
-        User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
-                new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
+        User user = getByPublicId(publicId);
 
         String newAvatarUrl = s3Service.uploadAvatar(file);
 
@@ -92,5 +96,82 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
         return newAvatarUrl;
+    }
+
+    private User getByPublicId(String publicId) {
+        return userRepository.findByPublicId(publicId).orElseThrow(() ->
+                new UserNotFoundException("User with such publicId=%s not found".formatted(publicId)));
+    }
+
+    private User getByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() ->
+                new UserNotFoundException("User with such username=%s not found".formatted(username)));
+    }
+
+    @Override
+    @Transactional
+    public UserBanDataResponseDto ban(UserBanRequestDto request, String moderatorPublicId, String targetPublicId) {
+        User moderator = getByPublicId(moderatorPublicId);
+        User targetUser = getByPublicId(targetPublicId);
+
+        if (targetUser.getUserBanData() != null) {
+            throw new RuntimeException("User already has a ban");
+        }
+
+        UserBanData userBanData = UserBanData.builder()
+                .bannedAt(LocalDateTime.now())
+                .isPermanentBan(request.getIsPermanentBan())
+                .unbanAt(request.getUnbanAt())
+                .reason(request.getReason())
+                .bannedUser(targetUser)
+                .moderator(moderator)
+                .build();
+
+        UserBanData savedData = userBanDataRepository.save(userBanData);
+
+        return userBanDataMapper.toResponseDto(savedData);
+    }
+
+    @Override
+    @Transactional
+    public void unban(String targetPublicId) {
+        User user = getByPublicId(targetPublicId);
+
+        UserBanData userBanData = user.getUserBanData();
+
+        if (userBanData == null) {
+            throw new RuntimeException("Tried to unban a user without a ban");
+        }
+        user.setUserBanData(null);
+        userBanData.setBannedUser(null);
+
+        userBanDataRepository.delete(userBanData);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public Page<UserBanDataResponseDto> findBannedUsers(Pageable pageable, String username) {
+        User user = username != null ? getByUsername(username) : null;
+        Page<UserBanData> usersBanData = userBanDataRepository.findByBannedUser(user, pageable);
+        return usersBanData.map(userBanDataMapper::toResponseDto);
+    }
+
+    @Override
+    @Transactional
+    public UserBanDataResponseDto updateBanData(UserBanRequestDto request, String targetPublicId) {
+        User targetUser = getByPublicId(targetPublicId);
+
+        UserBanData userBanData = targetUser.getUserBanData();
+        if (userBanData == null) {
+            throw new RuntimeException("Tried to update ban data for a user without a ban");
+        }
+        userBanData.setIsPermanentBan(request.getIsPermanentBan());
+        userBanData.setReason(request.getReason());
+        userBanData.setUnbanAt(request.getUnbanAt());
+
+        UserBanData updateData = userBanDataRepository.save(userBanData);
+
+        return userBanDataMapper.toResponseDto(updateData);
     }
 }

@@ -2,6 +2,7 @@ package com.example.backend.dto;
 
 import com.example.backend.models.Avatar;
 import com.example.backend.models.Report;
+import com.example.backend.models.UserBanData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -63,4 +64,8 @@ public class UserDto {
     private List<PostDto> posts;
 
     private List<CommentaryDto> commentaries;
+
+    private UserBanData userBanData;
+
+    private List<UserBanData> bannedUsers;
 }

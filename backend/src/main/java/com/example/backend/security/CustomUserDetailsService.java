@@ -2,8 +2,10 @@ package com.example.backend.security;
 
 import com.example.backend.exceptions.UserEmailNotVerifiedException;
 import com.example.backend.models.User;
+import com.example.backend.models.UserBanData;
 import com.example.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,6 +24,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         if (!user.getIsEmailVerified()) {
             throw new UserEmailNotVerifiedException();
+        }
+        UserBanData userBanData = user.getUserBanData();
+        if (userBanData != null) {
+            String errorMessage = STR."Cannot login, banned until \{userBanData.getUnbanAt()} for '\{userBanData.getReason()}'";
+            if (userBanData.getIsPermanentBan()) {
+                errorMessage = STR."Cannot login, user has a permanent ban for '\{userBanData.getReason()}'";
+            }
+            throw new AccessDeniedException(errorMessage);
         }
 
         return new CustomUserDetails(user);
