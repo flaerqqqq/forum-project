@@ -245,7 +245,7 @@ const CategoryInfoSidebar = ({ category }) => {
                             <div className="mt-4 text-center space-y-2">
                                 <Link
                                     to={`/categories/${category.slug}/moderators`}
-                                    className='no-underline font-medium px-6 py-2 rounded-full focus:outline-none transition-colors duration-300 bg-accent-green hover:bg-green-700 text-white'
+                                    className='no-underline font-medium px-4 py-2 rounded-xl focus:outline-none transition-colors duration-300 bg-accent-green hover:bg-green-700 text-white'
                                 >
                                     View all moderators
                                 </Link>

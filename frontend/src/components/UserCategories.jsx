@@ -23,6 +23,9 @@ const UserCategories = ({ userPublicId }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isViewingFollowing, setIsViewingFollowing] = useState(false);
+    // New state for Moderated tab view
+    const [isViewingModerated, setIsViewingModerated] = useState(false);
+
 
     const token = Cookies.get('token');
     const observer = useRef();
@@ -46,6 +49,7 @@ const UserCategories = ({ userPublicId }) => {
     };
 
     const lastCategoryRef = useCallback(node => {
+        // Only observe if not loading (any type), and there is more data, and not searching
         if (loading || initialLoading || isSearching || !hasMore) return;
         if (observer.current) observer.current.disconnect();
 
@@ -58,21 +62,24 @@ const UserCategories = ({ userPublicId }) => {
         if (node) observer.current.observe(node);
     }, [loading, initialLoading, hasMore, isSearching]);
 
-    const fetchCategoryDetails = async (categoryId) => {
-        try {
-            const res = await axios.get(`http://localhost:8080/api/v1/categories/${categoryId}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-            });
-            return res.data;
-        } catch {
-            return null;
-        }
-    };
 
-    // Function to fetch categories (Created or Following)
-    // Removed followedCategorySlugs from dependencies to prevent refetch on unfollow
+    // Function to fetch categories based on the active view (Created, Following, Moderated)
     const fetchCategories = useCallback(async () => {
-        if (!userPublicId) return;
+        if (!userPublicId) {
+            setInitialLoading(false);
+            setLoading(false);
+            setHasMore(false);
+            setCategories([]); // Clear categories if no userPublicId
+            return;
+        }
+
+        // Prevent fetching if already searching
+        if (isSearching) {
+            setInitialLoading(false);
+            setLoading(false);
+            return;
+        }
+
 
         if (page === 0) {
             setInitialLoading(true);
@@ -99,10 +106,11 @@ const UserCategories = ({ userPublicId }) => {
                 const slugsForPage = slugsToFetch.slice(startIndex, endIndex);
 
                 // Fetch full details for the slugs on the current page
+                // Use Promise.all for concurrent fetching
                 const categoryDetailsPromises = slugsForPage.map(slug =>
                     axios.get(`http://localhost:8080/api/v1/categories/slug/${slug}`, {
                         headers: token ? { Authorization: `Bearer ${token}` } : {},
-                    }).then(res => res.data).catch(() => null) // Fetch by slug
+                    }).then(res => res.data).catch(() => null) // Fetch by slug, handle errors per fetch
                 );
                 const detailedCategories = await Promise.all(categoryDetailsPromises);
                 fetchedCategories = detailedCategories.filter(cat => cat !== null); // Filter out failed fetches
@@ -111,7 +119,20 @@ const UserCategories = ({ userPublicId }) => {
                 isLast = endIndex >= followedCategorySlugs.length;
 
 
+            } else if (isViewingModerated) {
+                // --- Fetching Moderated Categories ---
+                const url = `http://localhost:8080/api/v1/users/me/moderated-categories`; // Endpoint for moderated categories
+
+                const res = await axios.get(url, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    params: { page, size: PAGE_SIZE }, // Assuming backend supports pagination
+                });
+
+                fetchedCategories = res.data.content || [];
+                isLast = res.data.last;
+
             } else {
+                // --- Fetching Created Categories (Default) ---
                 const url = `http://localhost:8080/api/v1/users/me/categories`; // Endpoint for created categories
 
                 const res = await axios.get(url, {
@@ -125,9 +146,11 @@ const UserCategories = ({ userPublicId }) => {
 
         } catch (err) {
             // Handle errors during fetching
-            const errorMessage = err.response?.data?.body?.detail || 'Failed to load categories.';
+            console.error('Failed to load categories:', err);
+            const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Failed to load categories.';
             // Avoid showing toast for 404/500 which might be expected for empty lists or specific states
-            if (err.response?.status !== 404 && err.response?.status !== 500) {
+            // Also avoid toast for 403 on moderated/following if user is not logged in, handled by view logic
+            if (err.response?.status !== 404 && err.response?.status !== 500 && !(err.response?.status === 403 && (isViewingFollowing || isViewingModerated))) {
                 toast.error(errorMessage);
             }
             fetchedCategories = []; // Clear categories on error
@@ -149,10 +172,12 @@ const UserCategories = ({ userPublicId }) => {
                 setLoading(false);
             }, remainingTime);
         }
-    }, [page, token, userPublicId, isViewingFollowing]); // Removed followedCategorySlugs from dependencies
+    }, [page, token, userPublicId, isViewingFollowing, isViewingModerated, isSearching, followedCategorySlugs]);
 
 
+    // Search functionality (adjusted to potentially handle different views or be disabled)
     const searchCategories = useCallback(async (query) => {
+        // Disable search if not in Created view for now, as backend endpoint might not support filtering by moderator/follower status
         if (!query.trim()) {
             setIsSearching(false);
             setSearchQuery('');
@@ -160,19 +185,33 @@ const UserCategories = ({ userPublicId }) => {
             return;
         }
 
+        // Only allow search in Created view for now
+        if (isViewingFollowing || isViewingModerated) {
+            toast.info("Search is currently only available for Created categories.");
+            setSearchQuery(''); // Clear search input if not in created view
+            setIsSearching(false); // Ensure searching is off
+            return;
+        }
+
+
         setIsSearching(true);
         setInitialLoading(true);
 
         try {
+            // Assuming the search endpoint supports filtering by creatorPublicId
             const res = await axios.get(`http://localhost:8080/api/v1/categories/search`, {
-                params: { query },
-                creatorPublicId: user?.publicId,
+                params: {
+                    query,
+                    creatorPublicId: userPublicId, // Pass creatorPublicId for created categories search
+                },
+                headers: token ? { Authorization: `Bearer ${token}` } : {}, // Include token for authenticated search
             });
 
             setCategories(res.data || []);
-            setHasMore(false);
+            setHasMore(false); // Search results are typically not paginated by scrolling in this way
         } catch (err) {
-            const errorMessage = err.response?.data?.body?.detail || 'Failed to search categories.';
+            console.error('Failed to search categories:', err);
+            const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Failed to search categories.';
             if (err.response?.status !== 404 && err.response?.status !== 500) {
                 toast.error(errorMessage);
             }
@@ -181,7 +220,7 @@ const UserCategories = ({ userPublicId }) => {
         } finally {
             setInitialLoading(false);
         }
-    }, []);
+    }, [userPublicId, isViewingFollowing, isViewingModerated, token]); // Added dependencies
 
 
     // Effect to trigger fetching when page, fetchCategories function, or view mode changes
@@ -201,7 +240,12 @@ const UserCategories = ({ userPublicId }) => {
             }, 300);
             return () => clearTimeout(delayDebounceFn); // Cleanup timeout
         } else if (isSearching) {
-            searchCategories('');
+            // If search query is cleared while in search mode, exit search mode and refetch based on current view
+            setIsSearching(false);
+            setPage(0); // Reset page
+            setCategories([]); // Clear categories
+            setHasMore(true); // Assume more data
+            // fetchCategories will be triggered by the isSearching dependency change
         }
     }, [searchQuery, searchCategories, isSearching]); // Dependencies
 
@@ -211,17 +255,31 @@ const UserCategories = ({ userPublicId }) => {
         setSearchQuery(e.target.value); // Update search query state
     };
 
-    // Toggle between Created and Following views
-    const toggleCategoryView = () => {
-        setIsViewingFollowing(prev => !prev); // Toggle the view state
-        setSearchQuery(''); // Clear search query when switching views
+    // Toggle between Created, Following, and Moderated views
+    const toggleCategoryView = (view) => {
+        if (view === 'created' && (isViewingFollowing || isViewingModerated)) {
+            setIsViewingFollowing(false);
+            setIsViewingModerated(false);
+        } else if (view === 'following' && (!isViewingFollowing || isViewingModerated)) {
+            setIsViewingFollowing(true);
+            setIsViewingModerated(false);
+        } else if (view === 'moderated' && (!isViewingModerated || isViewingFollowing)) {
+            setIsViewingModerated(true);
+            setIsViewingFollowing(false);
+        } else {
+            return; // Do nothing if already in the selected view
+        }
+
+        // Reset states when switching views
+        setSearchQuery(''); // Clear search query
         setPage(0); // Reset pagination
         setCategories([]); // Clear categories
         setHasMore(true); // Assume more data in the new view
         setIsSearching(false); // Ensure not in search mode
     };
 
-    // Handle unfollow action using context function
+
+    // Handle unfollow action using context function (only relevant for Following tab)
     const handleUnfollow = async (categoryId, categorySlug, categoryName) => {
         const token = Cookies.get('token');
         if (!token) {
@@ -238,14 +296,31 @@ const UserCategories = ({ userPublicId }) => {
             );
             toast.success(`${categoryName} unfollowed.`);
             removeFollowedCategory(categorySlug);
-            setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+            // Remove the category from the current list if in Following view
+            if (isViewingFollowing) {
+                setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+                // Note: Removing an item might affect pagination count for client-side paginated lists (Following).
+                // A full refetch of the current page might be needed for perfect accuracy,
+                // but filtering from the current list is simpler for now.
+            }
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to unfollow category');
+            console.error('Failed to unfollow category', err);
+            const errorMessage = err.response?.data?.message || 'Failed to unfollow category';
+            toast.error(errorMessage);
         }
     };
 
     // Determine overall loading state including context loading
     const overallLoading = initialLoading || loading || userLoading || loadingFollowedCategories;
+
+    // Determine the message to show when no categories are found
+    const noCategoriesMessage = isSearching
+        ? `No categories found matching "${searchQuery}".`
+        : isViewingFollowing
+            ? 'Not following any categories yet.'
+            : isViewingModerated
+                ? 'Not moderating any categories yet.'
+                : 'No categories created yet.'; // Default message for Created view
 
 
     return (
@@ -254,14 +329,22 @@ const UserCategories = ({ userPublicId }) => {
                 <div className="flex items-center justify-center bg-gray-light rounded-full p-1 w-fit mx-auto">
                     {/* Button to switch to Created view */}
                     <button
-                        onClick={() => { if (isViewingFollowing) toggleCategoryView(); }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${!isViewingFollowing ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        onClick={() => toggleCategoryView('created')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${!isViewingFollowing && !isViewingModerated ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        disabled={overallLoading} // Disable buttons while loading
                     >Created</button>
                     {/* Button to switch to Following view */}
                     <button
-                        onClick={() => { if (!isViewingFollowing) toggleCategoryView(); }}
+                        onClick={() => toggleCategoryView('following')}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${isViewingFollowing ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        disabled={overallLoading} // Disable buttons while loading
                     >Following</button>
+                    {/* Button to switch to Moderated view */}
+                    <button
+                        onClick={() => toggleCategoryView('moderated')}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${isViewingModerated ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        disabled={overallLoading} // Disable buttons while loading
+                    >Moderated</button>
                 </div>
             </div>
 
@@ -274,18 +357,19 @@ const UserCategories = ({ userPublicId }) => {
                     value={searchQuery}
                     onChange={handleSearchChange}
                     className="block w-[186px] bg-transparent border-0 border-b border-border focus:outline-none focus:border-black py-2 text-sm text-gray-darker placeholder-gray-medium"
+                    disabled={overallLoading || isViewingFollowing || isViewingModerated} // Disable search in Following/Moderated for now
                 />
             </div>
 
-            {/* Loading indicator for initial load */}
+            {/* Loading indicator for initial load or search */}
             {overallLoading && categories.length === 0 ? (
                 <div className="flex justify-center items-center min-h-[200px]">
                     <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible />
                 </div>
             ) : categories.length === 0 ? (
-                // Message when no categories are found
+                // Message when no categories are found based on the active view/search
                 <p className="text-gray-medium text-center py-10 text-base">
-                    {isSearching ? `No categories found matching "${searchQuery}".` : `No categories found in the "${isViewingFollowing ? 'Following' : 'Created'}" list.`}
+                    {noCategoriesMessage}
                 </p>
             ) : (
                 // List of categories
@@ -326,8 +410,9 @@ const UserCategories = ({ userPublicId }) => {
                                 {/* Unfollow button (only shown in Following view) */}
                                 {isViewingFollowing && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); handleUnfollow(category.id, category.slug, category.name); }} // Pass slug to handleUnfollow
+                                        onClick={(e) => { e.stopPropagation(); handleUnfollow(category.id, category.slug, category.name); }} // Pass slug and name to handleUnfollow
                                         className="font-medium px-6 py-1 rounded-full focus:outline-none transition-colors duration-300 bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black"
+                                        disabled={overallLoading} // Disable button while loading
                                     >Unfollow</button>
                                 )}
                             </div>
@@ -336,19 +421,12 @@ const UserCategories = ({ userPublicId }) => {
                 </ul>
             )}
 
-            {/* Loading indicator for subsequent pages */}
             {loading && page > 0 && !isSearching && (
                 <div className="flex justify-center py-6">
                     <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} visible />
                 </div>
             )}
 
-            {/* Message for scrolling to load more */}
-            {!loading && hasMore && categories.length > 0 && !initialLoading && !isSearching && (
-                <p className="text-gray-medium text-sm mt-8 text-center pb-4">
-                    Scroll down for more categories...
-                </p>
-            )}
         </div>
     );
 };

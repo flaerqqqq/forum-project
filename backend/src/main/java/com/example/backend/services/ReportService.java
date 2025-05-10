@@ -16,13 +16,26 @@ public interface ReportService {
 
     ReportDto findById(Long reportId);
 
+    Page<ReportDto> findFilteredForModerator(String reporterId,
+                                             ReportTargetType targetType,
+                                             ReportReason reason,
+                                             ReportStatus status,
+                                             Pageable pageable);
+
     Page<ReportDto> findFiltered(String reporterId,
-                                     ReportTargetType targetType,
-                                     ReportReason reason,
-                                     ReportStatus status,
-                                     Pageable pageable);
+                                 ReportTargetType targetType,
+                                 ReportReason reason,
+                                 ReportStatus status,
+                                 Pageable pageable);
 
     ReportDto review(Long reportId, String moderatorUsername, ReportReviewRequestDto reviewRequest);
 
     void deleteById(Long reportId);
+
+    Page<ReportDto> findReportsForCategory(String categorySlug,
+                                           Pageable pageable,
+                                           ReportTargetType targetType,
+                                           ReportReason reason,
+                                           ReportStatus status,
+                                           String reporterId);
 }

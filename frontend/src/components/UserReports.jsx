@@ -9,7 +9,7 @@ import { Oval } from 'react-loader-spinner';
 
 const STATUSES = ['All', 'OPEN', 'UNDER_REVIEW', 'REJECTED', 'RESOLVED'];
 const REASONS = ['All', 'SPAM', 'HARASSMENT', 'HATE_SPEECH', 'INAPPROPRIATE_CONTENT', 'OTHER'];
-const TARGET_TYPES = ['All', 'USER', 'POST', 'COMMENT'];
+const TARGET_TYPES = ['All', 'USER', 'CATEGORY'];
 const SORT_OPTIONS = [
     { label: 'Date (Newest)', value: 'reportedAt,DESC' },
     { label: 'Date (Oldest)', value: 'reportedAt,ASC' },

@@ -28,6 +28,9 @@ public abstract class CategoryMapper {
 
     public abstract CategoryResponseDto toResponseDto(CategoryDto dto);
 
+    @Mapping(source = "createdBy.publicId", target = "creatorId")
+    public abstract CategoryResponseDto toResponseDto(Category entity);
+
     public User resolverUser(String userId) {
         if (userId == null) return null;
         return userRepository.findByPublicId(userId).orElseThrow(() -> new UserNotFoundException());

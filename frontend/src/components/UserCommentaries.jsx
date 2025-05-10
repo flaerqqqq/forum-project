@@ -176,7 +176,9 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
                             {idx !== 0 && <hr className="border-gray-300 my-1" />}
                             <UserCommentaryItem
                                 commentary={commentary}
-                                profileUser={profileUser}
+                                publicId={profileUser?.publicId}
+                                displayName={profileUser?.displayName}
+                                avatarUrl={profileUser?.avatarUrl}
                                 ref={idx === commentaries.length - 1 ? lastCommentaryRef : null}
                                 onCommentDeleted={handleCommentDeleted} // Pass the handler down
                             />

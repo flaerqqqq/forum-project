@@ -44,7 +44,7 @@ public class ReportController {
                                                     @RequestParam(required = false) ReportTargetType targetType,
                                                     @RequestParam(required = false) ReportReason reason,
                                                     @RequestParam(required = false) String reporterId) {
-        Page<ReportDto> response = reportService.findFiltered(reporterId, targetType, reason, status, pageable);
+        Page<ReportDto> response = reportService.findFilteredForModerator(reporterId, targetType, reason, status, pageable);
         return ResponseEntity.ok(response);
     }
 

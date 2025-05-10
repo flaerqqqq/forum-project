@@ -53,11 +53,21 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
-    public Page<ReportDto> findFiltered(String reporterId,
+    public Page<ReportDto> findFilteredForModerator(String reporterId,
                                      ReportTargetType targetType,
                                      ReportReason reason,
                                      ReportStatus status,
                                      Pageable pageable) {
+        return reportRepository.findFilteredPageForModerator(reporterId, targetType, reason, status, pageable)
+                .map(reportMapper::toDto);
+    }
+
+    @Override
+    public Page<ReportDto> findFiltered(String reporterId,
+                                                    ReportTargetType targetType,
+                                                    ReportReason reason,
+                                                    ReportStatus status,
+                                                    Pageable pageable) {
         return reportRepository.findFilteredPage(reporterId, targetType, reason, status, pageable)
                 .map(reportMapper::toDto);
     }
@@ -85,6 +95,23 @@ public class ReportServiceImpl implements ReportService {
         } else {
             throw new ReportNotFoundException();
         }
+    }
+
+    @Override
+    public Page<ReportDto> findReportsForCategory(String categorySlug,
+                                                  Pageable pageable,
+                                                  ReportTargetType targetType,
+                                                  ReportReason reason,
+                                                  ReportStatus status,
+                                                  String reporterId) {
+        Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
+                new CategoryNotFoundException(STR."Category with such slug=\{categorySlug} not found"));
+        if (targetType == ReportTargetType.USER || targetType == ReportTargetType.CATEGORY) {
+            throw new IllegalArgumentException(STR."Target type for category reports can be either POST or COMMENTARY, but given \{targetType}");
+        }
+        Page<Report> categoryReports = reportRepository.findCategoryReportsWithFilters(category.getId(),targetType, reason, status, reporterId, pageable);
+
+        return categoryReports.map(reportMapper::toDto);
     }
 
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {

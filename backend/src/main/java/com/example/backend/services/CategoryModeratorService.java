@@ -1,6 +1,7 @@
 package com.example.backend.services;
 
 import com.example.backend.dto.CategoryModeratorDto;
+import com.example.backend.dto.CategoryResponseDto;
 import com.example.backend.dto.ModeratorRoleInfoDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,4 +24,6 @@ public interface CategoryModeratorService {
     List<CategoryModeratorDto> getModeratorByPublicId(String moderatorPublicId, String categorySlug);
 
     Set<String> findUserModeratedCategories(String publicId);
+
+    Page<CategoryResponseDto> findUserModeratedCategoriesPage(String publicId, Pageable pageable);
 }

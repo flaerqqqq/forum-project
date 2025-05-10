@@ -159,10 +159,27 @@ public class UserController {
         return ResponseEntity.ok(userCommentaries);
     }
 
+    @GetMapping("/me/comments/{commentaryId}")
+    public ResponseEntity<UserCommentaryResponseDto> getUserCommentaryById(@PathVariable Long commentaryId) {
+        UserCommentaryResponseDto userCommentary = commentaryService.getUserCommentaryById(commentaryId);
+        return ResponseEntity.ok(userCommentary);
+    }
+
     @GetMapping("/me/moderators")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<Set<String>> getCategoriesModeratedByUser(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
         Set<String> moderatedCategories = categoryModeratorService.findUserModeratedCategories(customUserDetails.getPublicId());
+        if (moderatedCategories.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(moderatedCategories);
+    }
+
+    @GetMapping("/me/moderated-categories")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Page<CategoryResponseDto>> getUserModeratedCategories(@AuthenticationPrincipal CustomUserDetails customUserDetails,
+                                                                                Pageable pageable) {
+        Page<CategoryResponseDto> moderatedCategories = categoryModeratorService.findUserModeratedCategoriesPage(customUserDetails.getPublicId(), pageable);
         if (moderatedCategories.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }

@@ -50,7 +50,7 @@ const createSafeHTML = (htmlContent) => {
     };
 };
 
-const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUser }, ref) => {
+const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, publicId, avatarUrl, displayName }, ref) => {
     const navigate = useNavigate();
     const { user: authenticatedUser, loading: authLoading } = useUser();
     const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
@@ -70,7 +70,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
 
     if (!commentary) return null;
 
-    const isCommentOwner = authenticatedUser && commentary.creatorPublicId && authenticatedUser.publicId === commentary.creatorPublicId;
+    const isCommentOwner = authenticatedUser && publicId && authenticatedUser.publicId === publicId;
 
     const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
 
@@ -232,20 +232,20 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
     }, [showDeleteModal, showReportModal]);
 
 
-    const displayName = commentary.userDisplayName || commentary.username || 'User';
-    const avatarClass = getAvatarColorClass(commentary.username);
-    const initials = getInitials(displayName);
+    const dname = displayName || 'User';
+    const avatarClass = getAvatarColorClass(dname);
+    const initials = getInitials(dname);
 
 
     return (
         <li
             ref={ref}
-            className="transition rounded-2xl p-4 hover:bg-gray-100 overflow-visible relative"
+            className="transition list-none rounded-2xl p-4 hover:bg-gray-100 overflow-visible relative"
         >
             <div className="flex items-start space-x-3">
-                {commentary.userAvatarUrl ? (
+                {avatarUrl ? (
                     <img
-                        src={commentary.userAvatarUrl}
+                        src={avatarUrl}
                         alt="avatar"
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     />
@@ -264,7 +264,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                                 to={`/users/${commentary.username}`}
                                 className="font-semibold text-gray-800 hover:underline"
                             >
-                                {displayName}
+                                {dname}
                             </Link>
                         )}
                         {commentary.username && <span>•</span>}

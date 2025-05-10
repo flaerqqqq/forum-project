@@ -223,6 +223,7 @@ const CategoryPage = () => {
 
     // Determine if the user can report the category (logged in and not the creator)
     const canReportCategory = user && category && user.publicId !== category.creatorId;
+    const canModerateCategory = user && category && isModerator;
 
 
     // Determine if the "Create Post" button should be disabled while contexts are loading
@@ -239,6 +240,11 @@ const CategoryPage = () => {
     const handleReportCategoryClick = () => {
         setShowReportModal(true);
         setShowCategoryDropdown(false); // Close the dropdown
+    };
+
+    const handlerModerateClick = () => {
+        setShowCategoryDropdown(false); // Close the dropdown
+        navigate(`/categories/${category.slug}/moderate`);
     };
 
     // Handler to close the report modal
@@ -391,6 +397,14 @@ const CategoryPage = () => {
                                                     className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
                                                 >
                                                     Report
+                                                </button>
+                                            )}
+                                            {canModerateCategory && (
+                                                <button
+                                                    onClick={handlerModerateClick} // Use the new handler
+                                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                >
+                                                    Moderate
                                                 </button>
                                             )}
                                         </div>

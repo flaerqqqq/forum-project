@@ -22,6 +22,10 @@ public class UserCommentaryResponseDto {
     private String categoryName;
     private String categoryIconUrl;
 
+    private String creatorPublicId;
+    private String creatorAvatarUrl;
+    private String creatorDisplayName;
+
     private Long postId;
     private String postTitle;
 

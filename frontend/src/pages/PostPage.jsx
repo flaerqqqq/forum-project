@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
-import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, ChevronLeft, ChevronRight, X, MoreHorizontal, ArrowUp } from 'lucide-react'; // Import ArrowUp
 import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import { useUser } from '../contexts/UserContext';
 import { useDeletedPosts } from '../contexts/DeletedPostsContext';
@@ -64,10 +64,31 @@ const PostPage = () => {
     // State to control the visibility of the ReportContentModal
     const [showReportModal, setShowReportModal] = useState(false);
 
+    // State to control the visibility of the Scroll to Top button
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+
 
     useEffect(() => {
+        // Scroll to top on initial load
         window.scrollTo(0, 0);
-    }, []);
+
+        // Add scroll event listener for Scroll to Top button
+        const handleScroll = () => {
+            if (window.scrollY > 300) { // Show button if scrolled down more than 300px
+                setShowScrollToTop(true);
+            } else {
+                setShowScrollToTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        // Clean up the event listener on component unmount
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
+
 
     const fetchPost = async () => {
         setLoading(true);
@@ -283,6 +304,14 @@ const PostPage = () => {
         setShowReportModal(false);
     };
 
+    // Function to scroll the window to the top
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' // Smooth scrolling animation
+        });
+    };
+
 
     if (error && axios.isAxiosError(error) && error.response && error.response.status === 404) {
         return <PostNotFound />;
@@ -431,7 +460,7 @@ const PostPage = () => {
                                                 ></div>
                                             )}
                                             {image?.url && (
-                                                <div className="absolute inset-0 bg-black opacity-20"></div>
+                                                <div className="absolute inset-0 bg-black opacity-40"></div>
                                             )}
                                             {image && (
                                                 <img
@@ -558,13 +587,22 @@ const PostPage = () => {
                 </div>
             )}
 
-            {/* Render the ReportContentModal */}
             {showReportModal && post?.id && (
                 <ReportContentModal
                     targetType="POST" // Specify the target type as 'POST'
                     targetId={post.id} // Pass the post's ID as the targetId
                     onClose={handleReportModalClose} // Pass the close handler
                 />
+            )}
+
+            {showScrollToTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-8 right-8 bg-accent-green hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 flex items-center justify-center"
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp size={20} />
+                </button>
             )}
         </div>
     );

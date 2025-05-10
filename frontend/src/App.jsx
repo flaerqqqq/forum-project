@@ -25,7 +25,8 @@ import SearchResultsPage from "./pages/SearchResultsPage.jsx";
 import {DeletedPostsProvider} from "./contexts/DeletedPostsContext.jsx";
 import {DeletedCommentsProvider} from "./contexts/DeletedCommentsContext.jsx";
 import {ModeratedCategoriesProvider} from "./contexts/ModeratedCategoriesContext.jsx";
-import {FollowedCategoriesProvider} from "./contexts/FollowedCategoriesContext.jsx"; // Keep the import
+import {FollowedCategoriesProvider} from "./contexts/FollowedCategoriesContext.jsx";
+import CategoryModeratorPage from "./pages/CategoryModeratorPage.jsx"; // Keep the import
 
 function App() {
     return (
@@ -48,7 +49,7 @@ function App() {
                                             <Route path="/categories/:categorySlug/moderators" element={<CategoryModeratorsPage />} />
                                             <Route path="/categories/:categorySlug/posts/:postId" element={<PostPage />} />
                                             <Route path="/posts/search" element={<SearchResultsPage />} />
-
+                                            <Route path="/categories/:categorySlug/moderate" element={<CategoryModeratorPage />} />
                                             <Route path="/categories/:categorySlug/create-post" element={
                                                 <AuthOnlyRoute>
                                                     <CreatePostPage />

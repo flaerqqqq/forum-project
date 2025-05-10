@@ -1,6 +1,7 @@
 package com.example.backend.repositories;
 
 import com.example.backend.dto.CategoryModeratorDto;
+import com.example.backend.dto.CategoryResponseDto;
 import com.example.backend.models.Category;
 import com.example.backend.models.CategoryModerator;
 import com.example.backend.models.User;
@@ -44,4 +45,12 @@ public interface CategoryModeratorRepository extends JpaRepository<CategoryModer
     WHERE cm.user = :user
     """)
     Set<String> findUserModeratedCategories(@Param("user") User user);
+
+    @Query("""
+    SELECT cm.category 
+    FROM CategoryModerator cm
+    WHERE cm.user = :user
+        AND cm.role = "MODERATOR"
+    """)
+    Page<Category> findUserModeratedCategoriesPage(User user, Pageable pageable);
 }

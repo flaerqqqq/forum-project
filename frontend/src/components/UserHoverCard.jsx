@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { format } from 'date-fns'; // Assuming you have date-fns installed
+import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Oval } from 'react-loader-spinner';
+// Import the UserReactions component
+import UserReactions from './UserReactions.jsx';
+// Import useUser hook to check if the authenticated user is the one being hovered
+import { useUser } from '../contexts/UserContext.jsx';
+
 
 // --- Helper Functions (Copying from Commentary, ideally these are shared) ---
 // You might want to put these into a separate utility file (e.g., src/utils/avatarUtils.js)
@@ -44,6 +49,9 @@ const UserHoverCard = ({ username, onMouseEnter, onMouseLeave }) => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    // Get the authenticated user from the UserContext
+    const { user: authenticatedUser, loading: authLoading } = useUser();
+
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -71,11 +79,11 @@ const UserHoverCard = ({ username, onMouseEnter, onMouseLeave }) => {
     }, [username]);
 
 
-    if (loading) {
+    if (loading || authLoading) { // Include authLoading in the loading check
         // Position and style the loading state consistent with the card
         return (
             <div
-                className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-md shadow-lg p-4 w-64 max-w-xs flex justify-center items-center overflow-hidden" // Added overflow-hidden
+                className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-xl shadow-lg p-4 w-64 max-w-xs flex justify-center items-center overflow-hidden"
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >
@@ -88,7 +96,7 @@ const UserHoverCard = ({ username, onMouseEnter, onMouseLeave }) => {
         // Position and style the error state consistent with the card
         return (
             <div
-                className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-md shadow-lg p-4 w-64 max-w-xs text-red-600 overflow-hidden" // Added overflow-hidden
+                className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-xl shadow-lg p-4 w-64 max-w-xs text-red-600 overflow-hidden"
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >
@@ -97,19 +105,17 @@ const UserHoverCard = ({ username, onMouseEnter, onMouseLeave }) => {
         );
     }
 
+    // Determine if the authenticated user is viewing their own hover card
+    const isOwnProfile = authenticatedUser && authenticatedUser.publicId === userData.publicId;
+
     // Format registration date using date-fns
     const formattedRegistrationDate = userData.registrationDate
         ? format(new Date(userData.registrationDate), 'MMM d, yyyy') // Formats like "May 8, 2025"
         : 'N/A';
 
     return (
-        // Main container with absolute positioning, border, shadow, background, and rounded corners
-        // top-full mt-2 positions it just below the triggering element
-        // left-0 aligns its left edge with the triggering element
-        // z-20 ensures it appears above other content
-        // overflow-hidden is important for rounded corners with the header
         <div
-            className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-md shadow-lg w-64 max-w-xs text-gray-800 text-sm overflow-hidden"
+            className="absolute top-full mt-2 left-0 z-20 bg-white border border-gray-300 rounded-2xl shadow-lg w-64 max-w-xs text-gray-800 text-sm overflow-hidden"
             onMouseEnter={onMouseEnter} // Keep card visible when mouse is over it
             onMouseLeave={onMouseLeave} // Trigger parent's hide logic when mouse leaves the card
         >
@@ -155,38 +161,33 @@ const UserHoverCard = ({ username, onMouseEnter, onMouseLeave }) => {
             )}
 
 
-            {/* Stats based on the provided fields - Add padding and adjust layout */}
-            <div className="px-4 mt-3 grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-gray-600 border-t pt-3 border-gray-200">
-                {/* Display Posts count */}
-                <div>
-                    <span className="font-bold text-gray-800">Posts:</span> {userData.postsCount ?? 0}
-                </div>
-                {/* Display Likes received */}
-                <div>
-                    <span className="font-bold text-gray-800">Likes:</span> {userData.receivedLikesCount ?? 0}
-                </div>
-                {/* Display Dislikes received if available */}
-                {userData.receivedDislikesCount !== undefined && userData.receivedDislikesCount !== null && ( // Check if field exists and is not null
-                    <div>
-                        <span className="font-bold text-gray-800">Dislikes:</span> {userData.receivedDislikesCount ?? 0}
-                    </div>
-                )}
-                {/* If your backend provides a combined 'karma' field, you might prefer to show that */}
-                {/* {userData.karma !== undefined && userData.karma !== null && (
-                     <div className="col-span-2 text-sm">
-                         <span className="font-bold text-gray-800">Karma:</span> {userData.karma ?? 0}
-                     </div>
-                  )} */}
+            {/* Container for Reactions and Stats */}
+            {userData.publicId && (
+                <div className="px-4 mt-3 pb-3 flex flex-col gap-3"> {/* Use flex-col and gap for vertical stacking */}
+                    {/* User Reactions */}
+                    <UserReactions
+                        targetPublicId={userData.publicId}
+                        readOnly={isOwnProfile} // Set readOnly based on whether it's the user's own profile
+                    />
 
-                {/* Registration Date */}
-                <div>
-                    <span className="font-bold text-gray-800">Joined:</span> {formattedRegistrationDate}
+                    {/* Stats (Posts Count and Joined Date) */}
+                    <div className="grid grid-cols-2 gap-x-4 text-xs text-gray-600"> {/* Use grid for horizontal layout of stats */}
+                        {/* Display Posts count */}
+                        <div>
+                            <span className="font-bold text-gray-800">Posts:</span> {userData.postsCount ?? 0}
+                        </div>
+                        {/* Registration Date */}
+                        <div>
+                            <span className="font-bold text-gray-800">Joined:</span> {formattedRegistrationDate}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
+
 
             {/* Link to full profile styled as a button */}
-            <div className="mt-4 px-4 pb-3">
-                <Link to={`/users/${userData.username}`} className="block w-full text-center py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-sm font-semibold">
+            <div className="mt-2 px-4 pb-3"> {/* Adjusted margin-top */}
+                <Link to={`/users/${userData.username}`} className="block w-full text-center py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-sm font-semibold">
                     View Profile
                 </Link>
             </div>

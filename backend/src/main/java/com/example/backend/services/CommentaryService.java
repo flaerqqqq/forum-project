@@ -19,4 +19,6 @@ public interface CommentaryService {
     CommentaryDto update(Long commentaryId, CommentaryUpdateRequestDto request, String publicId);
 
     Page<UserCommentaryResponseDto> getUserCommentaries(String publicId, Pageable pageable);
+
+    UserCommentaryResponseDto getUserCommentaryById(Long commentaryId);
 }

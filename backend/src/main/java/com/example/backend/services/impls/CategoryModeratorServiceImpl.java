@@ -1,8 +1,10 @@
 package com.example.backend.services.impls;
 
 import com.example.backend.dto.CategoryModeratorDto;
+import com.example.backend.dto.CategoryResponseDto;
 import com.example.backend.dto.ModeratorRoleInfoDto;
 import com.example.backend.exceptions.*;
+import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.mappers.CategoryModeratorMapper;
 import com.example.backend.models.Category;
 import com.example.backend.models.CategoryModerator;
@@ -29,6 +31,7 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     private final CategoryRepository categoryRepository;
     private final CategoryModeratorMapper categoryModeratorMapper;
     private final CategoryModeratorRepository categoryModeratorRepository;
+    private final CategoryMapper categoryMapper;
 
     @Override
     @Transactional
@@ -149,5 +152,11 @@ public class CategoryModeratorServiceImpl implements CategoryModeratorService {
     public Set<String> findUserModeratedCategories(String publicId) {
         User user = findUserByPublicId(publicId);
         return categoryModeratorRepository.findUserModeratedCategories(user);
+    }
+
+    @Override
+    public Page<CategoryResponseDto> findUserModeratedCategoriesPage(String publicId, Pageable pageable) {
+        User user = findUserByPublicId(publicId);
+        return categoryModeratorRepository.findUserModeratedCategoriesPage(user, pageable).map(categoryMapper::toResponseDto);
     }
 }

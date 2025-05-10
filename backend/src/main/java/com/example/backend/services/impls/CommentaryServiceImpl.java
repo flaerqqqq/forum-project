@@ -122,6 +122,8 @@ public class CommentaryServiceImpl implements CommentaryService {
                     .id(com.getId())
                     .content(com.getContent())
                     .createdAt(com.getCreatedAt())
+                    .creatorPublicId(publicId)
+                    .creatorAvatarUrl(user.getAvatar() != null ? user.getAvatar().getUrl() : null)
                     .updatedAt(com.getUpdatedAt())
                     .categorySlug(category.getSlug())
                     .categoryName(category.getName())
@@ -133,6 +135,30 @@ public class CommentaryServiceImpl implements CommentaryService {
         });
 
         return userCommentaries;
+    }
+
+    @Override
+    public UserCommentaryResponseDto getUserCommentaryById(Long commentaryId) {
+        Commentary com = findCommentaryById(commentaryId);
+        Post post = com.getPost();
+        Category category = post.getCategory();
+        User user = com.getCreatedBy();
+
+        return UserCommentaryResponseDto.builder()
+                .id(com.getId())
+                .content(com.getContent())
+                .createdAt(com.getCreatedAt())
+                .creatorPublicId(user.getPublicId())
+                .creatorAvatarUrl(user.getAvatar() != null ? user.getAvatar().getUrl() : null)
+                .creatorDisplayName(user.getDisplayName())
+                .updatedAt(com.getUpdatedAt())
+                .categorySlug(category.getSlug())
+                .categoryName(category.getName())
+                .categoryIconUrl(category.getIconUrl())
+                .postId(post.getId())
+                .postTitle(post.getTitle())
+                .parentCommentUsername(com.getParent() != null ? com.getParent().getCreatedBy().getUsername() : null)
+                .build();
     }
 
     private void checkAuthorizedUser(String publicId, Long commentaryId) {

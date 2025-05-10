@@ -2,11 +2,11 @@ package com.example.backend.controllers;
 
 import com.example.backend.dto.*;
 import com.example.backend.mappers.CategoryMapper;
+import com.example.backend.models.enums.ReportReason;
+import com.example.backend.models.enums.ReportStatus;
+import com.example.backend.models.enums.ReportTargetType;
 import com.example.backend.security.CustomUserDetails;
-import com.example.backend.services.CategoryFollowService;
-import com.example.backend.services.CategoryModeratorService;
-import com.example.backend.services.CategorySearchService;
-import com.example.backend.services.CategoryService;
+import com.example.backend.services.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +31,7 @@ public class CategoryController {
     private final CategoryMapper categoryMapper;
     private final CategoryModeratorService categoryModeratorService;
     private final CategorySearchService categorySearchService;
+    private final ReportService reportService;
 
     @PostMapping
     @PreAuthorize("hasRole('ROLE_USER')")
@@ -193,5 +194,20 @@ public class CategoryController {
                                                          @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         Boolean isAllowed = categoryService.checkAccessToCategory(customUserDetails != null ? customUserDetails.getPublicId() : null, categorySlug);
         return ResponseEntity.ok(isAllowed);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/slug/{categorySlug}/reports")
+    public ResponseEntity<Page<ReportDto>> findCategoryReports(@PathVariable String categorySlug,
+                                                               @RequestParam(required = false) ReportStatus status,
+                                                               @RequestParam(required = false) ReportTargetType targetType,
+                                                               @RequestParam(required = false) ReportReason reason,
+                                                               @RequestParam(required = false) String reporterId,
+                                                               Pageable pageable) {
+        Page<ReportDto> categoryReports = reportService.findReportsForCategory(categorySlug, pageable, targetType, reason, status, reporterId);
+        if (categoryReports.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(categoryReports);
     }
 }
