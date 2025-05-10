@@ -187,4 +187,11 @@ public class CategoryController {
                 .toList()
         );
     }
+
+    @GetMapping("/slug/{categorySlug}/access")
+    public ResponseEntity<Boolean> checkAccessToCategory(@PathVariable("categorySlug") String categorySlug,
+                                                         @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        Boolean isAllowed = categoryService.checkAccessToCategory(customUserDetails != null ? customUserDetails.getPublicId() : null, categorySlug);
+        return ResponseEntity.ok(isAllowed);
+    }
 }

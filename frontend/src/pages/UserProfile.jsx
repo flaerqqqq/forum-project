@@ -274,11 +274,9 @@ const UserProfile = () => {
                             </div>
                         </div>
 
-                        {profileUser.description && (
                             <p className="text-gray-700 text-base mb-4 pr-6">
-                                {profileUser.description}
+                                {profileUser.description ? profileUser.description : 'No bio.'}
                             </p>
-                        )}
                         <div className="flex space-x-6 font-medium text-gray-darker">
                             <button
                                 className={`pb-2 border-b-2 ${activeSection === 'posts' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}

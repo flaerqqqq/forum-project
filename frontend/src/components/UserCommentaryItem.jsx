@@ -1,7 +1,14 @@
-import React, { forwardRef, useState, useRef, useEffect } from 'react';
+import React, { forwardRef, useState, useRef, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import DOMPurify from 'dompurify';
 import UserHoverCard from './UserHoverCard';
+import { Link, useNavigate } from 'react-router-dom';
+import { MoreHorizontal, X } from 'lucide-react';
+import { useUser } from '../contexts/UserContext';
+import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext';
+import Cookies from 'js-cookie';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const getAvatarColorClass = (username) => {
     if (!username) return 'bg-gray-medium';
@@ -34,13 +41,41 @@ const getInitials = (name) => {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
+const createSafeHTML = (htmlContent) => {
+    const contentString = String(htmlContent || '');
+    return {
+        __html: DOMPurify.sanitize(contentString)
+    };
+};
+
+const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUser }, ref) => {
+    const navigate = useNavigate();
+    const { user: authenticatedUser, loading: authLoading } = useUser();
+    const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
+
     const [showHoverCard, setShowHoverCard] = useState(false);
     const hoverTimeoutRef = useRef(null);
     const showDelay = 500;
     const hideDelay = 300;
 
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const dropdownButtonRef = useRef(null);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+
     if (!commentary) return null;
+
+    const isCommentOwner = authenticatedUser && profileUser.publicId && authenticatedUser.publicId === profileUser.publicId;
+    const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
+    const isUserCategoryModerator = !loadingModeratedCategories && Array.isArray(moderatedCategorySlugs) && moderatedCategorySlugs.includes(commentary.categorySlug);
+
+    // Renamed canUpdateComment to canEditComment for consistency
+    const canEditComment = !authLoading && isCommentOwner;
+    const canDeleteComment = !authLoading && (isCommentOwner || isGlobalModerator || isUserCategoryModerator);
+    const canReportComment = !authLoading && authenticatedUser && !isCommentOwner;
+
 
     const handleMouseEnter = () => {
         clearTimeout(hoverTimeoutRef.current);
@@ -62,7 +97,116 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
         };
     }, []);
 
-    const displayName = profileUser.displayName || profileUser.username || 'User';
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                dropdownButtonRef.current && !dropdownButtonRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+
+    const toggleDropdown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowDropdown(prev => !prev);
+    };
+
+    // Moved action handling into a single function
+    const handleDropdownItemClick = useCallback(async (action) => {
+        setShowDropdown(false);
+        switch (action) {
+            case 'edit':
+                if (canEditComment) {
+                    // Implement update logic here or trigger parent to show edit modal
+                    toast.info("Update functionality not yet implemented.");
+                }
+                break;
+            case 'delete':
+                if (canDeleteComment) {
+                    setShowDeleteModal(true);
+                }
+                break;
+            case 'report':
+                if (canReportComment) { // Use canReportComment logic
+                    toast.info("Reporting functionality not yet implemented.");
+                    // If you had a ReportCommentModal: setShowReportModal(true);
+                } else if (!authenticatedUser) { // Check if user is not authenticated
+                    toast.info('You must be logged in to report a comment.');
+                }
+                break;
+            default:
+                break;
+        }
+    }, [canEditComment, canDeleteComment, canReportComment, authenticatedUser]); // Added dependencies
+
+
+    const confirmDeleteComment = async () => {
+        setShowDeleteModal(false);
+
+        try {
+            const token = Cookies.get('token');
+            if (!token) {
+                toast.error("Authentication token not found. Please log in.");
+                return;
+            }
+
+            if (!commentary?.id) {
+                toast.error("Comment ID is missing.");
+                return;
+            }
+
+            const response = await axios.delete(`http://localhost:8080/api/v1/commentaries/${commentary.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.status === 204) {
+                console.log(`Comment with ID ${commentary.id} deleted successfully.`);
+                toast.success("Comment deleted successfully!");
+                if (onCommentDeleted) {
+                    onCommentDeleted(commentary.id);
+                }
+            } else {
+                console.error('Error deleting comment: Unexpected status', response.status);
+                toast.error(`Failed to delete comment: Unexpected server response.`);
+            }
+
+        } catch (err) {
+            console.error('Error deleting comment:', err);
+            let errorMessage = "An error occurred while trying to delete the comment.";
+            if (axios.isAxiosError(err)) {
+                if (err.response) {
+                    if (err.response.data && err.response.data.message) {
+                        errorMessage = `Failed to delete comment: ${err.response.data.message}`;
+                    } else if (err.response.status === 403) {
+                        errorMessage = "You do not have permission to delete this comment.";
+                    } else if (err.response.status === 404) {
+                        errorMessage = "Comment not found (possibly already deleted).";
+                    } else {
+                        errorMessage = `Failed to delete comment: Server responded with status ${err.response.status}`;
+                    }
+                } else if (err.request) {
+                    errorMessage = "No response received from server. Please try again.";
+                } else {
+                    errorMessage = `Error setting up request: ${err.message}`;
+                }
+            } else {
+                errorMessage = `An unexpected error occurred: ${err.message}`;
+            }
+            toast.error(errorMessage);
+        }
+    };
+
+
+    const displayName = profileUser.displayName || profileUser.displayName || 'User';
     const avatarClass = getAvatarColorClass(displayName);
     const initials = getInitials(displayName);
 
@@ -87,17 +231,14 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
                 )}
 
                 <div className="flex-grow">
-                    {/* Meta info row */}
                     <div className="text-xs text-gray-600 mb-1 flex items-center flex-wrap gap-x-1">
                         {commentary.username && (
-                            <a
-                                href={`/users/${commentary.username}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <Link
+                                to={`/users/${commentary.username}`}
                                 className="font-semibold text-gray-800 hover:underline"
                             >
                                 {displayName}
-                            </a>
+                            </Link>
                         )}
                         {commentary.username && <span>•</span>}
                         <span>{formatDistanceToNow(new Date(commentary.createdAt), { addSuffix: true })}</span>
@@ -107,16 +248,14 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
                                 <span>•</span>
                                 <span className="relative">
                                     In reply to{' '}
-                                    <a
-                                        href={`/users/${commentary.parentCommentUsername}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <Link
+                                        to={`/users/${commentary.parentCommentUsername}`}
                                         className="font-semibold hover:underline"
                                         onMouseEnter={handleMouseEnter}
                                         onMouseLeave={handleMouseLeave}
                                     >
                                         {commentary.parentCommentDisplayName || commentary.parentCommentUsername}
-                                    </a>
+                                    </Link>
                                     {showHoverCard && (
                                         <div
                                             className="absolute z-50"
@@ -131,13 +270,10 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
                         )}
                     </div>
 
-                    {/* Post and Category Info */}
                     <div className="text-xs text-gray-500 mb-2 flex flex-wrap items-center gap-2">
                         {commentary.categorySlug && (
-                            <a
-                                href={`/categories/${commentary.categorySlug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <Link
+                                to={`/categories/${commentary.categorySlug}`}
                                 className="flex items-center gap-1 hover:underline"
                             >
                                 {commentary.categoryIconUrl && (
@@ -148,30 +284,102 @@ const UserCommentaryItem = forwardRef(({ commentary, profileUser }, ref) => {
                                     />
                                 )}
                                 <span>{commentary.categoryName}</span>
-                            </a>
+                            </Link>
                         )}
                         {commentary.postId && commentary.postTitle && (
                             <>
                                 <span>•</span>
-                                <a
-                                    href={`/categories/${commentary.categorySlug}/posts/${commentary.postId}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <Link
+                                    to={`/categories/${commentary.categorySlug}/posts/${commentary.postId}`}
                                     className="hover:underline text-gray-700 font-medium"
                                 >
                                     {commentary.postTitle}
-                                </a>
+                                </Link>
                             </>
                         )}
                     </div>
 
-                    {/* Comment content */}
                     <div
                         className="text-md text-gray-800 prose max-w-full"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(commentary.content) }}
+                        dangerouslySetInnerHTML={createSafeHTML(commentary.content)}
                     />
                 </div>
             </div>
+
+            {(canEditComment || canDeleteComment || canReportComment) && ( // Use canEditComment here
+                <div className="absolute top-2 right-2">
+                    <button
+                        ref={dropdownButtonRef}
+                        className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
+                        onClick={toggleDropdown}
+                        aria-label="Comment options"
+                    >
+                        <MoreHorizontal size={20} />
+                    </button>
+                    {showDropdown && (
+                        <div
+                            ref={dropdownRef}
+                            className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-20"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {canEditComment && (
+                                <button
+                                    onClick={() => handleDropdownItemClick('edit')} // Call the unified handler
+                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                >
+                                    Update
+                                </button>
+                            )}
+                            {canDeleteComment && (
+                                <button
+                                    onClick={() => handleDropdownItemClick('delete')} // Call the unified handler
+                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                                >
+                                    Delete
+                                </button>
+                            )}
+                            {canReportComment && (
+                                <button
+                                    onClick={() => handleDropdownItemClick('report')} // Call the unified handler
+                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                >
+                                    Report
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-[999] overflow-hidden"
+                    onClick={() => setShowDeleteModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-lg p-6 max-w-sm mx-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+                        <p className="text-gray-700 mb-6">Are you sure you want to delete this comment? This action cannot be undone.</p>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                onClick={confirmDeleteComment}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </li>
     );
 });

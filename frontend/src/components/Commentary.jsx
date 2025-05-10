@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import {ChevronDown, ChevronUp, MessageCircle, MoreHorizontal, PlusCircle} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from "../contexts/UserContext.jsx";
 import Cookies from "js-cookie";
 import DOMPurify from 'dompurify';
@@ -549,8 +549,6 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
             <div className={`${depth > 0 ? 'pl-2 md:pl-2' : ''}`}>
                 <div
                     className="flex items-center space-x-2 text-xs text-gray-600 mb-1 relative"
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
                 >
                     {commentary.userAvatarUrl ? (
                         <img
@@ -565,12 +563,14 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                             <span>{getInitials(commentary.userDisplayName || commentary.username)}</span>
                         </div>
                     )}
-                    <span
-                        onClick={() => navigate(`/users/${commentary.username}`)}
+                    <Link
+                        to={`/users/${commentary.username}`}
                         className="font-semibold text-gray-800 cursor-pointer hover:underline"
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
                     >
                         {commentary.userDisplayName || commentary.username}
-                    </span>
+                    </Link>
                     <span className="mx-1">•</span>
                     <span>{formatDistanceToNow(new Date(commentary.createdAt), { addSuffix: true })}</span>
 
@@ -796,5 +796,4 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
         </div>
     );
 };
-
 export default Commentary;

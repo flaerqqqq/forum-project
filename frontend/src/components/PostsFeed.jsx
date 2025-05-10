@@ -9,6 +9,7 @@ import { useDeletedPosts } from '../contexts/DeletedPostsContext';
 
 const POSTS_PER_PAGE = 10;
 const SCROLL_THRESHOLD = 800;
+const MIN_LOADING_TIME = 300;
 
 const getCacheKey = (creatorPublicId, isFollowingFeed) => {
     if (creatorPublicId) {
@@ -128,6 +129,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
 
 
         setError(null);
+        const startTime = Date.now();
 
         const params = {
             page: pageNumber,
@@ -144,9 +146,10 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             url = `http://localhost:8080/api/v1/users/me/follows/posts`;
         }
 
+        const authToken = Cookies.get('token');
         const headers = {};
-        if (currentIsFollowingFeed && currentAuthToken) {
-            headers['Authorization'] = `Bearer ${currentAuthToken}`;
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
         }
 
         try {
@@ -155,46 +158,60 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 headers: headers,
             });
 
-            if (res.status === 204 || res.data.content.length === 0) {
-                if (pageNumber === 0 && !append) {
-                    setPosts([]);
-                    setLoadedPostCount(0);
-                }
-                setHasMore(false);
-                return res.data.content;
-            } else {
-                const newPosts = res.data.content.filter(post => !deletedPostIds.includes(post.id));
+            const fetchedPosts = res.data.content || [];
+            const isLast = res.data.last;
 
-                if (append) {
-                    setPosts(prev => {
-                        const prevArray = Array.isArray(prev) ? prev : [];
-                        const existingPostIds = new Set(prevArray.map(p => p.id));
-                        const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
-                        return [...prevArray, ...uniqueNewPosts];
-                    });
-                    setLoadedPostCount(prevCount => prevCount + newPosts.length);
+            const newPosts = fetchedPosts.filter(post => !deletedPostIds.includes(post.id));
+
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                if (res.status === 204 || fetchedPosts.length === 0) {
+                    if (pageNumber === 0 && !append) {
+                        setPosts([]);
+                        setLoadedPostCount(0);
+                    }
+                    setHasMore(false);
                 } else {
-                    const uniqueNewPosts = newPosts;
-                    setPosts(uniqueNewPosts);
-                    setLoadedPostCount(uniqueNewPosts.length);
+                    if (append) {
+                        setPosts(prev => {
+                            const prevArray = Array.isArray(prev) ? prev : [];
+                            const existingPostIds = new Set(prevArray.map(p => p.id));
+                            const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
+                            return [...prevArray, ...uniqueNewPosts];
+                        });
+                        setLoadedPostCount(prevCount => prevCount + newPosts.length);
+                    } else {
+                        const uniqueNewPosts = newPosts;
+                        setPosts(uniqueNewPosts);
+                        setLoadedPostCount(uniqueNewPosts.length);
+                    }
+                    setHasMore(!isLast);
                 }
-                setHasMore(!res.data.last);
-                return newPosts;
-            }
+                setLoading(false);
+            }, remainingTime);
+
+            return newPosts;
 
         } catch (err) {
-            console.error('Error fetching posts:', err);
-            if (err.response && err.response.status === 401 && currentIsFollowingFeed) {
-                setError('Authentication required or invalid token for following feed.');
-                toast.error('Authentication required or invalid token.');
-            } else {
-                setError('Failed to load posts.');
-                toast.error('Failed to load posts.');
-            }
-            setHasMore(false);
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                console.error('Error fetching posts:', err);
+                if (err.response && err.response.status === 401 && currentIsFollowingFeed) {
+                    setError('Authentication required or invalid token for following feed.');
+                    toast.error('Authentication required or invalid token.');
+                } else {
+                    setError('Failed to load posts.');
+                    toast.error('Failed to load posts.');
+                }
+                setHasMore(false);
+                setLoading(false);
+            }, remainingTime);
+
             return [];
-        } finally {
-            setLoading(false);
         }
     }, [sortBy, creatorPublicId, isFollowingFeed, authToken, deletedPostIds]);
 
@@ -435,7 +452,7 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
                 </div>
             </div>
 
-            {(posts.length > 0 || showLoadingMore) && <hr className="border-gray-300 my-2" />}
+                <hr className="border-gray-300 my-2" />
 
             {error && (
                 <div className="p-6 bg-red-100 rounded-md border border-red-400 text-center text-red-700">
@@ -444,14 +461,14 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             )}
 
             {showInitialLoading && (
-                <div className="w-full flex items-center justify-center py-8">
+                <div className="w-full flex items-center justify-center py-8 min-h-[200px]"> {/* Added min-height */}
                     <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
                 </div>
             )}
 
             {!loading && posts.length === 0 && !error && (
-                <div className=" border-border text-center text-gray-medium">
-                    <hr className="w-full my-4 border-gray-300" />
+                <div className=" border-border text-center text-gray-medium py-4">
+                    {/* HR is now handled above */}
                     {isFollowingFeed ? "You are not following any categories yet, or they do not have any posts." : "No posts found."}
                 </div>
             )}
@@ -470,8 +487,8 @@ const PostsFeed = ({ saveHomePostsCache, getHomePostsCache, clearHomePostsCache,
             ))}
 
             {showLoadingMore && (
-                <div className="w-full flex items-center justify-center py-8">
-                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
+                <div className="w-full flex items-center justify-center py-6"> {/* Adjusted padding */}
+                    <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} /> {/* Adjusted spinner size */}
                 </div>
             )}
         </div>

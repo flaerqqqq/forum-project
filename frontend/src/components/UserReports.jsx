@@ -194,7 +194,7 @@ const UserReports = () => {
 
             {initialLoading && reports.length === 0 ? (
                 <div className="flex justify-center py-12">
-                    <Oval height={36} width={36} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={4} visible />
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible />
                 </div>
             ) : reports.length === 0 && !initialLoading ? (
                 <p className="text-center text-gray-500 py-10 text-base">
@@ -214,7 +214,7 @@ const UserReports = () => {
 
             {loading && reports.length > 0 && (
                 <div className="flex justify-center py-6">
-                    <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} visible />
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible />
                 </div>
             )}
 

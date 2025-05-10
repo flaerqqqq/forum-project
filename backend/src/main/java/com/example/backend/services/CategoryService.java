@@ -28,4 +28,6 @@ public interface CategoryService {
     void deleteCategoryById(String publicId, Long categoryId);
 
     Page<CategoryDto> getUserOwnedCategories(String publicId, Pageable pageable);
+
+    Boolean checkAccessToCategory(String publicId, String categorySlug);
 }

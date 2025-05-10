@@ -12,11 +12,13 @@ import com.example.backend.models.*;
 import com.example.backend.repositories.CommentaryRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
+import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.CommentaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,7 +108,13 @@ public class CommentaryServiceImpl implements CommentaryService {
     public Page<UserCommentaryResponseDto> getUserCommentaries(String publicId, Pageable pageable) {
         User user = findUserByPublicId(publicId);
 
-        Page<UserCommentaryResponseDto> userCommentaries = commentaryRepository.findByCreatedBy(user, pageable).map(com -> {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User caller = null;
+        if (principal != null && !(principal instanceof String)) {
+            caller = findUserByPublicId(((CustomUserDetails) principal).getPublicId());
+        }
+
+        Page<UserCommentaryResponseDto> userCommentaries = commentaryRepository.findByCreatedBy(user, caller, pageable).map(com -> {
             Post post = com.getPost();
             Category category = post.getCategory();
 

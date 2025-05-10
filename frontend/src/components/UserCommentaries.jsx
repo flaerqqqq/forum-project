@@ -72,7 +72,7 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
 
         setError(null);
         const startTime = Date.now();
-
+        const token = Cookies.get('token');
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/users/me/comments`, {
                 params: {
@@ -80,7 +80,7 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
                     size: PAGE_SIZE,
                     publicId: userPublicId,
                     sort: sortBy === 'newest' ? 'createdAt,desc' : 'createdAt,asc'
-                },
+                }, headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
 
             const fetchedCommentaries = res.data.content || [];
@@ -125,11 +125,21 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
         }
     };
 
+    // Function to handle comment deletion from the list
+    const handleCommentDeleted = useCallback((deletedCommentId) => {
+        setCommentaries(prevCommentaries =>
+            prevCommentaries.filter(comment => comment.id !== deletedCommentId)
+        );
+        // Note: This doesn't update the total count displayed, only removes from the list.
+        // If you need to update the total count, you might need a separate state or refetch.
+    }, []);
+
+
     const overallLoading = initialLoading || loading;
 
     return (
         <div className="mt-6 rounded-md text-black font-sans overflow-visible">
-            <div className="flex items-center gap-1 mb-6">
+            <div className="flex items-center gap-1 mb-4">
                 <span className="text-sm text-gray-darker font-medium">Sort By:</span>
                 <button
                     onClick={() => handleSortChange('newest')}
@@ -156,7 +166,7 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
                     <p>{error}</p>
                 </div>
             ) : commentaries.length === 0 ? (
-                <p className="text-gray-medium text-center py-10 text-base">
+                <p className="text-gray-medium text-center py-4 text-base">
                     No commentaries found for this user.
                 </p>
             ) : (
@@ -168,6 +178,7 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
                                 commentary={commentary}
                                 profileUser={profileUser}
                                 ref={idx === commentaries.length - 1 ? lastCommentaryRef : null}
+                                onCommentDeleted={handleCommentDeleted} // Pass the handler down
                             />
                         </React.Fragment>
                     ))}

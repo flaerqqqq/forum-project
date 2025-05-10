@@ -71,8 +71,13 @@ const PostPage = () => {
         setPost(null);
         setCurrentImageIndex(0);
 
+        const authToken = Cookies.get('token');
         try {
-            const res = await axios.get(`http://localhost:8080/api/v1/posts/${postId}`);
+            const res = await axios.get(`http://localhost:8080/api/v1/posts/${postId}`, {
+                headers: authToken ?{
+                    'Authorization': `Bearer ${authToken}`,
+                } : {},
+            });
             setPost(res.data);
         } catch (err) {
             console.error('Error fetching post:', err);
@@ -249,6 +254,8 @@ const PostPage = () => {
 
     if (error && axios.isAxiosError(error) && error.response && error.response.status === 404) {
         return <PostNotFound />;
+    } else if (error && axios.isAxiosError(error) && error.response && error.response.status === 403) {
+        return <PostNotFound accessDenied={true} />
     }
 
     if (loading || authLoading || (!post && !error) || (post && loadingModeratedCategories)) {
@@ -430,8 +437,6 @@ const PostPage = () => {
                             <MessageCircle size={16} className="mr-1" />
                             <span>{post?.commentsCount || 0} comments</span>
                         </div>
-
-                        <hr className="my-6 border-gray-300" />
 
                         {post?.id && post.category && (
                             <PostCommentaries

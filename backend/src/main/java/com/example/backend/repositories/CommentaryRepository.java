@@ -27,5 +27,22 @@ public interface CommentaryRepository extends JpaRepository<Commentary, Long> {
             """)
     Page<Commentary> findCommentariesByPost(@Param("post") Post post, Pageable pageable);
 
-    Page<Commentary> findByCreatedBy(User user, Pageable pageable);
+    @Query("""
+    SELECT c FROM Commentary c
+    JOIN c.post p
+    JOIN p.category cat
+    WHERE c.createdBy = :user
+    AND (
+        cat.visibility = 'PUBLIC'
+        OR :caller IS NOT NULL AND (
+            cat.createdBy = :caller
+            OR EXISTS (
+                SELECT 1 FROM CategoryModerator cm
+                WHERE cm.category = cat AND cm.user = :caller
+            )
+        )
+    )
+    """)
+    Page<Commentary> findByCreatedBy(@Param("user") User user,
+                                     @Param("caller") User caller, Pageable pageable);
 }

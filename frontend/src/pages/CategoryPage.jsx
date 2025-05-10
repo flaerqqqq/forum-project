@@ -13,6 +13,8 @@ import CategoryUpdateModal from '../components/CategoryUpdateModal';
 import {ArrowUp, HammerIcon, PlusCircleIcon} from 'lucide-react';
 
 import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
+// Import the useModeratedCategories hook
+import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext';
 
 
 const categoryPostsCache = new Map();
@@ -28,8 +30,16 @@ const CategoryPage = () => {
 
     const { user, loading: userLoading } = useUser();
     const { followedCategorySlugs, loadingFollowedCategories, addFollowedCategory, removeFollowedCategory } = useFollowedCategories();
+    // Use the hook to get moderated categories state and loading status
+    const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
 
+
+    // Determine if the current category is followed based on the context state
     const isFollowed = Array.isArray(followedCategorySlugs) && followedCategorySlugs.includes(category?.slug);
+
+    // Determine if the current user is a moderator of this category
+    const isModerator = Array.isArray(moderatedCategorySlugs) && moderatedCategorySlugs.includes(category?.slug);
+
 
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
@@ -50,6 +60,45 @@ const CategoryPage = () => {
         const key = `${slug}_${sort}`;
         categoryPostsCache.delete(key);
     }, []);
+
+    const checkAccessAndFetchCategory = async () => {
+        setLoadingCategory(true);
+        setCategoryError(null);
+        setNotFound(false);
+
+        try {
+            const token = Cookies.get('token');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            const accessRes = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}/access`, {
+                headers
+            });
+
+            if (accessRes.data !== true) {
+                setCategoryError("Access denied to this category.");
+                return;
+            }
+
+            const categoryRes = await axios.get(`http://localhost:8080/api/v1/categories/slug/${categorySlug}`, {
+                headers
+            });
+
+            setCategory(categoryRes.data);
+        } catch (error) {
+            console.error("Access check or category fetch failed:", error);
+            if (error.response?.status === 404) {
+                setNotFound(true);
+            } else if (error.response?.status === 403) {
+                setCategoryError("You do not have access to this category.");
+            } else {
+                setCategoryError("Failed to load category.");
+            }
+            toast.error("Access denied or error loading category.");
+        } finally {
+            setLoadingCategory(false);
+        }
+    };
+
 
     useEffect(() => {
         const handleScroll = () => {
@@ -96,7 +145,7 @@ const CategoryPage = () => {
     };
 
     useEffect(() => {
-        fetchCategoryDetails();
+        checkAccessAndFetchCategory();
     }, [categorySlug]);
 
     const handleFollowClick = async () => {
@@ -155,7 +204,18 @@ const CategoryPage = () => {
         }
     };
 
-    const overallLoading = loadingCategory || userLoading || loadingFollowedCategories;
+    // Determine if the "Create Post" button should be shown
+    const canCreatePost = user && category?.postPermission && (
+        category.postPermission === 'EVERYONE' ||
+        (category.postPermission === 'MEMBERS_ONLY' && isFollowed) ||
+        (category.postPermission === 'MODS_ONLY' && isModerator)
+    );
+
+    // Determine if the "Create Post" button should be disabled while contexts are loading
+    const isCreatePostButtonDisabled = userLoading || loadingFollowedCategories || loadingModeratedCategories;
+
+
+    const overallLoading = loadingCategory || userLoading || loadingFollowedCategories || loadingModeratedCategories;
 
 
     if (overallLoading) {
@@ -171,6 +231,15 @@ const CategoryPage = () => {
 
     if (notFound) {
         return <CategoryNotFound />;
+    }
+
+    if (categoryError === "Access denied to this category." || categoryError === "You do not have access to this category.") {
+        return (
+            <CategoryNotFound
+                title="🚫 Access Denied"
+                message="You do not have permission to view this category."
+            />
+        );
     }
 
     if (categoryError) {
@@ -243,18 +312,27 @@ const CategoryPage = () => {
                                 </button>
                             )}
 
-                            {user && categorySlug && (
+                            {/* Conditionally render the Create Post button */}
+                            {canCreatePost && categorySlug && (
                                 <Link
                                     to={`/categories/${categorySlug}/create-post`}
-                                    className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1 hover:no-underline"
+                                    className={`bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1 hover:no-underline
+                                     ${isCreatePostButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''} // Apply disabled styles
+                                    `}
+                                    disabled={isCreatePostButtonDisabled} // Disable the link when contexts are loading
                                 >
                                     <div className="flex items-center">
-                                        <PlusCircleIcon size={16} />
+                                        {isCreatePostButtonDisabled ? (
+                                            <Oval height={16} width={16} color="#4A5568" secondaryColor="#E2E8F0" strokeWidth={5} />
+                                        ) : (
+                                            <PlusCircleIcon size={16} />
+                                        )}
                                         <span className="pl-1">  Create Post
                                         </span>
                                     </div>
                                 </Link>
                             )}
+
 
                             {user?.publicId === category?.creatorId && (
                                 <button

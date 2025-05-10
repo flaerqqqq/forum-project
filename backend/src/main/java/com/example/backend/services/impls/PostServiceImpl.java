@@ -11,10 +11,12 @@ import com.example.backend.mappers.PostMapper;
 import com.example.backend.models.*;
 import com.example.backend.models.enums.PostPermission;
 import com.example.backend.models.enums.PostType;
+import com.example.backend.models.enums.Visibility;
 import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.PostImageRepository;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.repositories.UserRepository;
+import com.example.backend.security.CustomUserDetails;
 import com.example.backend.services.PostService;
 import com.example.backend.services.S3Service;
 import com.example.backend.utils.ImageUtils;
@@ -22,10 +24,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,6 +89,9 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostDto findById(Long postId) {
         final Post post = findPostById(postId);
+        if (!checkAccessToPost(post)) {
+            throw new AccessDeniedException(STR."Such a user has no permission to view the post with id=\{postId}");
+        }
         return postMapper.toDto(post);
     }
 
@@ -93,7 +100,15 @@ public class PostServiceImpl implements PostService {
     public Page<PostDto> findPostsPage(Pageable pageable, PostType type, String creatorPublicId, String categorySlug) {
         User creator = creatorPublicId == null ? null : findUserByPublicId(creatorPublicId);
         Category category = categorySlug == null ? null : findCategoryBySlug(categorySlug);
-        return postRepository.findFilteredPage(type, creator, category, pageable).map(postMapper::toDto);
+
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User caller = null;
+        if (principal !=null && !(principal instanceof String)) {
+            caller = findUserByPublicId(((CustomUserDetails) principal).getPublicId());
+        }
+
+        return postRepository.findFilteredPage(type, creator, category, caller, pageable)
+                .map(postMapper::toDto);
     }
 
     @Override
@@ -181,7 +196,15 @@ public class PostServiceImpl implements PostService {
     @Override
     public Page<PostDto> getPostsByUserFollowedCategories(String publicId, Pageable pageable) {
         User user = findUserByPublicId(publicId);
-        Page<Post> postsFromFollowing = postRepository.findPostsFromUserFollowing(user, pageable);
+
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User caller = null;
+        if (principal !=null && !(principal instanceof String)) {
+            caller = findUserByPublicId(((CustomUserDetails) principal).getPublicId());
+        }
+
+        Page<Post> postsFromFollowing = postRepository.findPostsFromUserFollowing(user, caller, pageable);
+
         return postsFromFollowing.map(postMapper::toDto);
     }
 
@@ -239,5 +262,24 @@ public class PostServiceImpl implements PostService {
             postImages.add(postImage);
         }
         return postImages;
+    }
+
+    private Boolean checkAccessToPost(Post post) {
+        Category category = post.getCategory();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal != null & !(principal instanceof String)) {
+            String publicId = ((CustomUserDetails)principal).getPublicId();
+            User user = findUserByPublicId(publicId);
+            switch (category.getVisibility()) {
+                case Visibility.PUBLIC:
+                    return true;
+                case Visibility.RESTRICTED:
+                    return category.getCategoryModerators().stream().anyMatch(mod -> mod.getUser().equals(user));
+                case Visibility.PRIVATE:
+                    return category.getCreatedBy().equals(user);
+            }
+        }
+        return category.getVisibility() == Visibility.PUBLIC;
     }
 }

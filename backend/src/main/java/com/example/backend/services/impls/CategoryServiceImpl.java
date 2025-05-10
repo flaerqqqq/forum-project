@@ -10,6 +10,7 @@ import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.mappers.CategoryMapper;
 import com.example.backend.models.*;
 import com.example.backend.models.enums.CategoryModeratorRole;
+import com.example.backend.models.enums.Visibility;
 import com.example.backend.repositories.CategoryModeratorRepository;
 import com.example.backend.repositories.CategoryRepository;
 import com.example.backend.repositories.UserRepository;
@@ -163,6 +164,26 @@ public class CategoryServiceImpl implements CategoryService {
                 new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
 
         return categoryRepository.findAllByCreatedBy(user, pageable).map(categoryMapper::toDto);
+    }
+
+    @Override
+    public Boolean checkAccessToCategory(String publicId, String categorySlug) {
+        Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
+                new CategoryNotFoundException("Category with such a id=%d not found".formatted(categorySlug)));
+
+        if (publicId != null) {
+            User user = userRepository.findByPublicId(publicId).orElseThrow(() ->
+                    new UserNotFoundException("User with such a publicId=%s not found".formatted(publicId)));
+            switch (category.getVisibility()) {
+                case Visibility.PUBLIC:
+                    return true;
+                case Visibility.RESTRICTED:
+                    return category.getCategoryModerators().stream().anyMatch(mod -> mod.getUser().equals(user));
+                case Visibility.PRIVATE:
+                    return category.getCreatedBy().equals(user);
+            }
+        }
+        return category.getVisibility() == Visibility.PUBLIC;
     }
 
     private boolean isUserAuthorizedToDelete(User user, Category category) {

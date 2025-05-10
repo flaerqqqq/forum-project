@@ -4,12 +4,14 @@ import PostCard from './PostCard';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
+import { useDeletedPosts } from '../contexts/DeletedPostsContext';
+import Cookies from "js-cookie";
 
 const POSTS_PER_PAGE = 10;
+const SCROLL_THRESHOLD = 800;
+const MIN_LOADING_TIME = 300;
 
 const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsCache, clearCategoryPostsCache }) => {
-    // Consume the context to get deleted post IDs and the add function
     const { deletedPostIds, addDeletedPostId } = useDeletedPosts();
 
     const [posts, setPosts] = useState([]);
@@ -19,11 +21,13 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     const [hasMore, setHasMore] = useState(true);
     const [sortBy, setSortBy] = useState('createdAt,desc');
     const [loadedPostCount, setLoadedPostCount] = useState(0);
+    const [minContainerHeight, setMinContainerHeight] = useState('auto'); // State to hold the minimum height
+
 
     const location = useLocation();
     const navigate = useNavigate();
 
-    const postsContainerRef = useRef(null);
+    const postsContainerRef = useRef(null); // Ref for the main posts container
 
     const initialMountHandled = useRef(false);
     const isRestoringScroll = useRef(false);
@@ -34,10 +38,13 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             return [];
         }
 
+        // Only set loading true if not restoring from cache/scroll
         if (!isRestoringFromCache.current && !isRestoringScroll.current) {
             setLoading(true);
         }
         setError(null);
+        const authToken = Cookies.get('token')
+        const startTime = Date.now();
 
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/posts`, {
@@ -46,51 +53,69 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                     page: pageNumber,
                     size: size,
                     sort: currentSortBy
-                }
+                },
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
             });
 
-            if (res.status === 204 || res.data.content.length === 0) {
-                if (pageNumber === 0 && !append) {
-                    setPosts([]);
-                    setLoadedPostCount(0);
-                }
-                setHasMore(false);
-                return res.data.content;
-            } else {
-                // --- Filter out deleted posts from the fetched data ---
-                const newPosts = res.data.content.filter(post => !deletedPostIds.includes(post.id));
-                // --- End of filtering ---
+            const fetchedPosts = res.data.content || [];
+            const isLast = res.data.last;
 
-                if (append) {
-                    setPosts(prev => {
-                        // Ensure prev is an array before concatenating
-                        const prevArray = Array.isArray(prev) ? prev : [];
-                        const existingPostIds = new Set(prevArray.map(p => p.id));
-                        const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
-                        return [...prevArray, ...uniqueNewPosts];
-                    });
-                    setLoadedPostCount(prevCount => prevCount + newPosts.length);
+            const newPosts = fetchedPosts.filter(post => !deletedPostIds.includes(post.id));
+
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                if (res.status === 204 || fetchedPosts.length === 0) {
+                    if (pageNumber === 0 && !append) {
+                        setPosts([]);
+                        setLoadedPostCount(0);
+                    }
+                    setHasMore(false);
                 } else {
-                    const uniqueNewPosts = newPosts;
-                    setPosts(uniqueNewPosts);
-                    setLoadedPostCount(uniqueNewPosts.length);
+                    if (append) {
+                        setPosts(prev => {
+                            const prevArray = Array.isArray(prev) ? prev : [];
+                            const existingPostIds = new Set(prevArray.map(p => p.id));
+                            const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
+                            return [...prevArray, ...uniqueNewPosts];
+                        });
+                        setLoadedPostCount(prevCount => prevCount + newPosts.length);
+                    } else {
+                        const uniqueNewPosts = newPosts;
+                        setPosts(uniqueNewPosts);
+                        setLoadedPostCount(uniqueNewPosts.length);
+                    }
+                    setHasMore(!isLast);
                 }
-                setHasMore(!res.data.last);
-                return newPosts; // Return filtered posts
-            }
+                // Only set loading false if not restoring from cache/scroll
+                if (!isRestoringFromCache.current && !isRestoringScroll.current) {
+                    setLoading(false);
+                }
+                setMinContainerHeight('auto'); // Reset min height after loading is complete
+            }, remainingTime);
+
+            return newPosts;
 
         } catch (err) {
-            console.error('Error fetching posts:', err);
-            setError('Failed to load posts.');
-            toast.error('Failed to load posts.');
-            setHasMore(false);
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+
+            setTimeout(() => {
+                console.error('Error fetching posts:', err);
+                setError('Failed to load posts.');
+                toast.error('Failed to load posts.');
+                setHasMore(false);
+                // Only set loading false if not restoring from cache/scroll
+                if (!isRestoringFromCache.current && !isRestoringScroll.current) {
+                    setLoading(false);
+                }
+                setMinContainerHeight('auto'); // Reset min height on error
+            }, remainingTime);
+
             return [];
-        } finally {
-            if (!isRestoringFromCache.current && !isRestoringScroll.current) {
-                setLoading(false);
-            }
         }
-    }, [categorySlug, sortBy, deletedPostIds]); // Add deletedPostIds to dependencies
+    }, [categorySlug, sortBy, deletedPostIds]);
 
     useEffect(() => {
         if (!initialMountHandled.current) {
@@ -115,18 +140,16 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                     setSortBy(cachedDataToUse.sortBy);
                 }
 
-                // --- Filter out deleted posts from cache data ---
                 const filteredCachedPosts = cachedDataToUse.posts.filter(post => !deletedPostIds.includes(post.id));
-                // --- End of filtering ---
 
                 setPosts(filteredCachedPosts);
-                setLoadedPostCount(filteredCachedPosts.length); // Update count based on filtered posts
+                setLoadedPostCount(filteredCachedPosts.length);
 
                 const restoredPages = Math.ceil(filteredCachedPosts.length / POSTS_PER_PAGE) - 1;
                 setPage(Math.max(restoredPages, 0));
 
-                setHasMore(cachedDataToUse.hasMore); // Keep original hasMore for now
-                setLoading(false);
+                setHasMore(cachedDataToUse.hasMore);
+                setLoading(false); // Set loading false immediately when restoring from cache
 
                 if (cachedDataToUse.scrollY !== undefined) {
                     isRestoringScroll.current = true;
@@ -150,6 +173,7 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                         }, 0);
                     }, 0);
                 } else {
+                    // If no scrollY, still consider restoring from cache complete after a short delay
                     setTimeout(() => {
                         if (cachedDataToUse.hasMore) {
                             const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
@@ -159,15 +183,14 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                                 loadMore();
                             }
                         }
-
-                        setTimeout(() => {
-                            isRestoringFromCache.current = false;
-                        }, 0);
+                        isRestoringFromCache.current = false;
                     }, 0);
                 }
 
+
                 clearCategoryPostsCache(categorySlug, cachedDataToUse.sortBy);
             } else {
+                // If no cache, fetch initial data normally
                 setPage(0);
                 setPosts([]);
                 setHasMore(true);
@@ -175,119 +198,150 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 fetchPosts(0, POSTS_PER_PAGE, sortBy, false);
             }
         }
-    }, [categorySlug, sortBy, fetchPosts, getCategoryPostsCache, clearCategoryPostsCache, deletedPostIds]); // Add deletedPostIds to dependencies
+    }, [categorySlug, sortBy, fetchPosts, getCategoryPostsCache, clearCategoryPostsCache, deletedPostIds]);
 
     const prevCategoryRef = useRef(categorySlug);
     const prevSortRef = useRef(sortBy);
 
     useEffect(() => {
+        // This effect handles changes in categorySlug or sortBy after the initial mount
         if (initialMountHandled.current &&
             (prevCategoryRef.current !== categorySlug || prevSortRef.current !== sortBy) &&
             !isRestoringFromCache.current) {
 
+            // When category or sort changes, reset state and fetch new data
             setPage(0);
             setPosts([]);
             setHasMore(true);
             setLoadedPostCount(0);
+            // fetchPosts will handle setting initialLoading true
+
+            // Capture current height before clearing posts to prevent jump
+            if (postsContainerRef.current) {
+                setMinContainerHeight(`${postsContainerRef.current.scrollHeight}px`);
+            }
+
             fetchPosts(0, POSTS_PER_PAGE, sortBy, false);
         }
 
         prevCategoryRef.current = categorySlug;
         prevSortRef.current = sortBy;
-    }, [categorySlug, sortBy, fetchPosts]); // Add fetchPosts to dependencies
+    }, [categorySlug, sortBy, fetchPosts]);
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
+        // Only load more if not currently loading and there's more data
         if (!loading && hasMore && !isRestoringScroll.current && !isRestoringFromCache.current) {
+            // setLoading(true); // Loading state is handled inside fetchPosts
             fetchPosts(nextPage, POSTS_PER_PAGE, sortBy, true);
-            setPage(nextPage);
+            setPage(nextPage); // Update page state immediately
         }
     }, [loading, hasMore, page, sortBy, fetchPosts]);
 
     const handleScroll = useCallback(() => {
-        if (isRestoringScroll.current || isRestoringFromCache.current) {
+        // Prevent loading more if restoring from cache/scroll or already loading
+        if (isRestoringScroll.current || isRestoringFromCache.current || loading) {
             return;
         }
 
-        const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 500;
+        // Check if the user is near the bottom of the page
+        const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - SCROLL_THRESHOLD; // Use SCROLL_THRESHOLD
+
+        // Check if the posts container exists and is scrollable
         const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
         const viewportHeight = window.innerHeight;
         const isContentScrollable = containerHeight > viewportHeight;
 
+        // If near bottom, there's more data, not loading, and content is scrollable, load more
         if (isAtBottom && hasMore && !loading && isContentScrollable) {
             loadMore();
         }
-    }, [hasMore, loading, loadMore]);
+        // Also load more if content is not scrollable but there's more data (handles cases with few initial posts)
+        else if (!isContentScrollable && hasMore && posts.length > 0) {
+            loadMore();
+        }
+
+    }, [hasMore, loading, loadMore, posts.length]); // Added posts.length to dependencies
+
 
     useEffect(() => {
+        // Add scroll event listener on mount
         window.addEventListener('scroll', handleScroll);
+        // Clean up scroll event listener on unmount
         return () => {
             window.removeEventListener('scroll', handleScroll);
         };
-    }, [handleScroll]);
+    }, [handleScroll]); // Dependency on handleScroll useCallback
+
+    // Effect to load more if content is not scrollable on mount or after new data loads
+    useEffect(() => {
+        // Only trigger if not currently loading, there's more data, and there are posts rendered
+        if (!loading && hasMore && posts.length > 0) {
+            const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
+            const viewportHeight = window.innerHeight;
+            const isContentScrollable = containerHeight > viewportHeight;
+
+            // If content is not scrollable, load more posts
+            if (!isContentScrollable) {
+                loadMore();
+            }
+        }
+    }, [posts.length, loading, hasMore, loadMore]); // Dependencies: re-run if posts length, loading, hasMore, or loadMore changes
+
 
     const saveCurrentStateToCache = useCallback(() => {
-        // When saving to cache, filter out deleted posts first
         const postsToCache = posts.filter(post => !deletedPostIds.includes(post.id));
         if (categorySlug && postsToCache.length > 0) {
             saveCategoryPostsCache(
                 categorySlug,
                 sortBy,
-                postsToCache, // Save filtered posts
-                postsToCache.length, // Save filtered count
+                postsToCache,
+                postsToCache.length,
                 window.scrollY,
                 page,
                 hasMore
             );
         } else if (categorySlug) {
-            // If all posts are filtered out, clear the cache for this key/sort
             clearCategoryPostsCache(categorySlug, sortBy);
         }
-    }, [categorySlug, sortBy, posts, page, hasMore, saveCategoryPostsCache, deletedPostIds, clearCategoryPostsCache]); // Add deletedPostIds and clearCategoryPostsCache to dependencies
+    }, [categorySlug, sortBy, posts, page, hasMore, saveCategoryPostsCache, deletedPostIds, clearCategoryPostsCache]);
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
+            // Capture current height before clearing posts
+            if (postsContainerRef.current) {
+                setMinContainerHeight(`${postsContainerRef.current.scrollHeight}px`);
+            }
+
             setSortBy(newSortBy);
-            // Clear cache for the current category slug and the new sort type
             clearCategoryPostsCache(categorySlug, newSortBy);
-            // Also clear the cache for the old sort type for this category slug
             clearCategoryPostsCache(categorySlug, sortBy);
 
             setPage(0);
-            setPosts([]);
+            setPosts([]); // Clearing posts here will cause collapse without min-height
             setHasMore(true);
             setLoadedPostCount(0);
+
             fetchPosts(0, POSTS_PER_PAGE, newSortBy, false);
         }
     };
 
-    // --- NEW FUNCTION TO HANDLE POST DELETION ---
     const handleDeletePost = useCallback((deletedPostId) => {
-        // Ensure currentPosts is an array before filtering
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => post.id !== deletedPostId) : []);
         setLoadedPostCount(prevCount => Math.max(0, prevCount - 1));
-        // When a post is deleted from here, also add it to the global context
         addDeletedPostId(deletedPostId);
-    }, [addDeletedPostId]); // Add addDeletedPostId to dependencies
-    // --- END OF NEW FUNCTION ---
+    }, [addDeletedPostId]);
 
-    // Effect to filter posts whenever deletedPostIds changes
     useEffect(() => {
-        // This effect runs when deletedPostIds changes (e.g., after returning from post detail page)
-        // Filter the currently displayed posts
-        // Ensure currentPosts is an array before filtering
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)) : []);
-        // Recalculate loadedPostCount based on filtered posts
         setLoadedPostCount(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)).length : 0);
-
-    }, [deletedPostIds]); // Dependency on deletedPostIds
-
+    }, [deletedPostIds]);
 
     const showInitialLoading = loading && posts.length === 0 && !error;
     const showLoadingMore = loading && posts.length > 0 && hasMore;
 
     return (
-        <div className="space-y-1" ref={postsContainerRef}>
+        <div className="space-y-1" ref={postsContainerRef} style={{ minHeight: minContainerHeight }}> {/* Apply min height */}
             <div className="flex justify-end items-center mb-4 space-x-1">
                 <span className="text-sm text-gray-600">Sort By:</span>
                 <button
@@ -306,17 +360,27 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 </button>
             </div>
 
-            {(posts.length > 0 || showLoadingMore) && <hr className="border-gray-300 my-2" />}
-
-            {!loading && posts.length === 0 && !error && (
-                <div className="p-6 bg-white rounded-md border border-border text-center text-gray-medium">
-                    No posts found.
-                </div>
+            {/* Conditional HR above content/spinner */}
+            {(posts.length > 0 || showInitialLoading || showLoadingMore) && !error && (
+                <hr className="border-gray-300 my-2" />
             )}
+
 
             {error && (
                 <div className="p-6 bg-red-100 rounded-md border border-red-400 text-center text-red-700">
                     Failed to load posts.
+                </div>
+            )}
+
+            {showInitialLoading && (
+                <div className="w-full h-full flex items-center justify-center py-8">
+                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
+                </div>
+            )}
+
+            {!loading && posts.length === 0 && !error && (
+                <div className=" border-border text-center text-gray-medium py-4">
+                    No posts found.
                 </div>
             )}
 
@@ -334,8 +398,8 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             ))}
 
             {showLoadingMore && (
-                <div className="w-full flex items-center justify-center py-8">
-                    <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} />
+                <div className="w-full flex items-center justify-center py-6">
+                    <Oval height={28} width={28} color="#6B7280" secondaryColor="#E5E7EB" strokeWidth={3} />
                 </div>
             )}
         </div>
