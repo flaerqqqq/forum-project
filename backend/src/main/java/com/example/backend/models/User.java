@@ -91,9 +91,15 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CategoryModerator> moderatedCategories;
 
-    @OneToMany(mappedBy = "creator")
+    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     private List<Post> posts;
 
-    @OneToMany(mappedBy = "createdBy")
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     private List<Commentary> commentaries;
+
+    @OneToOne(mappedBy = "bannedUser", cascade = CascadeType.ALL)
+    private UserBanData userBanData;
+
+    @OneToMany(mappedBy = "moderator")
+    private List<UserBanData> bannedUsers;
 }

@@ -2,6 +2,7 @@ package com.example.backend.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -18,8 +19,14 @@ public class UserBanData {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "unban_time", nullable = false)
-    private LocalDateTime unbanTime;
+    @Column(name = "is_permanent_ban")
+    private Boolean isPermanentBan = false;
+
+    @Column(name = "unban_at")
+    private LocalDateTime unbanAt;
+
+    @CreationTimestamp
+    private LocalDateTime bannedAt;
 
     @Column(nullable = false)
     private String reason;
@@ -28,7 +35,7 @@ public class UserBanData {
     @JoinColumn(name = "moderator_id")
     private User moderator;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "banned_user_id")
     private User bannedUser;
 }
