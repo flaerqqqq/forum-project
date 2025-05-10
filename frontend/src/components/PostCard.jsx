@@ -7,6 +7,8 @@ import Cookies from "js-cookie";
 import axios from "axios";
 import {toast} from "react-toastify";
 import {useModeratedCategories} from "../contexts/ModeratedCategoriesContext.jsx";
+import ReportContentModal from './ReportContentModal.jsx';
+
 
 const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const {
@@ -20,7 +22,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         category,
     } = post;
 
-    const location = useLocation();
     const navigate = useNavigate();
     const { user: authenticatedUser, loading: authLoading } = useUser();
     const { addDeletedPostId } = useDeletedPosts();
@@ -37,15 +38,12 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+
 
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const dropdownButtonRef = useRef(null);
-
-    // Remove local state for category moderator check - this is now handled by context
-    // const [isUserCategoryModerator, setIsUserCategoryModerator] = useState(false);
-    // const [checkingCategoryModerator, setCheckingCategoryModerator] = useState(false);
-
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -60,48 +58,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
-
-    // Remove the useEffect hook that was fetching moderator status locally
-    /*
-    useEffect(() => {
-        const checkCategoryModeratorStatus = async () => {
-            if (!authenticatedUser || authLoading || !authenticatedUser.publicId || !category?.slug) {
-                setIsUserCategoryModerator(false);
-                return;
-            }
-
-            if (isUserCategoryModerator) {
-                return;
-            }
-
-
-            setCheckingCategoryModerator(true);
-            try {
-                const token = Cookies.get('token');
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-                const res = await axios.get(`http://localhost:8080/api/v1/categories/${post.category.id}/moderators/${authenticatedUser.publicId}/roles`, {
-                    headers: headers
-                });
-
-                if (res.data && res.data.roles.some(role => role === 'MODERATOR')) {
-                    setIsUserCategoryModerator(true);
-                } else {
-                    setIsUserCategoryModerator(false);
-                }
-
-            } catch (err) {
-                console.error('Error checking category moderator status in PostCard:', err);
-                setIsUserCategoryModerator(false);
-            } finally {
-                setCheckingCategoryModerator(false);
-            }
-        };
-
-        checkCategoryModeratorStatus();
-
-    }, [authenticatedUser, authLoading, category?.slug]);
-    */
 
     const showPrevImage = (e) => {
         e.stopPropagation();
@@ -134,10 +90,13 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
             if (event.key === 'Escape') {
                 closePreview();
                 setShowDeleteModal(false);
+                // Close report modal on Escape key
+                setShowReportModal(false);
             }
         };
 
-        if (showPreview || showDeleteModal) {
+        // Add or remove the event listener based on modal visibility
+        if (showPreview || showDeleteModal || showReportModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
             document.removeEventListener('keydown', handleEscapeKey);
@@ -146,7 +105,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview, showDeleteModal]);
+    }, [showPreview, showDeleteModal, showReportModal]); // Add showReportModal to dependencies
 
     const postDetailUrl = `/categories/${category?.slug}/posts/${id}`;
 
@@ -168,11 +127,13 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
 
     // Determine if the user is a moderator for *this post's* category using the context list
     // Ensure category and slug exist before checking includes
-    const isUserCategoryModerator = moderatedCategorySlugs.includes(category?.slug);
+    const isUserCategoryModerator = Array.isArray(moderatedCategorySlugs) && moderatedCategorySlugs.includes(category?.slug);
 
     // Update canDeletePost to use loadingModeratedCategories from context and derived isUserCategoryModerator
     const canDeletePost = !authLoading && !loadingModeratedCategories && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
     const canUpdatePost = !authLoading && (isPostOwner);
+
+    const canReportPost = !authLoading && authenticatedUser && !isPostOwner;
 
 
     const handleUpdatePostClick = (e) => {
@@ -245,6 +206,19 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         }
     };
 
+    // Handler to show the report modal
+    const handleReportClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowDropdown(false);
+        setShowReportModal(true); // Set state to true to show the modal
+    };
+
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+    };
+
+
     return (
         <div className="transition rounded-2xl p-4 mb-6 hover:bg-gray-100 overflow-hidden">
             {category?.slug && (
@@ -264,8 +238,8 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             {new Date(createdAt).toLocaleDateString()}
                         </div>
 
-                        {/* Show dropdown only if any action is available (update or delete) */}
-                        { (canUpdatePost || canDeletePost) && (
+                        {/* Show dropdown only if any action is available (update, delete, or report) */}
+                        { (canUpdatePost || canDeletePost || canReportPost) && (
                             <div className="relative">
                                 <button
                                     ref={dropdownButtonRef}
@@ -301,6 +275,15 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                                                 className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
                                             >
                                                 Delete post
+                                            </button>
+                                        )}
+                                        {/* Conditionally render Report button */}
+                                        {canReportPost && (
+                                            <button
+                                                onClick={handleReportClick}
+                                                className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                            >
+                                                Report post
                                             </button>
                                         )}
                                     </div>
@@ -390,6 +373,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 )}
             </div>
 
+            {/* Image Preview Modal */}
             {showPreview && images[currentImageIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
@@ -424,6 +408,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 </div>
             )}
 
+            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
@@ -451,6 +436,14 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showReportModal && id && (
+                <ReportContentModal
+                    targetType="POST" // Specify the target type as 'POST'
+                    targetId={id} // Pass the post's ID as the targetId
+                    onClose={handleReportModalClose} // Use the dedicated close handler
+                />
             )}
         </div>
     );

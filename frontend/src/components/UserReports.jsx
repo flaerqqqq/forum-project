@@ -217,10 +217,6 @@ const UserReports = () => {
                     <Oval height={40} width={40} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={4} visible />
                 </div>
             )}
-
-            {!loading && hasMore && reports.length > 0 && !initialLoading && (
-                <p className="text-center text-gray-400 text-sm mt-8 pb-4">Scroll down for more reports</p>
-            )}
         </div>
     );
 };

@@ -5,7 +5,8 @@ import Cookies from 'js-cookie';
 import { useUser } from '../contexts/UserContext';
 import UserReactions from '../components/UserReactions';
 import UserNotFound from "../components/UserNotFound.jsx";
-import ReportUserModal from '../components/ReportUserModal';
+// Import the new ReportContentModal component
+import ReportContentModal from '../components/ReportContentModal.jsx';
 import UserReports from '../components/UserReports';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -274,9 +275,9 @@ const UserProfile = () => {
                             </div>
                         </div>
 
-                            <p className="text-gray-700 text-base mb-4 pr-6">
-                                {profileUser.description ? profileUser.description : 'No bio.'}
-                            </p>
+                        <p className="text-gray-700 text-base mb-4 pr-6">
+                            {profileUser.description ? profileUser.description : 'No bio.'}
+                        </p>
                         <div className="flex space-x-6 font-medium text-gray-darker">
                             <button
                                 className={`pb-2 border-b-2 ${activeSection === 'posts' ? 'border-black text-black' : 'border-transparent text-gray-darker hover:text-black hover:border-gray-medium'} transition-colors duration-200`}
@@ -361,8 +362,9 @@ const UserProfile = () => {
             </div>
 
             {showReportModal && profileUser?.publicId && (
-                <ReportUserModal
-                    targetPublicId={profileUser.publicId}
+                <ReportContentModal
+                    targetType="USER" // Specify the target type as 'USER'
+                    targetId={profileUser.publicId} // Pass the user's publicId as the targetId
                     onClose={() => setShowReportModal(false)}
                 />
             )}
