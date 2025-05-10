@@ -9,6 +9,8 @@ import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import ReportContentModal from './ReportContentModal.jsx';
+
 
 const getAvatarColorClass = (username) => {
     if (!username) return 'bg-gray-medium';
@@ -63,15 +65,17 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
     const dropdownButtonRef = useRef(null);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
 
     if (!commentary) return null;
 
-    const isCommentOwner = authenticatedUser && profileUser.publicId && authenticatedUser.publicId === profileUser.publicId;
+    const isCommentOwner = authenticatedUser && commentary.creatorPublicId && authenticatedUser.publicId === commentary.creatorPublicId;
+
     const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
+
     const isUserCategoryModerator = !loadingModeratedCategories && Array.isArray(moderatedCategorySlugs) && moderatedCategorySlugs.includes(commentary.categorySlug);
 
-    // Renamed canUpdateComment to canEditComment for consistency
     const canEditComment = !authLoading && isCommentOwner;
     const canDeleteComment = !authLoading && (isCommentOwner || isGlobalModerator || isUserCategoryModerator);
     const canReportComment = !authLoading && authenticatedUser && !isCommentOwner;
@@ -118,13 +122,11 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
         setShowDropdown(prev => !prev);
     };
 
-    // Moved action handling into a single function
     const handleDropdownItemClick = useCallback(async (action) => {
         setShowDropdown(false);
         switch (action) {
             case 'edit':
                 if (canEditComment) {
-                    // Implement update logic here or trigger parent to show edit modal
                     toast.info("Update functionality not yet implemented.");
                 }
                 break;
@@ -134,17 +136,16 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                 }
                 break;
             case 'report':
-                if (canReportComment) { // Use canReportComment logic
-                    toast.info("Reporting functionality not yet implemented.");
-                    // If you had a ReportCommentModal: setShowReportModal(true);
-                } else if (!authenticatedUser) { // Check if user is not authenticated
+                if (canReportComment) {
+                    setShowReportModal(true);
+                } else if (!authenticatedUser) {
                     toast.info('You must be logged in to report a comment.');
                 }
                 break;
             default:
                 break;
         }
-    }, [canEditComment, canDeleteComment, canReportComment, authenticatedUser]); // Added dependencies
+    }, [canEditComment, canDeleteComment, canReportComment, authenticatedUser]);
 
 
     const confirmDeleteComment = async () => {
@@ -205,10 +206,36 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
         }
     };
 
+    const handleReportModalClose = useCallback(() => {
+        setShowReportModal(false);
+    }, []);
 
-    const displayName = profileUser.displayName || profileUser.displayName || 'User';
-    const avatarClass = getAvatarColorClass(displayName);
+
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                setShowDeleteModal(false);
+                setShowReportModal(false);
+            }
+        };
+
+        if (showDeleteModal || showReportModal) {
+            document.addEventListener('keydown', handleEscapeKey);
+        } else {
+            document.removeEventListener('keydown', handleEscapeKey);
+        }
+
+
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [showDeleteModal, showReportModal]);
+
+
+    const displayName = commentary.userDisplayName || commentary.username || 'User';
+    const avatarClass = getAvatarColorClass(commentary.username);
     const initials = getInitials(displayName);
+
 
     return (
         <li
@@ -216,9 +243,9 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
             className="transition rounded-2xl p-4 hover:bg-gray-100 overflow-visible relative"
         >
             <div className="flex items-start space-x-3">
-                {profileUser.avatarUrl ? (
+                {commentary.userAvatarUrl ? (
                     <img
-                        src={profileUser.avatarUrl}
+                        src={commentary.userAvatarUrl}
                         alt="avatar"
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     />
@@ -306,7 +333,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                 </div>
             </div>
 
-            {(canEditComment || canDeleteComment || canReportComment) && ( // Use canEditComment here
+            {(canEditComment || canDeleteComment || canReportComment) && (
                 <div className="absolute top-2 right-2">
                     <button
                         ref={dropdownButtonRef}
@@ -324,7 +351,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                         >
                             {canEditComment && (
                                 <button
-                                    onClick={() => handleDropdownItemClick('edit')} // Call the unified handler
+                                    onClick={() => handleDropdownItemClick('edit')}
                                     className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
                                 >
                                     Update
@@ -332,7 +359,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                             )}
                             {canDeleteComment && (
                                 <button
-                                    onClick={() => handleDropdownItemClick('delete')} // Call the unified handler
+                                    onClick={() => handleDropdownItemClick('delete')}
                                     className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
                                 >
                                     Delete
@@ -340,7 +367,7 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                             )}
                             {canReportComment && (
                                 <button
-                                    onClick={() => handleDropdownItemClick('report')} // Call the unified handler
+                                    onClick={() => handleDropdownItemClick('report')}
                                     className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
                                 >
                                     Report
@@ -378,6 +405,14 @@ const UserCommentaryItem = forwardRef(({ commentary, onCommentDeleted, profileUs
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showReportModal && commentary?.id && (
+                <ReportContentModal
+                    targetType="COMMENTARY"
+                    targetId={commentary.id}
+                    onClose={handleReportModalClose}
+                />
             )}
 
         </li>

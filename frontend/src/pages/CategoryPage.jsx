@@ -10,11 +10,13 @@ import CategoryInfoSidebar from "../components/CategoryInfoSidebar.jsx";
 import CategoryNotFound from "../components/CategoryNotFound.jsx";
 import CategoryPosts from "../components/CategoryPosts.jsx";
 import CategoryUpdateModal from '../components/CategoryUpdateModal';
-import {ArrowUp, HammerIcon, PlusCircleIcon} from 'lucide-react';
+import {ArrowUp, HammerIcon, PlusCircleIcon, MoreHorizontal} from 'lucide-react'; // Import MoreHorizontal
 
 import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
 // Import the useModeratedCategories hook
 import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext';
+// Import the ReportContentModal component
+import ReportContentModal from '../components/ReportContentModal.jsx';
 
 
 const categoryPostsCache = new Map();
@@ -42,8 +44,16 @@ const CategoryPage = () => {
 
 
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    // State to control the visibility of the ReportContentModal
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+    // State and refs for the category options dropdown
+    const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+    const categoryDropdownRef = useRef(null);
+    const categoryDropdownButtonRef = useRef(null);
+
 
     const saveCategoryPostsCache = useCallback((slug, sort, posts, loadedCount, scrollY, currentPage, hasMore) => {
         const key = `${slug}_${sort}`;
@@ -211,11 +221,71 @@ const CategoryPage = () => {
         (category.postPermission === 'MODS_ONLY' && isModerator)
     );
 
+    // Determine if the user can report the category (logged in and not the creator)
+    const canReportCategory = user && category && user.publicId !== category.creatorId;
+
+
     // Determine if the "Create Post" button should be disabled while contexts are loading
     const isCreatePostButtonDisabled = userLoading || loadingFollowedCategories || loadingModeratedCategories;
 
+    // Determine if the category options dropdown button should be shown
+    const showCategoryOptionsButton = user && category && (user.publicId === category.creatorId || canReportCategory);
+
 
     const overallLoading = loadingCategory || userLoading || loadingFollowedCategories || loadingModeratedCategories;
+
+
+    // Handler to show the report modal
+    const handleReportCategoryClick = () => {
+        setShowReportModal(true);
+        setShowCategoryDropdown(false); // Close the dropdown
+    };
+
+    // Handler to close the report modal
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+    };
+
+    // Handler to toggle the category options dropdown
+    const toggleCategoryDropdown = () => {
+        setShowCategoryDropdown(prev => !prev);
+    };
+
+    // Effect to close the dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target) &&
+                categoryDropdownButtonRef.current && !categoryDropdownButtonRef.current.contains(event.target)) {
+                setShowCategoryDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Effect to close modals/dropdown on Escape key
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                setIsUpdateModalOpen(false);
+                setShowReportModal(false);
+                setShowCategoryDropdown(false);
+            }
+        };
+
+        if (isUpdateModalOpen || showReportModal || showCategoryDropdown) {
+            document.addEventListener('keydown', handleEscapeKey);
+        } else {
+            document.removeEventListener('keydown', handleEscapeKey);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [isUpdateModalOpen, showReportModal, showCategoryDropdown]);
 
 
     if (overallLoading) {
@@ -285,6 +355,48 @@ const CategoryPage = () => {
                                     {category?.followersCount} {category?.followersCount === 1 ? 'follower' : 'followers'}
                                 </p>
                             </div>
+                            {/* Category Options Dropdown Button */}
+                            {showCategoryOptionsButton && (
+                                <div className="relative ml-4"> {/* Added ml-4 for spacing */}
+                                    <button
+                                        ref={categoryDropdownButtonRef}
+                                        className="text-gray-600 hover:bg-gray-200 hover:text-black p-1 rounded-full transition-colors"
+                                        onClick={toggleCategoryDropdown}
+                                        aria-label="Category options"
+                                    >
+                                        <MoreHorizontal size={20} />
+                                    </button>
+                                    {showCategoryDropdown && (
+                                        <div
+                                            ref={categoryDropdownRef}
+                                            className="absolute top-full mt-2 right-0 w-48 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
+                                            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside dropdown
+                                        >
+                                            {/* Option to update category (only for creator) */}
+                                            {user?.publicId === category?.creatorId && (
+                                                <button
+                                                    onClick={() => {
+                                                        setIsUpdateModalOpen(true);
+                                                        setShowCategoryDropdown(false); // Close dropdown
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                >
+                                                    Update
+                                                </button>
+                                            )}
+                                            {/* Option to report category (only for non-creators who are logged in) */}
+                                            {canReportCategory && (
+                                                <button
+                                                    onClick={handleReportCategoryClick} // Use the new handler
+                                                    className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                >
+                                                    Report
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {category?.description && (
@@ -332,20 +444,6 @@ const CategoryPage = () => {
                                     </div>
                                 </Link>
                             )}
-
-
-                            {user?.publicId === category?.creatorId && (
-                                <button
-                                    onClick={() => setIsUpdateModalOpen(true)}
-                                    className="bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black font-medium px-4 py-2 rounded-full transition duration-300 text-sm flex items-center justify-center gap-1"
-                                >
-                                    <div className="flex items-center">
-                                        <HammerIcon size={16} />
-                                        <span className="pl-1"> Update Category
-                                        </span>
-                                    </div>
-                                </button>
-                            )}
                         </div>
                         {category?.slug && (
                             <CategoryPosts
@@ -363,10 +461,20 @@ const CategoryPage = () => {
                 </div>
             </div>
 
+            {/* Update Category Modal */}
             {isUpdateModalOpen && category && (
                 <CategoryUpdateModal
                     category={category}
                     onClose={handleUpdateModalClose}
+                />
+            )}
+
+            {/* Report Category Modal */}
+            {showReportModal && category?.id && (
+                <ReportContentModal
+                    targetType="CATEGORY" // Specify the target type as 'CATEGORY'
+                    targetId={category.id} // Pass the category's ID as the targetId
+                    onClose={handleReportModalClose} // Pass the close handler
                 />
             )}
 

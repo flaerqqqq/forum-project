@@ -68,6 +68,7 @@ const DEFAULT_REPLY_SORT = 'createdAt,asc';
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import ReportContentModal from "./ReportContentModal.jsx";
 
 const DeleteConfirmModal = ({ isOpen, onConfirm, onCancel, message }) => {
     if (!isOpen) return null;
@@ -131,6 +132,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
     const [savingEdit, setSavingEdit] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const [showHoverCard, setShowHoverCard] = useState(false);
     const hoverTimeoutRef = useRef(null);
@@ -146,6 +148,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
     const isAuthor = user && user.username === commentary.username;
     const canEditComment = isAuthor;
     const canDeleteComment = isAuthor || isGlobalModerator || isUserCategoryModerator;
+    const canReportComment = !isAuthor;
 
     const quillModules = {
         toolbar: [
@@ -161,6 +164,19 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
         'list', 'bullet',
         'link'
     ];
+
+    // Handler to show the report modal
+    const handleReportClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowDropdown(false);
+        setShowReportModal(true); // Set state to true to show the modal
+    };
+
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+    };
+
 
     useEffect(() => {
         if (Array.isArray(commentary.replies) && commentary.replies.length > 0) {
@@ -396,7 +412,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 break;
             case 'report':
                 if (!isAuthor && user) {
-                    toast.info('Report functionality not implemented yet.');
+                    setShowReportModal(true);
                 } else if (!user) {
                     toast.info('You must be logged in to report a comment.');
                 }
@@ -404,7 +420,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
             default:
                 break;
         }
-    }, [commentaryDisplayContent, canEditComment, canDeleteComment, isAuthor, user]);
+    }, [commentaryDisplayContent, canEditComment, canDeleteComment, canReportComment, user]);
 
     const handleSaveEdit = async () => {
         const normalizedPlainTextContent = getNormalizedTextLength(editingContent);
@@ -628,7 +644,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                         </button>
                     )}
 
-                    {(canEditComment || canDeleteComment || (user && !isAuthor)) && (
+                    {(canEditComment || canDeleteComment || canReportComment) && (
                         <div ref={dropdownRef} className="relative">
                             <button
                                 onClick={() => setShowDropdown(!showDropdown)}
@@ -645,7 +661,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                                             onClick={() => handleDropdownItemClick('edit')}
                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                         >
-                                            Edit
+                                            Update
                                         </button>
                                     )}
                                     {canDeleteComment && (
@@ -656,7 +672,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                                             Delete
                                         </button>
                                     )}
-                                    {user && !isAuthor && (
+                                    {canReportComment && (
                                         <button
                                             onClick={() => handleDropdownItemClick('report')}
                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -793,6 +809,15 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 onCancel={cancelDelete}
                 message="Are you sure you want to delete this comment?"
             />
+
+
+            {showReportModal && commentary.id && (
+                <ReportContentModal
+                    targetType="COMMENTARY" // Specify the target type as 'POST'
+                    targetId={commentary.id} // Pass the post's ID as the targetId
+                    onClose={handleReportModalClose} // Use the dedicated close handler
+                />
+            )}
         </div>
     );
 };

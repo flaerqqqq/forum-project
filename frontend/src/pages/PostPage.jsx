@@ -11,6 +11,8 @@ import Cookies from "js-cookie";
 import PostNotFound from '../components/PostNotFound.jsx';
 import PostCommentaries from '../components/PostCommentaries.jsx';
 import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext.jsx';
+// Import the ReportContentModal component
+import ReportContentModal from '../components/ReportContentModal.jsx';
 
 
 const formatRelativeTime = (timestamp) => {
@@ -59,6 +61,8 @@ const PostPage = () => {
     const dropdownButtonRef = useRef(null);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    // State to control the visibility of the ReportContentModal
+    const [showReportModal, setShowReportModal] = useState(false);
 
 
     useEffect(() => {
@@ -82,7 +86,7 @@ const PostPage = () => {
         } catch (err) {
             console.error('Error fetching post:', err);
             setError(err);
-            if (err.response && err.response.status !== 404) {
+            if (err.response && err.response.status !== 404 && err.response.status !== 403) {
                 toast.error('Failed to load post.');
             }
         } finally {
@@ -139,10 +143,13 @@ const PostPage = () => {
             if (event.key === 'Escape') {
                 closePreview();
                 setShowDeleteModal(false);
+                // Close report modal on Escape key
+                setShowReportModal(false);
             }
         };
 
-        if (showPreview || showDeleteModal) {
+        // Add or remove the event listener based on modal visibility
+        if (showPreview || showDeleteModal || showReportModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
             document.removeEventListener('keydown', handleEscapeKey);
@@ -151,7 +158,7 @@ const PostPage = () => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview, showDeleteModal]);
+    }, [showPreview, showDeleteModal, showReportModal]); // Add showReportModal to dependencies
 
 
     const showPrevButton = post?.images?.length > 1 && currentImageIndex > 0;
@@ -166,6 +173,11 @@ const PostPage = () => {
 
     const canDeletePost = !authLoading && !loadingModeratedCategories && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
     const canUpdatePost = !authLoading && (isPostOwner);
+    // Determine if the user can report the post (logged in and not the owner)
+    const canReportPost = !authLoading && authenticatedUser && !isPostOwner;
+
+    // Determine if the dropdown button should be shown (if any action is available)
+    const showDropdownButton = canUpdatePost || canDeletePost || canReportPost;
 
 
     const handleUpdatePostClick = () => {
@@ -207,11 +219,19 @@ const PostPage = () => {
 
                 addDeletedPostId(post.id);
 
-                if (window.history.length <= 1) {
-                    navigate('/');
+                // Navigate back or to home after successful deletion
+                if (window.history.length <= 1 || location.pathname === `/categories/${post.category?.slug}/posts/${post.id}`) {
+                    // If there's no history or we are directly on the post page, go to the category page or home
+                    if (post.category?.slug) {
+                        navigate(`/categories/${post.category.slug}`);
+                    } else {
+                        navigate('/');
+                    }
                 } else {
+                    // Otherwise, go back in history
                     navigate(-1);
                 }
+
             } else {
                 console.error('Error deleting post: Unexpected status', response.status);
                 toast.error(`Failed to delete post: Unexpected server response.`);
@@ -251,6 +271,18 @@ const PostPage = () => {
             toast.error(errorMessage);
         }
     };
+
+    // Handler to show the report modal
+    const handleReportClick = () => {
+        setShowReportModal(true);
+        setShowDropdown(false); // Close the dropdown
+    };
+
+    // Handler to close the report modal
+    const handleReportModalClose = () => {
+        setShowReportModal(false);
+    };
+
 
     if (error && axios.isAxiosError(error) && error.response && error.response.status === 404) {
         return <PostNotFound />;
@@ -316,7 +348,8 @@ const PostPage = () => {
                                     )}
                                 </div>
 
-                                { (canUpdatePost || canDeletePost) && (
+                                {/* Show dropdown button only if any action is available */}
+                                { showDropdownButton && (
                                     <div className="relative">
                                         <button
                                             ref={dropdownButtonRef}
@@ -332,6 +365,7 @@ const PostPage = () => {
                                                 className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
+                                                {/* Conditionally render Update button */}
                                                 {canUpdatePost && (
                                                     <button
                                                         onClick={handleUpdatePostClick}
@@ -340,12 +374,22 @@ const PostPage = () => {
                                                         Update post
                                                     </button>
                                                 )}
+                                                {/* Conditionally render Delete button */}
                                                 {canDeletePost && (
                                                     <button
                                                         onClick={requestDeleteConfirmation}
                                                         className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
                                                     >
                                                         Delete post
+                                                    </button>
+                                                )}
+                                                {/* Conditionally render Report button */}
+                                                {canReportPost && (
+                                                    <button
+                                                        onClick={handleReportClick} // Use the new handler
+                                                        className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
+                                                    >
+                                                        Report
                                                     </button>
                                                 )}
                                             </div>
@@ -512,6 +556,15 @@ const PostPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Render the ReportContentModal */}
+            {showReportModal && post?.id && (
+                <ReportContentModal
+                    targetType="POST" // Specify the target type as 'POST'
+                    targetId={post.id} // Pass the post's ID as the targetId
+                    onClose={handleReportModalClose} // Pass the close handler
+                />
             )}
         </div>
     );

@@ -39,6 +39,7 @@ const SingleReport = ({ report, reportedEntityName }) => {
             >
                 <div className="space-y-1 pr-4">
                     <p className="text-gray-500">Report ID: <span className="text-black font-medium">#{localReport.id}</span></p>
+                    <p className="text-gray-500">Target Type: <span className="text-black font-medium">{localReport.targetType}</span></p>
                     <p className="text-gray-500">Reason: <span className="text-black font-medium">{localReport.reason}</span></p>
                     <p className="text-gray-500">
                         Reported Entity: <span className="text-black font-medium">{reportedEntityName || localReport.targetId}</span>
