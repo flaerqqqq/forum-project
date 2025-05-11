@@ -141,7 +141,7 @@ const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref
                 {/* Moderator Info */}
                 <div className="text-xs text-gray-600">
                     Banned by{' '}
-                    <Link to={`/users/${moderator.username}`} className="font-medium text-blue-600 hover:underline">
+                    <Link to={`/users/${moderator.username}`} className="font-medium text-green-700 hover:underline">
                         {moderator.displayName || moderator.username}
                     </Link>
                     {' '}@{moderator.username}

@@ -102,7 +102,7 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
             );
 
             if (response.status === 200) {
-                toast.success(`User ${targetPublicId} banned successfully.`);
+                toast.success(`User @${response.data.bannedUser.username} banned successfully.`);
                 onClose(); // Close the modal on success
                 if (onBanSuccess) {
                     onBanSuccess(); // Call parent success handler if provided
