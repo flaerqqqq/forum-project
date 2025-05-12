@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify"; // For toasts
-import { useUser } from "../contexts/UserContext"; // User context to access authenticated user
+import { toast } from "react-toastify";
+import { useUser } from "../contexts/UserContext";
 
 const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
     const { user } = useUser(); // Get the authenticated user
-    const [moderators, setModerators] = useState([]); // List of current moderators
-    const [searchQuery, setSearchQuery] = useState(""); // Search query for username
-    const [searchResults, setSearchResults] = useState([]); // Search results from API
-    const [loading, setLoading] = useState(false); // Loading state for API calls
-    const [error, setError] = useState(null); // Error state
+    const [moderators, setModerators] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Fetch the current list of moderators for the category
         const fetchModerators = async () => {
             setLoading(true);
             try {
@@ -31,7 +30,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
         fetchModerators();
     }, [categoryId]);
 
-    // Function to handle search for users by username
     const handleSearch = async () => {
         if (searchQuery.trim() === "") {
             setSearchResults([]);
@@ -51,7 +49,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
         }
     };
 
-    // Function to add a new moderator
     const handleAddModerator = async (userId) => {
         setLoading(true);
         try {
@@ -60,7 +57,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
                 { userId }
             );
             toast.success("Moderator added successfully");
-            // Refresh the list of moderators
             setModerators([...moderators, { userId }]);
         } catch (err) {
             setError("Failed to add moderator");
@@ -70,7 +66,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
         }
     };
 
-    // Function to remove a moderator
     const handleRemoveModerator = async (userId) => {
         setLoading(true);
         try {
@@ -78,7 +73,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
                 `http://localhost:8080/api/v1/categories/${categoryId}/moderators/${userId}`
             );
             toast.success("Moderator removed successfully");
-            // Refresh the list of moderators
             setModerators(moderators.filter((mod) => mod.userId !== userId));
         } catch (err) {
             setError("Failed to remove moderator");
@@ -93,7 +87,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
             <div className="bg-white p-6 rounded-lg w-96">
                 <h2 className="text-2xl font-semibold mb-4">Manage Moderators</h2>
 
-                {/* List of current moderators */}
                 <div className="mb-4">
                     <h3 className="text-xl font-medium">Current Moderators</h3>
                     {loading ? (
@@ -115,7 +108,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
                     )}
                 </div>
 
-                {/* Search for users to add as moderators */}
                 <div className="mb-4">
                     <h3 className="text-xl font-medium">Search Users</h3>
                     <input
@@ -144,7 +136,6 @@ const ManageCategoryModeratorsModal = ({ categoryId, onClose }) => {
                     )}
                 </div>
 
-                {/* Close button */}
                 <div className="flex justify-end mt-4">
                     <button
                         className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"

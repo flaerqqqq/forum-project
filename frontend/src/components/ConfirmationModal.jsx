@@ -1,10 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { X } from 'lucide-react'; // Assuming lucide-react for icons
+import { X } from 'lucide-react';
 
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmButtonText = 'Confirm', cancelButtonText = 'Cancel' }) => {
     const modalRef = useRef(null);
 
-    // Effect to handle closing the modal with the Escape key
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && isOpen) {
@@ -17,7 +16,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
         };
     }, [isOpen, onClose]);
 
-    // Handle clicks outside the modal content
     const handleBackdropClick = (event) => {
         if (modalRef.current && !modalRef.current.contains(event.target)) {
             onClose();

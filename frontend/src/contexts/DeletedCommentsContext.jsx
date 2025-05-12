@@ -7,7 +7,7 @@ export const DeletedCommentsProvider = ({ children }) => {
     const [deletedCommentIds, setDeletedCommentIds] = useState([]);
 
     const addDeletedCommentId = useCallback((commentId) => {
-        setDeletedCommentIds(prevIds => [...new Set([...prevIds, commentId])]); // Use a Set to avoid duplicates
+        setDeletedCommentIds(prevIds => [...new Set([...prevIds, commentId])]);
     }, []);
 
     return (

@@ -1,11 +1,11 @@
 package com.example.backend.services;
 
-import com.example.backend.dto.CategoryCreateRequestDto;
-import com.example.backend.dto.CategoryDto;
-import com.example.backend.dto.CategoryUpdateRequestDto;
+import com.example.backend.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
 
 public interface CategoryService {
 
@@ -30,4 +30,12 @@ public interface CategoryService {
     Page<CategoryDto> getUserOwnedCategories(String publicId, Pageable pageable);
 
     Boolean checkAccessToCategory(String publicId, String categorySlug);
+
+    UserBanDataDto banUser(UserBanRequestDto request,  String moderatorPublicId, String targetUserPublicId, String categorySlug);
+
+    void unbanUser(String publicId, String targetUserPublicId, String categorySlug);
+
+    Page<UserBanDataResponseDto> findBannedUsers(Pageable pageable, String categorySlug, String username, Boolean isPermanentBan, LocalDateTime unbanTimeStart, LocalDateTime unbanTimeEnd);
+
+    UserBanDataResponseDto updateBanData(UserBanRequestDto request, String publicId, String targetUserPublicId, String categorySlug);
 }

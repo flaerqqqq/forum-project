@@ -11,7 +11,6 @@ import Cookies from "js-cookie";
 import PostNotFound from '../components/PostNotFound.jsx';
 import PostCommentaries from '../components/PostCommentaries.jsx';
 import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext.jsx';
-// Import the ReportContentModal component
 import ReportContentModal from '../components/ReportContentModal.jsx';
 
 
@@ -61,20 +60,16 @@ const PostPage = () => {
     const dropdownButtonRef = useRef(null);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    // State to control the visibility of the ReportContentModal
     const [showReportModal, setShowReportModal] = useState(false);
 
-    // State to control the visibility of the Scroll to Top button
     const [showScrollToTop, setShowScrollToTop] = useState(false);
 
 
     useEffect(() => {
-        // Scroll to top on initial load
         window.scrollTo(0, 0);
 
-        // Add scroll event listener for Scroll to Top button
         const handleScroll = () => {
-            if (window.scrollY > 300) { // Show button if scrolled down more than 300px
+            if (window.scrollY > 300) {
                 setShowScrollToTop(true);
             } else {
                 setShowScrollToTop(false);
@@ -82,12 +77,10 @@ const PostPage = () => {
         };
 
         window.addEventListener('scroll', handleScroll);
-
-        // Clean up the event listener on component unmount
         return () => {
             window.removeEventListener('scroll', handleScroll);
         };
-    }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
+    }, []);
 
 
     const fetchPost = async () => {
@@ -164,12 +157,10 @@ const PostPage = () => {
             if (event.key === 'Escape') {
                 closePreview();
                 setShowDeleteModal(false);
-                // Close report modal on Escape key
                 setShowReportModal(false);
             }
         };
 
-        // Add or remove the event listener based on modal visibility
         if (showPreview || showDeleteModal || showReportModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
@@ -194,10 +185,8 @@ const PostPage = () => {
 
     const canDeletePost = !authLoading && !loadingModeratedCategories && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
     const canUpdatePost = !authLoading && (isPostOwner);
-    // Determine if the user can report the post (logged in and not the owner)
     const canReportPost = !authLoading && authenticatedUser && !isPostOwner;
 
-    // Determine if the dropdown button should be shown (if any action is available)
     const showDropdownButton = canUpdatePost || canDeletePost || canReportPost;
 
 
@@ -240,16 +229,13 @@ const PostPage = () => {
 
                 addDeletedPostId(post.id);
 
-                // Navigate back or to home after successful deletion
                 if (window.history.length <= 1 || location.pathname === `/categories/${post.category?.slug}/posts/${post.id}`) {
-                    // If there's no history or we are directly on the post page, go to the category page or home
                     if (post.category?.slug) {
                         navigate(`/categories/${post.category.slug}`);
                     } else {
                         navigate('/');
                     }
                 } else {
-                    // Otherwise, go back in history
                     navigate(-1);
                 }
 
@@ -293,22 +279,19 @@ const PostPage = () => {
         }
     };
 
-    // Handler to show the report modal
     const handleReportClick = () => {
         setShowReportModal(true);
-        setShowDropdown(false); // Close the dropdown
+        setShowDropdown(false);
     };
 
-    // Handler to close the report modal
     const handleReportModalClose = () => {
         setShowReportModal(false);
     };
 
-    // Function to scroll the window to the top
     const scrollToTop = () => {
         window.scrollTo({
             top: 0,
-            behavior: 'smooth' // Smooth scrolling animation
+            behavior: 'smooth'
         });
     };
 
@@ -377,7 +360,6 @@ const PostPage = () => {
                                     )}
                                 </div>
 
-                                {/* Show dropdown button only if any action is available */}
                                 { showDropdownButton && (
                                     <div className="relative">
                                         <button
@@ -394,7 +376,6 @@ const PostPage = () => {
                                                 className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                {/* Conditionally render Update button */}
                                                 {canUpdatePost && (
                                                     <button
                                                         onClick={handleUpdatePostClick}
@@ -403,7 +384,6 @@ const PostPage = () => {
                                                         Update post
                                                     </button>
                                                 )}
-                                                {/* Conditionally render Delete button */}
                                                 {canDeletePost && (
                                                     <button
                                                         onClick={requestDeleteConfirmation}
@@ -412,7 +392,6 @@ const PostPage = () => {
                                                         Delete post
                                                     </button>
                                                 )}
-                                                {/* Conditionally render Report button */}
                                                 {canReportPost && (
                                                     <button
                                                         onClick={handleReportClick} // Use the new handler
@@ -589,9 +568,9 @@ const PostPage = () => {
 
             {showReportModal && post?.id && (
                 <ReportContentModal
-                    targetType="POST" // Specify the target type as 'POST'
-                    targetId={post.id} // Pass the post's ID as the targetId
-                    onClose={handleReportModalClose} // Pass the close handler
+                    targetType="POST"
+                    targetId={post.id}
+                    onClose={handleReportModalClose}
                 />
             )}
 

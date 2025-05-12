@@ -4,7 +4,7 @@ import React, { createContext, useContext, useRef } from 'react';
 const ScrollContext = createContext();
 
 export const ScrollProvider = ({ children }) => {
-    const scrollMapRef = useRef(new Map()); // key: categorySlug, value: { scrollY, loadedPages }
+    const scrollMapRef = useRef(new Map());
 
     const saveScrollData = (key, data) => {
         scrollMapRef.current.set(key, data);

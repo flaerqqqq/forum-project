@@ -161,7 +161,7 @@ const CategoryCreateModal = ({ onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto p-4" // Changed z-index to z-[999]
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-y-auto p-4"
             onClick={(e) => e.target === e.currentTarget && onClose()}
         >
             <div
@@ -212,7 +212,11 @@ const CategoryCreateModal = ({ onClose }) => {
                                 className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black text-black"
                                 placeholder="Enter category name"
                                 required
+                                maxLength="50"
                             />
+                            <p className="text-xs text-gray-500 text-right mt-1">
+                                {categoryData.name.length}/50
+                            </p>
                         </div>
                         <div className="mb-4 w-full max-w-sm">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -229,6 +233,9 @@ const CategoryCreateModal = ({ onClose }) => {
                                 minLength="3"
                                 maxLength="50"
                             />
+                            <p className="text-xs text-gray-500 text-right mt-1">
+                                {categoryData.slug.length}/50
+                            </p>
                         </div>
                         <div className="mb-4 w-full max-w-sm">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -240,9 +247,12 @@ const CategoryCreateModal = ({ onClose }) => {
                                 onChange={handleInputChange}
                                 className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-black text-black"
                                 placeholder="Enter category description"
-                                rows="4"
+                                rows="6"
                                 maxLength="1000"
                             />
+                            <p className="text-xs text-gray-500 text-right mt-1">
+                                {categoryData.description.length}/1000
+                            </p>
                         </div>
                     </div>
                 )}
@@ -270,6 +280,12 @@ const CategoryCreateModal = ({ onClose }) => {
                             >
                                 <p className="mt-1 text-sm text-gray-700">
                                     Drag 'n' drop or click to upload icon
+                                    <br />
+                                    <span className="text-xs text-gray-500">
+                                        Recommended size: 64x64 or greater.
+                                        Max file size: 5MB.
+                                    </span>
+                                    <br />
                                 </p>
                                 {categoryData.icon && (
                                     <p className="text-xs text-green-600 mt-1 truncate w-full">
@@ -293,6 +309,12 @@ const CategoryCreateModal = ({ onClose }) => {
                                 className="block text-sm font-medium text-gray-700 mb-1"
                             >
                                 Category Banner (Optional)
+                                <br />
+                                <span className="text-xs text-gray-500">
+                                        Recommended size: 256x256 or greater.
+                                        Max file size: 5MB.
+                                    </span>
+                                <br />
                             </label>
                             <input
                                 id="banner-upload"
@@ -380,6 +402,7 @@ const CategoryCreateModal = ({ onClose }) => {
                         <button
                             onClick={handleNextStep}
                             className="ml-auto px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+                            disabled={categoryData.name.length === 0 || categoryData.slug.length < 3}
                         >
                             Next
                         </button>
@@ -387,7 +410,7 @@ const CategoryCreateModal = ({ onClose }) => {
                         <button
                             onClick={handleCreateCategory}
                             className="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center"
-                            disabled={loading}
+                            disabled={loading || categoryData.name.length === 0 || categoryData.slug.length < 3}
                         >
                             {loading ? (
                                 <Oval height={20} width={20} color="#fff" secondaryColor="#4ade80" />

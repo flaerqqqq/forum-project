@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useUser } from '../contexts/UserContext';
-import defaultAvatar from '../assets/images/default-avatar.png';
 import { isModerator } from "../utils/Auth.js";
 
 const AvatarMenu = () => {

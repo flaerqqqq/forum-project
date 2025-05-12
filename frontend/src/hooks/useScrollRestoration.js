@@ -1,4 +1,3 @@
-// hooks/useScrollRestoration.js
 import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -7,7 +6,6 @@ const scrollPositions = {};
 export default function useScrollRestoration(trigger = true) {
     const location = useLocation();
 
-    // Save scroll before navigation
     useEffect(() => {
         return () => {
             scrollPositions[location.key] = {
@@ -17,7 +15,6 @@ export default function useScrollRestoration(trigger = true) {
         };
     }, [location]);
 
-    // Restore scroll only when explicitly triggered
     useLayoutEffect(() => {
         if (trigger && scrollPositions[location.key]) {
             const { x, y } = scrollPositions[location.key];

@@ -88,7 +88,6 @@ const UserReports = () => {
             const errorMessage =
                 err.response?.data?.body?.detail?.split(':')[1]?.trim() || 'Failed to load reports.';
             if (err.response?.status === 404 && reportId.trim()) {
-                // Do nothing
             } else if (err.response?.status !== 404 && err.response?.status !== 500) {
                 toast.error(errorMessage);
             }

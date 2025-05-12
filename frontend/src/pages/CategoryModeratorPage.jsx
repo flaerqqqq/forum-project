@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { useUser } from '../contexts/UserContext';
 import { useModeratedCategories } from '../contexts/ModeratedCategoriesContext';
-import { isModerator as isGlobalModerator } from '../utils/Auth'; // Rename global moderator check
-import CategoryReports from '../components/CategoryReports'; // Import the CategoryReports component
-import CategoryNotFound from '../components/CategoryNotFound'; // Import CategoryNotFound for 404 cases
+import CategoryReports from '../components/CategoryReports';
+import CategoryNotFound from '../components/CategoryNotFound';
+import BannedUsers from '../components/BannedUsers'; // Import BannedUsers
 
 const CategoryModeratorPage = () => {
-    const { categorySlug } = useParams(); // Get the category slug from the URL
-    const navigate = useNavigate(); // Initialize useNavigate
-    const location = useLocation(); // Initialize useLocation for history check
+    const { categorySlug } = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    const { user, loading: userLoading } = useUser(); // Get authenticated user and loading state
-    // Get the list of moderated category slugs and loading state from context
+    const { user, loading: userLoading } = useUser();
     const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
 
-    const [category, setCategory] = useState(null); // State for the category details
-    const [loadingCategory, setLoadingCategory] = useState(true); // State for loading category details
-    const [categoryError, setCategoryError] = useState(null); // State for category fetch errors
+    const [category, setCategory] = useState(null);
+    const [loadingCategory, setLoadingCategory] = useState(true);
+    const [categoryError, setCategoryError] = useState(null);
     const [notFound, setNotFound] = useState(false);
+
+    const [activeView, setActiveView] = useState('reports');
 
 
     useEffect(() => {
@@ -54,6 +55,7 @@ const CategoryModeratorPage = () => {
     const overallLoading = userLoading || loadingModeratedCategories || loadingCategory;
 
     useEffect(() => {
+        scroll(0, 0);
         if (!overallLoading && !notFound && !categoryError) {
             if (!isModeratorForThisCategory) {
                 console.log(`User is not a moderator for category ${categorySlug}. Redirecting.`);
@@ -64,43 +66,62 @@ const CategoryModeratorPage = () => {
                 }
             }
         }
-    }, [overallLoading, notFound, categoryError, isModeratorForThisCategory, navigate]);
+    }, [overallLoading, notFound, categoryError, isModeratorForThisCategory, navigate, categorySlug]);
 
 
-    if (notFound) {
-        return <CategoryNotFound />;
-    }
-
-    // Handle loading state
-    if (overallLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
-                <div className="flex flex-col items-center gap-4">
-                    <Oval height={50} width={50} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} visible={true} />
-                    <p className="text-gray-medium">Loading category and checking permissions...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Handle category fetch error (if not a 404, which is handled by notFound)
-    if (categoryError) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background-light-gray">
-                <div className="p-6 bg-white rounded-md shadow-md text-center text-red-600">
-                    <p>{categoryError}</p>
-                </div>
-            </div>
-        );
-    }
+    const renderContent = useCallback(() => {
+        if (activeView === 'reports') {
+            return <CategoryReports categorySlug={categorySlug} />;
+        } else if (activeView === 'bans') {
+            return <BannedUsers categorySlug={categorySlug} />;
+        }
+        return null;
+    }, [activeView, categorySlug]);
 
     return (
-        isModeratorForThisCategory && !loadingCategory && !categoryError && !notFound && !overallLoading && (
-            <div className="flex min-h-screen pt-8"> {/* Added padding-top to offset header */}
-                <CategoryReports categorySlug={categorySlug} />
+        <div className="flex min-h-screen flex-col pt-8 bg-background-light-gray font-sans text-black">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                {isModeratorForThisCategory && !loadingCategory && !categoryError && !notFound && (
+                    <div className="flex items-center justify-center bg-gray-light rounded-full p-1 w-fit mx-auto mb-8">
+                        <button
+                            onClick={() => setActiveView('reports')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${activeView === 'reports' ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        >
+                            Reports
+                        </button>
+                        <button
+                            onClick={() => setActiveView('bans')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 flex items-center gap-1 ${activeView === 'bans' ? 'bg-accent-green text-white' : 'text-gray-darker hover:bg-gray-light'}`}
+                        >
+                            Bans
+                        </button>
+                    </div>
+                )}
+
+                {notFound ? (
+                    <CategoryNotFound />
+                ) : overallLoading ? (
+                    <div className="flex items-center justify-center min-h-[200px]">
+                        <div className="flex flex-col items-center gap-4">
+                            <Oval height={50} width={50} color="#1A8917" secondaryColor="#EAEAEA" strokeWidth={5} visible={true} />
+                            <p className="text-gray-medium">Loading category and checking permissions...</p>
+                        </div>
+                    </div>
+                ) : categoryError ? (
+                    <div className="p-6 bg-white rounded-md shadow-md text-center text-red-600">
+                        <p>{categoryError}</p>
+                    </div>
+                ) : isModeratorForThisCategory ? (
+                    renderContent()
+                ) : (
+                    <div className="p-6 bg-white rounded-md shadow-md text-center text-red-600">
+                        <p>You do not have permission to view this page.</p>
+                    </div>
+                )}
             </div>
-            )
+        </div>
     );
 };
+
 
 export default CategoryModeratorPage;

@@ -32,15 +32,13 @@ const CharacterCount = ({ max, current }) => {
 };
 
 const ROOT_COMMENTS_PER_PAGE = 10;
-const SCROLL_THRESHOLD = 500; // Keep the threshold value
+const SCROLL_THRESHOLD = 500;
 const MAX_ROOT_COMMENTARY_TEXT_LENGTH = 1000;
 const MIN_LOADING_TIME = 300;
 
-// Define the sort parameters for root comments (matches backend expectation)
 const SORT_PARAMS = {
     'newest': 'createdAt,desc',
     'oldest': 'createdAt,asc',
-    // Add other sort options if needed, e.g., 'likes,desc': 'likes,desc'
 };
 
 
@@ -48,20 +46,20 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
     const { user } = useUser();
 
     const [rootComments, setRootComments] = useState([]);
-    const [isLoadingInitial, setIsLoadingInitial] = useState(true); // For first load
-    const [isLoadingMore, setIsLoadingMore] = useState(false);   // For infinite scroll
-    const [isRefetching, setIsRefetching] = useState(false);     // For sort changes or manual refresh
+    const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isRefetching, setIsRefetching] = useState(false);
 
     const [error, setError] = useState(null);
-    const [page, setPage] = useState(0); // State for the page number of the LAST successfully loaded page
+    const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const [sortOrder, setSortOrder] = useState('newest'); // State to hold the selected sort key
+    const [sortOrder, setSortOrder] = useState('newest');
 
-    const isFetchingRef = useRef(false); // Still useful to prevent multiple concurrent fetches
-    const pageRef = useRef(0); // Use ref for the page number CURRENTLY BEING FETCHED or ABOUT TO BE FETCHED
-    const hasMoreRef = useRef(true); // Use ref for hasMore to avoid stale closures in scroll handler
-    const sortOrderRef = useRef('newest'); // Use ref for sortOrder to avoid stale closures
-    const rootCommentariesRef = useRef(null); // Ref for the main comments container element
+    const isFetchingRef = useRef(false);
+    const pageRef = useRef(0);
+    const hasMoreRef = useRef(true);
+    const sortOrderRef = useRef('newest');
+    const rootCommentariesRef = useRef(null);
 
 
     const [showRootCommentaryInput, setShowRootCommentaryInput] = useState(false);
@@ -109,20 +107,17 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
     }, [rootCommentaryContent, showRootCommentaryInput]);
 
 
-    // Removed commentaries.length from the dependency array
     const fetchRootComments = useCallback(async (pageNumber = 0, append = true, currentSortKey) => {
         const activeSortKey = currentSortKey || sortOrderRef.current;
         const sortParam = SORT_PARAMS[activeSortKey] || SORT_PARAMS['newest'];
 
-        // Prevent fetch if already fetching or no more data to append
         if (isFetchingRef.current || (!hasMoreRef.current && append)) {
-            if (append) return; // Silently return if trying to append when no more data
+            if (append) return;
         }
 
         isFetchingRef.current = true;
         setError(null);
 
-        // Determine which loading state to set
         if (!append && pageNumber === 0) {
             if (rootComments.length === 0) {
                 setIsLoadingInitial(true);
@@ -133,15 +128,14 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
             setIsLoadingMore(true);
         }
 
-        // Update the page state as soon as a fetch for this page starts
         setPage(pageNumber);
 
-        const startTime = Date.now(); // Record start time
+        const startTime = Date.now();
 
         const params = {
             postId: postId,
             parentId: null,
-            page: pageNumber, // Use the pageNumber argument passed to the function
+            page: pageNumber,
             size: ROOT_COMMENTS_PER_PAGE,
             sort: sortParam,
         };
@@ -155,20 +149,20 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
             const fetchedComments = res.status === 204 ? [] : res.data.content;
             const hasMoreFromServer = !res.data.last;
 
-            const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime); // Calculate remaining time
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
 
-            setTimeout(() => { // Wrap state updates in a timeout
-                if (!append && pageNumber === 0) { // Fresh load (initial or sort change)
+            setTimeout(() => {
+                if (!append && pageNumber === 0) {
                     console.log(`Fresh load for postId: ${postId}. Setting ${fetchedComments.length} root comments.`);
                     setRootComments(fetchedComments || []);
-                    // setPage(0); // Removed setPage here
-                    setHasMore(hasMoreFromServer); // Update state AND ref
+
+                    setHasMore(hasMoreFromServer);
                     hasMoreRef.current = hasMoreFromServer;
 
-                } else { // Appending comments (infinite scroll)
+                } else {
                     if (!fetchedComments || fetchedComments.length === 0) {
-                        setHasMore(false); // Update state AND ref
+                        setHasMore(false);
                         hasMoreRef.current = false;
                     } else {
                         setRootComments(prev => {
@@ -176,22 +170,22 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
                             const uniqueNewComments = fetchedComments.filter(c => !existingCommentIds.has(c.id));
                             return [...prev, ...uniqueNewComments];
                         });
-                        // setPage(pageNumber); // Removed setPage here
-                        setHasMore(hasMoreFromServer); // Update state AND ref
+
+                        setHasMore(hasMoreFromServer);
                         hasMoreRef.current = hasMoreFromServer;
                     }
                 }
 
-                // Handle no results on fresh load
+
                 if (!append && pageNumber === 0 && (!fetchedComments || fetchedComments.length === 0)) {
-                    setRootComments([]); // Clear if the new result set is empty
-                    setHasMore(false); // Update state AND ref
+                    setRootComments([]);
+                    setHasMore(false);
                     hasMoreRef.current = false;
                 }
 
                 setIsLoadingInitial(false);
                 setIsLoadingMore(false);
-                setIsRefetching(false); // Hide the sorting spinner
+                setIsRefetching(false);
                 isFetchingRef.current = false;
                 console.log(`Finished fetching root comments for postId: ${postId}.`);
 
@@ -199,22 +193,22 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
 
 
         } catch (err) {
-            const elapsedTime = Date.now() - startTime; // Calculate elapsed time
-            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime); // Calculate remaining time
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
 
-            setTimeout(() => { // Wrap state updates in a timeout
+            setTimeout(() => {
                 if (err.response?.status === 204) {
-                    setHasMore(false); // Update state AND ref
+                    setHasMore(false);
                     hasMoreRef.current = false;
                 }
-                // If initial fetch failed, ensure comments list is empty
+
                 if (!append && pageNumber === 0 && rootComments.length === 0) {
                     setRootComments([]);
                 }
 
                 setIsLoadingInitial(false);
                 setIsLoadingMore(false);
-                setIsRefetching(false); // Hide the sorting spinner
+                setIsRefetching(false);
                 isFetchingRef.current = false;
                 console.error('Error fetching root comments:', err);
                 const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Failed to load comments.';
@@ -222,54 +216,42 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
                 toast.error(errorMessage);
             }, remainingTime);
         }
-    }, [postId, sortOrder]); // Removed rootComments.length from dependencies
+    }, [postId, sortOrder]);
 
 
-    // Effect to fetch initial comments and re-fetch on postId or sortOrder change
     useEffect(() => {
         console.log(`useEffect triggered in PostCommentaries. postId: ${postId}, sortOrder: ${sortOrder}`);
         if (postId) {
-            // Reset pagination state
-            setPage(0); // Update state
-            pageRef.current = 0; // Update ref
-            setHasMore(true); // Assume there's more data when fetching the first page
-            hasMoreRef.current = true; // Update ref
+            setPage(0);
+            pageRef.current = 0;
+            setHasMore(true);
+            hasMoreRef.current = true;
             setError(null);
-            // Fetch root comments with the current sort order (not appending)
-            fetchRootComments(0, false, sortOrder); // Pass 0 for page number explicitly
+            fetchRootComments(0, false, sortOrder);
         }
-        // Dependencies: postId to fetch comments for the correct post,
-        // sortOrder to re-trigger fetch when sort changes. fetchRootComments is stable due to useCallback.
     }, [postId, sortOrder, fetchRootComments]);
 
 
-    // Effect for infinite scrolling
     const handleScroll = useCallback(() => {
-        // Only trigger if not already fetching anything or no more data
         if (isFetchingRef.current || !hasMoreRef.current) {
             return;
         }
 
-        // Get the position of the comments container
         const container = rootCommentariesRef.current;
-        if (!container) return; // Exit if the container ref is not set
+        if (!container) return;
 
-        // Calculate the distance from the bottom of the container to the bottom of the viewport
         const containerBottom = container.getBoundingClientRect().bottom;
         const viewportHeight = window.innerHeight;
 
-        // Check if the bottom of the container is within the SCROLL_THRESHOLD distance from the bottom of the viewport
         const isNearBottomOfContainer = containerBottom <= (viewportHeight + SCROLL_THRESHOLD);
 
         if (isNearBottomOfContainer) {
             console.log("Scroll handler: Near bottom of container, fetching next page.");
-            // Increment pageRef.current BEFORE calling fetchRootComments
             const nextPage = pageRef.current + 1;
-            pageRef.current = nextPage; // Update the ref immediately
-            // Call fetchRootComments with the incremented page number
+            pageRef.current = nextPage;
             fetchRootComments(nextPage, true, sortOrderRef.current);
         }
-    }, [fetchRootComments]); // Dependencies: fetchRootComments (stable), no need for loading states or hasMore/page refs here
+    }, [fetchRootComments]);
 
 
     useEffect(() => {
@@ -279,15 +261,13 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
             console.log("Removing scroll listener.");
             window.removeEventListener('scroll', handleScroll);
         }
-    }, [handleScroll]); // Dependency on handleScroll useCallback
+    }, [handleScroll]);
 
 
     const handleSortChange = (newSortOrderKey) => {
         console.log(`Sort order change requested to: ${newSortOrderKey}`);
         if (newSortOrderKey !== sortOrder) {
-            setSortOrder(newSortOrderKey); // Update the sortOrder state
-            // The useEffect watching sortOrder will handle the refetch from page 0,
-            // which will trigger isRefetching state and the min-height logic.
+            setSortOrder(newSortOrderKey);
         }
     };
 
@@ -333,23 +313,15 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
                 setRootCommentaryContent('');
                 setShowRootCommentaryInput(false);
 
-                // After posting, decide how to update the list:
                 if (sortOrder === 'newest') {
-                    // Add the new comment to the top optimistically if sorting by newest
                     setRootComments(prev => [newCommentary, ...prev]);
-                    // Reset pagination state as a new item is added to the first page
-                    setPage(0); // Update state AND ref
+                    setPage(0);
                     pageRef.current = 0;
-                    // We might still have more comments after this new one,
-                    // setting hasMore to true is safer unless we know the total count.
-                    // A full refetch is the safest for pagination accuracy, but we optimize for newest sort.
-                    setHasMore(true); // Update state AND ref
+                    setHasMore(true);
                     hasMoreRef.current = true;
 
                 } else {
-                    // If sorting by anything else, a full refetch is needed
                     console.log(`Posted new comment. Current sort is ${sortOrder}. Refetching root comments.`);
-                    // Trigger a refetch for the first page, which handles loading and state reset
                     fetchRootComments(0, false, sortOrder);
                 }
 
@@ -367,10 +339,8 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
 
     const rootCommentaryTextLength = getNormalizedTextLength(rootCommentaryContent);
 
-    // Combine loading states for disabling buttons/inputs
     const isLoading = isLoadingInitial || isLoadingMore || isRefetching || submittingRootCommentary;
 
-    // Handler for when a comment (root or reply) is deleted anywhere in the tree
     const handleRootCommentDeleted = useCallback((deletedCommentId) => {
         console.log(`[PostCommentaries] Root comment deleted signal received for ID: ${deletedCommentId}. Removing from root comments list.`);
         setRootComments(prevRootComments => {
@@ -435,7 +405,6 @@ const PostCommentaries = ({ postId, isUserCategoryModerator}) => {
                 </div>
             )}
 
-            {/* Sorting Options */}
             <div className="flex items-center space-x-1 mb-4 justify-end">
                 <span className="text-sm text-gray-600">Sort By:</span>
                 <button

@@ -11,6 +11,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -25,9 +28,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (!user.getIsEmailVerified()) {
             throw new UserEmailNotVerifiedException();
         }
-        UserBanData userBanData = user.getUserBanData();
-        if (userBanData != null) {
-            String errorMessage = STR."Cannot login, banned until \{userBanData.getUnbanAt()} for '\{userBanData.getReason()}'";
+
+        Optional<UserBanData> userBanDataOpt = user.getUserBanData().stream()
+                .filter(banData -> !banData.getIsCategoryBan())
+                .findAny();
+        if (userBanDataOpt.isPresent()) {
+            UserBanData userBanData = userBanDataOpt.get();
+            String errorMessage = STR."Cannot login, banned until \{userBanData.getIsPermanentBan() ? "{forever}" : userBanData.getUnbanAt()} for '\{userBanData.getReason()}'";
             if (userBanData.getIsPermanentBan()) {
                 errorMessage = STR."Cannot login, user has a permanent ban for '\{userBanData.getReason()}'";
             }

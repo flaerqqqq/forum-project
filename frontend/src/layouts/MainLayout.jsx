@@ -5,7 +5,6 @@ import SidebarMenu from "../components/SidebarMenu.jsx"; // Assuming your sideba
 const MainLayout = () => {
     const location = useLocation();
 
-    // Check if the current path is one of the authentication pages
     const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
     return (
@@ -14,14 +13,12 @@ const MainLayout = () => {
                 <Header />
             </div>
             <main className="flex">
-                {/* Conditionally render the fixed left sidebar */}
                 {!isAuthPage && (
                     <div className="fixed top-14 left-0 h-screen w-64  bg-white shadow-md z-40">
                         <SidebarMenu />
                     </div>
                 )}
 
-                {/* Main content area with padding on the left to prevent overlap */}
                 <div className={`flex-1 p-1 ${!isAuthPage ? 'ml-64' : 'ml-0'} mt-14`}>
                     <Outlet />
                 </div>

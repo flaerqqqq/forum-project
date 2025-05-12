@@ -17,6 +17,10 @@ public class UserBanDataDto {
 
     private Boolean isPermanentBan = false;
 
+    private Boolean isCategoryBan = false;
+
+    private Long categoryId;
+
     private LocalDateTime unbanAt;
 
     private LocalDateTime bannedAt;

@@ -87,19 +87,16 @@ const CreatePostPage = () => {
         }
     };
 
-    // Simplified function to close the preview
     const closePreview = () => {
         setPreviewIndex(null);
     };
 
-    // Close modal on Escape key press
     const handleEscClose = (e) => {
         if (e.key === 'Escape') {
             closePreview();
         }
     };
 
-    // Add/remove Escape key listener based on preview visibility
     useEffect(() => {
         if (previewIndex !== null) {
             window.addEventListener('keydown', handleEscClose);
@@ -107,7 +104,6 @@ const CreatePostPage = () => {
             window.removeEventListener('keydown', handleEscClose);
         }
 
-        // Cleanup
         return () => {
             window.removeEventListener('keydown', handleEscClose);
         };
@@ -131,7 +127,6 @@ const CreatePostPage = () => {
         'link', 'image'
     ];
 
-    // Get the URL for the image preview from the File object
     const previewImageUrl = previewIndex !== null && images[previewIndex] ? URL.createObjectURL(images[previewIndex]) : null;
 
 
@@ -242,42 +237,37 @@ const CreatePostPage = () => {
                 </div>
             </form>
 
-            {/* Full-page Image Preview Modal */}
             {previewIndex !== null && images[previewIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-                    onClick={closePreview} // Clicking the outer area closes
+                    onClick={closePreview}
                 >
-                    {/* Blurred Background in Preview */}
                     {previewImageUrl && (
                         <div
                             className="absolute inset-0 bg-cover bg-center filter blur-xl transform scale-125"
                             style={{ backgroundImage: `url(${previewImageUrl})` }}
-                            onClick={closePreview} // Clicking blurred background closes
+                            onClick={closePreview}
                         ></div>
                     )}
-                    {/* Optional: Overlay for preview background */}
                     {previewImageUrl && (
                         <div
                             className="absolute inset-0 bg-black opacity-40"
-                            onClick={closePreview} // Clicking overlay closes
+                            onClick={closePreview}
                         ></div>
                     )}
 
-                    {/* Main Image in Preview - Clicking THIS closes */}
                     {previewImageUrl && (
                         <img
                             src={previewImageUrl}
                             alt="Image Preview"
                             className="max-w-[90%] max-h-[90%] object-contain relative z-10 cursor-pointer"
-                            onClick={closePreview} // Clicking the image itself closes
+                            onClick={closePreview}
                         />
                     )}
 
-                    {/* Close Button - Clicking THIS closes */}
                     <button
                         className="absolute top-4 right-4 text-white z-20 p-2 rounded-full bg-black/40 hover:bg-black/60 transition"
-                        onClick={closePreview} // Clicking the button closes
+                        onClick={closePreview}
                         aria-label="Close Image Preview"
                     >
                         <X size={24} />

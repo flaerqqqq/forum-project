@@ -4,27 +4,20 @@ import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { X } from 'lucide-react';
 import { Oval } from 'react-loader-spinner';
-import { format } from 'date-fns'; // Import format for date formatting
+import { format } from 'date-fns';
 
-// Renamed from BanUserModal to ManageBanModal
-// This modal can be used for both creating and updating user bans.
 const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess, onUpdateSuccess }) => {
-    // State for form fields
     const [isPermanentBan, setIsPermanentBan] = useState(banData?.isPermanentBan || false);
-    // Format unbanAt if it exists, otherwise use empty string
     const [unbanAt, setUnbanAt] = useState(banData?.unbanAt ? format(new Date(banData.unbanAt), 'yyyy-MM-dd\'T\'HH:mm') : '');
     const [reason, setReason] = useState(banData?.reason || '');
 
-    // State for loading and error
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Determine if the modal is in update mode
     const isUpdateMode = !!banData;
 
     const modalRef = useRef(null);
 
-    // Effect to handle closing the modal with the Escape key
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && isOpen) {
@@ -37,7 +30,6 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
         };
     }, [isOpen, onClose]);
 
-    // Effect to reset form state when modal is opened or banData changes (for update mode)
     useEffect(() => {
         if (isOpen) {
             setIsPermanentBan(banData?.isPermanentBan || false);
@@ -46,9 +38,8 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
             setError(null);
             setLoading(false);
         }
-    }, [isOpen, banData]); // Added banData as a dependency
+    }, [isOpen, banData]);
 
-    // Handle clicks outside the modal content
     const handleBackdropClick = (event) => {
         if (modalRef.current && !modalRef.current.contains(event.target)) {
             onClose();
@@ -67,7 +58,6 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
             return;
         }
 
-        // Validate input based on ban type
         if (!reason.trim()) {
             setError("Reason is required.");
             setLoading(false);
@@ -82,7 +72,6 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
                 return;
             }
             try {
-                // Convert the input string to ISO string format expected by backend
                 finalUnbanAt = new Date(unbanAt).toISOString();
             } catch (parseError) {
                 setError("Invalid unban date or time format.");
@@ -94,14 +83,13 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
 
         const banRequestDto = {
             isPermanentBan: isPermanentBan,
-            unbanAt: isPermanentBan ? null : finalUnbanAt, // Send null for permanent ban
+            unbanAt: isPermanentBan ? null : finalUnbanAt,
             reason: reason.trim(),
         };
 
         try {
             let response;
             if (isUpdateMode) {
-                // Call the update endpoint for update mode
                 response = await axios.put(
                     `http://localhost:8080/api/v1/users/${targetPublicId}/update`,
                     banRequestDto,
@@ -113,7 +101,6 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
                     }
                 );
             } else {
-                // Call the ban endpoint for create mode
                 response = await axios.post(
                     `http://localhost:8080/api/v1/users/${targetPublicId}/ban`,
                     banRequestDto,
@@ -130,11 +117,11 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
             if (response.status === 200) {
                 const successMessage = isUpdateMode ? "Ban data updated successfully." : `User ${targetPublicId} banned successfully.`;
                 toast.success(successMessage);
-                onClose(); // Close the modal on success
+                onClose();
                 if (isUpdateMode && onUpdateSuccess) {
-                    onUpdateSuccess(response.data); // Call parent update success handler with updated ban data
+                    onUpdateSuccess(response.data);
                 } else if (!isUpdateMode && onBanSuccess) {
-                    onBanSuccess(response.data); // Call parent ban success handler with new ban data
+                    onBanSuccess(response.data);
                 }
             } else {
                 // Handle unexpected status codes
@@ -183,7 +170,7 @@ const ManageBanModal = ({ isOpen, onClose, targetPublicId, banData, onBanSuccess
             <div
                 ref={modalRef}
                 className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 my-8"
-                onClick={(e) => e.stopPropagation()} // Prevent backdrop click from closing when clicking inside modal
+                onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center border-b pb-3 mb-4">
                     <h2 className="text-xl font-semibold text-gray-800">{isUpdateMode ? 'Update Ban Data' : 'Ban User'}</h2>

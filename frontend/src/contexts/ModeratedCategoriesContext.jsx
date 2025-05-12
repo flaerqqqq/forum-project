@@ -12,27 +12,23 @@ export const ModeratedCategoriesContext = createContext({
     removeModeratedCategory: (slug) => {},
 });
 
-// Create the provider component
 export const ModeratedCategoriesProvider = ({ children }) => {
 
     const { user: authenticatedUser, loading: authLoading } = useUser();
 
 
     const [moderatedCategorySlugs, setModeratedCategorySlugs] = useState([]);
-    // State for loading status
     const [loadingModeratedCategories, setLoadingModeratedCategories] = useState(true);
-    // State for any errors during fetching
     const [errorModeratedCategories, setErrorModeratedCategories] = useState(null);
 
     useEffect(() => {
         const fetchModeratedCategories = async () => {
 
             if (authLoading) {
-                setLoadingModeratedCategories(true); // Keep loading true while waiting for auth
+                setLoadingModeratedCategories(true);
                 return;
             }
 
-            // If no user is authenticated after authLoading is false,
 
             if (!authenticatedUser) {
                 setModeratedCategorySlugs([]);
@@ -56,7 +52,6 @@ export const ModeratedCategoriesProvider = ({ children }) => {
                     return;
                 }
 
-                // Make the API call to fetch moderated categories for the authenticated user
 
                 const response = await axios.get('http://localhost:8080/api/v1/users/me/moderators', {
                     headers: {
@@ -64,7 +59,6 @@ export const ModeratedCategoriesProvider = ({ children }) => {
                     },
                 });
 
-                // Backend returns 204 No Content for an empty list, 200 OK with list otherwise
                 if (response.status === 200) {
                     setModeratedCategorySlugs(response.data || []);
                 } else if (response.status === 204) {

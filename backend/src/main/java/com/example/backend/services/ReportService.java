@@ -38,4 +38,6 @@ public interface ReportService {
                                            ReportReason reason,
                                            ReportStatus status,
                                            String reporterId);
+
+    ReportDto findReportByIdAndCategory(Long reportId, String categorySlug);
 }

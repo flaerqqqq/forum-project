@@ -3,6 +3,7 @@ package com.example.backend.services;
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.dto.PostUpdateRequestDto;
+import com.example.backend.models.Post;
 import com.example.backend.models.enums.PostType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,4 +24,6 @@ public interface PostService {
     void deleteById(String publicId, Long postId);
 
     Page<PostDto> getPostsByUserFollowedCategories(String publicId, Pageable pageable);
+
+    Boolean checkAccessToPost(Post post);
 }

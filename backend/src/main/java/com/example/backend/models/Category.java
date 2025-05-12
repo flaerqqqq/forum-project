@@ -67,4 +67,7 @@ public class Category {
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    private List<UserBanData> bannedUsers;
 }

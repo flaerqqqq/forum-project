@@ -158,7 +158,6 @@ const AddModeratorModal = ({ categoryId, onClose, onModeratorAdded }) => {
 
                 {userFound && (
                     <div className="flex items-center gap-4 mb-4 p-3 bg-gray-100 rounded-md">
-                        {/* Avatar Rendering Logic using helpers */}
                         <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                             {userFound.avatarUrl ? (
                                 <img
@@ -174,7 +173,6 @@ const AddModeratorModal = ({ categoryId, onClose, onModeratorAdded }) => {
                                 </div>
                             )}
                         </div>
-                        {/* End of Avatar Rendering Logic */}
 
                         <span className="text-base font-medium text-gray-800">{userFound.username}</span>
                     </div>

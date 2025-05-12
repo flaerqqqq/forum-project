@@ -220,10 +220,8 @@ const CategoryModeratorsPage = () => {
                     )}
                 </div>
 
-                {/* Header for Moderators List */}
                 <div className="flex items-center justify-between px-4 pb-2 mb-2 border-b border-border text-gray-darker text-sm font-semibold">
                     <div className="flex-grow">Username</div>
-                    {/* Added pr-4 here to match the list item date padding */}
                     <div className="w-40 text-right pr-4">Joined At</div>
                     <div className="flex-shrink-0 ml-4 w-20"></div> {/* Placeholder column for Remove button */}
                 </div>
@@ -266,13 +264,10 @@ const CategoryModeratorsPage = () => {
                                         )}
                                     </div>
                                 </div>
-                                {/* Joined Date Column */}
                                 <div className="w-40 text-gray-darker text-sm flex-shrink-0 text-right ">
                                     {moderator.assignedAt ? new Date(moderator.assignedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                                 </div>
-                                {/* Remove Button Column - Always render this container */}
                                 <div className="flex-shrink-0 ml-4 w-20 flex justify-end items-center">
-                                    {/* Conditionally render the button inside */}
                                     {isOwner && moderator.userDto?.publicId !== user?.publicId && (
                                         <button
                                             onClick={() => handleRemoveModerator(moderator.userDto?.publicId)}

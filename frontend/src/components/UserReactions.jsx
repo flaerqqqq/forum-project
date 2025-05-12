@@ -85,7 +85,6 @@ const UserReactions = ({ targetPublicId, readOnly = false }) => {
                 </>
             ) : (
                 <>
-                    {/* Styled interactive buttons */}
                     <button
                         onClick={() => sendReaction('LIKE')}
                         className={`flex items-center space-x-1 px-3 py-1 border rounded-full text-sm transition-colors ${reaction === 'LIKE' ? 'border-accent-green text-accent-green' : 'border-gray-medium text-gray-darker hover:border-black hover:text-black'}`}

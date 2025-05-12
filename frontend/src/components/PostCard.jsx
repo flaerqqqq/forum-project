@@ -25,7 +25,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const navigate = useNavigate();
     const { user: authenticatedUser, loading: authLoading } = useUser();
     const { addDeletedPostId } = useDeletedPosts();
-    // Use the hook to get moderated categories status and loading state from context
     const { moderatedCategorySlugs, loadingModeratedCategories } = useModeratedCategories();
 
     const getPlainText = (html) => {
@@ -90,12 +89,10 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
             if (event.key === 'Escape') {
                 closePreview();
                 setShowDeleteModal(false);
-                // Close report modal on Escape key
                 setShowReportModal(false);
             }
         };
 
-        // Add or remove the event listener based on modal visibility
         if (showPreview || showDeleteModal || showReportModal) {
             document.addEventListener('keydown', handleEscapeKey);
         } else {
@@ -105,7 +102,7 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [showPreview, showDeleteModal, showReportModal]); // Add showReportModal to dependencies
+    }, [showPreview, showDeleteModal, showReportModal]);
 
     const postDetailUrl = `/categories/${category?.slug}/posts/${id}`;
 
@@ -125,11 +122,8 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
     const isPostOwner = authenticatedUser && creator && authenticatedUser.publicId === creator.publicId;
     const isGlobalModerator = authenticatedUser?.roles?.some(role => role.name === 'ROLE_MODERATOR');
 
-    // Determine if the user is a moderator for *this post's* category using the context list
-    // Ensure category and slug exist before checking includes
     const isUserCategoryModerator = Array.isArray(moderatedCategorySlugs) && moderatedCategorySlugs.includes(category?.slug);
 
-    // Update canDeletePost to use loadingModeratedCategories from context and derived isUserCategoryModerator
     const canDeletePost = !authLoading && !loadingModeratedCategories && (isPostOwner || isGlobalModerator || isUserCategoryModerator);
     const canUpdatePost = !authLoading && (isPostOwner);
 
@@ -206,12 +200,11 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
         }
     };
 
-    // Handler to show the report modal
     const handleReportClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setShowDropdown(false);
-        setShowReportModal(true); // Set state to true to show the modal
+        setShowReportModal(true);
     };
 
     const handleReportModalClose = () => {
@@ -238,7 +231,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                             {new Date(createdAt).toLocaleDateString()}
                         </div>
 
-                        {/* Show dropdown only if any action is available (update, delete, or report) */}
                         { (canUpdatePost || canDeletePost || canReportPost) && (
                             <div className="relative">
                                 <button
@@ -259,7 +251,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                                         className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        {/* Conditionally render Update button */}
                                         {canUpdatePost && (
                                             <button
                                                 onClick={handleUpdatePostClick}
@@ -268,7 +259,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                                                 Update
                                             </button>
                                         )}
-                                        {/* Conditionally render Delete button */}
                                         {canDeletePost && (
                                             <button
                                                 onClick={requestDeleteConfirmation}
@@ -277,7 +267,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                                                 Delete
                                             </button>
                                         )}
-                                        {/* Conditionally render Report button */}
                                         {canReportPost && (
                                             <button
                                                 onClick={handleReportClick}
@@ -373,7 +362,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 )}
             </div>
 
-            {/* Image Preview Modal */}
             {showPreview && images[currentImageIndex] && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
@@ -408,7 +396,6 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 overflow-hidden"
@@ -440,9 +427,9 @@ const PostCard = ({ post, saveCurrentStateToCache, onDeleteSuccess }) => {
 
             {showReportModal && id && (
                 <ReportContentModal
-                    targetType="POST" // Specify the target type as 'POST'
-                    targetId={id} // Pass the post's ID as the targetId
-                    onClose={handleReportModalClose} // Use the dedicated close handler
+                    targetType="POST"
+                    targetId={id}
+                    onClose={handleReportModalClose}
                 />
             )}
         </div>
