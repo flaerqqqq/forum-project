@@ -1,9 +1,9 @@
 import React, { forwardRef, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { format, isFuture, isPast } from 'date-fns';
-import { MoreHorizontal } from 'lucide-react'; // Import MoreHorizontal icon
+import { format, isFuture } from 'date-fns';
+import { MoreHorizontal } from 'lucide-react';
 
-// Helper function to get avatar color class (can be reused)
+
 const getAvatarColorClass = (username) => {
     if (!username) return 'bg-gray-medium';
     const firstLetter = username.charAt(0).toUpperCase();
@@ -26,7 +26,7 @@ const getAvatarColorClass = (username) => {
     return avatarColors[colorIndex];
 };
 
-// Helper function to get initials (can be reused)
+
 const getInitials = (name) => {
     if (!name) return '';
     const parts = name.split(' ');
@@ -36,22 +36,20 @@ const getInitials = (name) => {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-// Use forwardRef to allow the parent component to attach a ref for infinite scrolling
-const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref) => { // Added onUnbanClick and onUpdateClick props
-    const [showDropdown, setShowDropdown] = useState(false); // State for dropdown visibility
-    const dropdownRef = useRef(null); // Ref for the dropdown menu
-    const dropdownButtonRef = useRef(null); // Ref for the dropdown button
+const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const dropdownButtonRef = useRef(null);
 
 
     if (!banData || !banData.bannedUser || !banData.moderator) {
-        // Handle cases where ban data or related user data is missing
+
         console.error("Invalid ban data:", banData);
         return null;
     }
 
     const { bannedUser, moderator, reason, bannedAt, unbanAt, isPermanentBan } = banData;
 
-    // Determine ban status based on unbanAt and isPermanentBan
     const isCurrentlyBanned = isPermanentBan || (unbanAt && isFuture(new Date(unbanAt)));
     const banStatusText = isPermanentBan
         ? 'Permanent'
@@ -61,7 +59,6 @@ const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref
 
     const bannedAtFormatted = format(new Date(bannedAt), 'MMM dd, yyyy HH:mm');
 
-    // Effect to close the dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -76,38 +73,33 @@ const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref
         };
     }, []);
 
-    // Toggle dropdown visibility
     const toggleDropdown = (e) => {
-        e.preventDefault(); // Prevent default link behavior if wrapped in Link
-        e.stopPropagation(); // Prevent click from bubbling up
+        e.preventDefault();
+        e.stopPropagation();
         setShowDropdown(prev => !prev);
     };
 
-    // Handle Update button click
     const handleUpdateClickInternal = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setShowDropdown(false);
         if (onUpdateClick) {
-            onUpdateClick(banData); // Call the parent's update handler, passing the ban data
+            onUpdateClick(banData);
         }
     };
 
-    // Handle Unban button click
     const handleUnbanClickInternal = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setShowDropdown(false);
         if (onUnbanClick) {
-            onUnbanClick(banData.bannedUser.publicId); // Call the parent's unban handler, passing the banned user's public ID
+            onUnbanClick(banData.bannedUser.publicId);
         }
     };
 
 
     return (
-        // Attach the ref to the root list item element
-        <li ref={ref} className="p-4 hover:bg-gray-100 rounded-2xl flex items-start space-x-4 relative"> {/* Added relative for absolute positioning of dropdown */}
-            {/* Banned User Avatar/Initials */}
+        <li ref={ref} className="p-4 hover:bg-gray-100 rounded-2xl flex items-start space-x-4 relative">
             <Link to={`/users/${bannedUser.username}`} className="flex-shrink-0">
                 {bannedUser.avatarUrl ? (
                     <img
@@ -164,14 +156,12 @@ const BannedUserItem = forwardRef(({ banData, onUnbanClick, onUpdateClick }, ref
                         className="absolute top-full mt-2 right-0 w-40 bg-white rounded-md shadow-lg border border-border overflow-hidden z-10"
                         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside dropdown
                     >
-                        {/* Update button */}
                         <button
                             onClick={handleUpdateClickInternal}
                             className="block w-full text-left px-4 py-2 text-gray-darker hover:bg-gray-lighter"
                         >
                             Update
                         </button>
-                        {/* Unban button */}
                         <button
                             onClick={handleUnbanClickInternal}
                             className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"

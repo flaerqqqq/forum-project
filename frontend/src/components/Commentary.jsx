@@ -165,12 +165,11 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
         'link'
     ];
 
-    // Handler to show the report modal
     const handleReportClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         setShowDropdown(false);
-        setShowReportModal(true); // Set state to true to show the modal
+        setShowReportModal(true);
     };
 
     const handleReportModalClose = () => {
@@ -541,10 +540,7 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
                 return reply;
             });
         });
-        // Do NOT increment THIS comment's direct reply count here, as the new reply was to a child
 
-
-        // If this comment has a parent, inform the parent that one of its children received a reply
         if (onReplyAdded) {
             onReplyAdded(commentary.id, newReplyData);
         }
@@ -813,9 +809,9 @@ const Commentary = ({ commentary, postId, categoryId, isUserCategoryModerator, i
 
             {showReportModal && commentary.id && (
                 <ReportContentModal
-                    targetType="COMMENTARY" // Specify the target type as 'POST'
-                    targetId={commentary.id} // Pass the post's ID as the targetId
-                    onClose={handleReportModalClose} // Use the dedicated close handler
+                    targetType="COMMENTARY"
+                    targetId={commentary.id}
+                    onClose={handleReportModalClose}
                 />
             )}
         </div>

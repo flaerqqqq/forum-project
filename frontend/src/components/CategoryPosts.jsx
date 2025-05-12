@@ -21,13 +21,13 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     const [hasMore, setHasMore] = useState(true);
     const [sortBy, setSortBy] = useState('createdAt,desc');
     const [loadedPostCount, setLoadedPostCount] = useState(0);
-    const [minContainerHeight, setMinContainerHeight] = useState('auto'); // State to hold the minimum height
+    const [minContainerHeight, setMinContainerHeight] = useState('auto');
 
 
     const location = useLocation();
     const navigate = useNavigate();
 
-    const postsContainerRef = useRef(null); // Ref for the main posts container
+    const postsContainerRef = useRef(null);
 
     const initialMountHandled = useRef(false);
     const isRestoringScroll = useRef(false);
@@ -38,7 +38,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             return [];
         }
 
-        // Only set loading true if not restoring from cache/scroll
         if (!isRestoringFromCache.current && !isRestoringScroll.current) {
             setLoading(true);
         }
@@ -88,11 +87,10 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                     }
                     setHasMore(!isLast);
                 }
-                // Only set loading false if not restoring from cache/scroll
                 if (!isRestoringFromCache.current && !isRestoringScroll.current) {
                     setLoading(false);
                 }
-                setMinContainerHeight('auto'); // Reset min height after loading is complete
+                setMinContainerHeight('auto');
             }, remainingTime);
 
             return newPosts;
@@ -106,11 +104,10 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 setError('Failed to load posts.');
                 toast.error('Failed to load posts.');
                 setHasMore(false);
-                // Only set loading false if not restoring from cache/scroll
                 if (!isRestoringFromCache.current && !isRestoringScroll.current) {
                     setLoading(false);
                 }
-                setMinContainerHeight('auto'); // Reset min height on error
+                setMinContainerHeight('auto');
             }, remainingTime);
 
             return [];
@@ -149,7 +146,7 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 setPage(Math.max(restoredPages, 0));
 
                 setHasMore(cachedDataToUse.hasMore);
-                setLoading(false); // Set loading false immediately when restoring from cache
+                setLoading(false);
 
                 if (cachedDataToUse.scrollY !== undefined) {
                     isRestoringScroll.current = true;
@@ -173,7 +170,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                         }, 0);
                     }, 0);
                 } else {
-                    // If no scrollY, still consider restoring from cache complete after a short delay
                     setTimeout(() => {
                         if (cachedDataToUse.hasMore) {
                             const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
@@ -190,7 +186,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
                 clearCategoryPostsCache(categorySlug, cachedDataToUse.sortBy);
             } else {
-                // If no cache, fetch initial data normally
                 setPage(0);
                 setPosts([]);
                 setHasMore(true);
@@ -204,19 +199,15 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     const prevSortRef = useRef(sortBy);
 
     useEffect(() => {
-        // This effect handles changes in categorySlug or sortBy after the initial mount
         if (initialMountHandled.current &&
             (prevCategoryRef.current !== categorySlug || prevSortRef.current !== sortBy) &&
             !isRestoringFromCache.current) {
 
-            // When category or sort changes, reset state and fetch new data
             setPage(0);
             setPosts([]);
             setHasMore(true);
             setLoadedPostCount(0);
-            // fetchPosts will handle setting initialLoading true
 
-            // Capture current height before clearing posts to prevent jump
             if (postsContainerRef.current) {
                 setMinContainerHeight(`${postsContainerRef.current.scrollHeight}px`);
             }
@@ -230,63 +221,51 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
     const loadMore = useCallback(() => {
         const nextPage = page + 1;
-        // Only load more if not currently loading and there's more data
         if (!loading && hasMore && !isRestoringScroll.current && !isRestoringFromCache.current) {
-            // setLoading(true); // Loading state is handled inside fetchPosts
             fetchPosts(nextPage, POSTS_PER_PAGE, sortBy, true);
-            setPage(nextPage); // Update page state immediately
+            setPage(nextPage);
         }
     }, [loading, hasMore, page, sortBy, fetchPosts]);
 
     const handleScroll = useCallback(() => {
-        // Prevent loading more if restoring from cache/scroll or already loading
         if (isRestoringScroll.current || isRestoringFromCache.current || loading) {
             return;
         }
 
-        // Check if the user is near the bottom of the page
         const isAtBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - SCROLL_THRESHOLD; // Use SCROLL_THRESHOLD
 
-        // Check if the posts container exists and is scrollable
         const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
         const viewportHeight = window.innerHeight;
         const isContentScrollable = containerHeight > viewportHeight;
 
-        // If near bottom, there's more data, not loading, and content is scrollable, load more
         if (isAtBottom && hasMore && !loading && isContentScrollable) {
             loadMore();
         }
-        // Also load more if content is not scrollable but there's more data (handles cases with few initial posts)
         else if (!isContentScrollable && hasMore && posts.length > 0) {
             loadMore();
         }
 
-    }, [hasMore, loading, loadMore, posts.length]); // Added posts.length to dependencies
+    }, [hasMore, loading, loadMore, posts.length]);
 
 
     useEffect(() => {
-        // Add scroll event listener on mount
         window.addEventListener('scroll', handleScroll);
-        // Clean up scroll event listener on unmount
         return () => {
             window.removeEventListener('scroll', handleScroll);
         };
-    }, [handleScroll]); // Dependency on handleScroll useCallback
+    }, [handleScroll]);
 
-    // Effect to load more if content is not scrollable on mount or after new data loads
     useEffect(() => {
-        // Only trigger if not currently loading, there's more data, and there are posts rendered
         if (!loading && hasMore && posts.length > 0) {
             const containerHeight = postsContainerRef.current ? postsContainerRef.current.scrollHeight : 0;
             const viewportHeight = window.innerHeight;
             const isContentScrollable = containerHeight > viewportHeight;
 
-            // If content is not scrollable, load more posts
             if (!isContentScrollable) {
                 loadMore();
             }
         }
-    }, [posts.length, loading, hasMore, loadMore]); // Dependencies: re-run if posts length, loading, hasMore, or loadMore changes
+    }, [posts.length, loading, hasMore, loadMore]);
 
 
     const saveCurrentStateToCache = useCallback(() => {
@@ -308,7 +287,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
 
     const handleSortChange = (newSortBy) => {
         if (newSortBy !== sortBy) {
-            // Capture current height before clearing posts
             if (postsContainerRef.current) {
                 setMinContainerHeight(`${postsContainerRef.current.scrollHeight}px`);
             }
@@ -318,7 +296,7 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
             clearCategoryPostsCache(categorySlug, sortBy);
 
             setPage(0);
-            setPosts([]); // Clearing posts here will cause collapse without min-height
+            setPosts([]);
             setHasMore(true);
             setLoadedPostCount(0);
 
@@ -341,7 +319,7 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
     const showLoadingMore = loading && posts.length > 0 && hasMore;
 
     return (
-        <div className="space-y-1" ref={postsContainerRef} style={{ minHeight: minContainerHeight }}> {/* Apply min height */}
+        <div className="space-y-1" ref={postsContainerRef} style={{ minHeight: minContainerHeight }}>
             <div className="flex justify-end items-center mb-4 space-x-1">
                 <span className="text-sm text-gray-600">Sort By:</span>
                 <button
@@ -360,7 +338,6 @@ const CategoryPosts = ({ categorySlug, saveCategoryPostsCache, getCategoryPostsC
                 </button>
             </div>
 
-            {/* Conditional HR above content/spinner */}
             {(posts.length > 0 || showInitialLoading || showLoadingMore) && !error && (
                 <hr className="border-gray-300 my-2" />
             )}

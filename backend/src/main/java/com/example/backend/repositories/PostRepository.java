@@ -28,6 +28,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 )
             )
       )
+    AND ( 
+          :caller IS NULL OR NOT EXISTS (
+              SELECT 1 FROM UserBanData ubd
+              WHERE ubd.bannedUser = :caller 
+              AND ubd.category = p.category
+              AND ubd.isCategoryBan = TRUE
+              AND (
+                    ubd.isPermanentBan = TRUE
+                    OR ubd.unbanAt > CURRENT_TIMESTAMP
+                  )
+          )
+    )
     """)
     Page<Post> findFilteredPage(@Param("type") PostType type,
                                 @Param("creator") User creator,
@@ -50,6 +62,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                 WHERE cm.category = c AND cm.user = :caller
             )
         )
+    )
+    AND ( 
+          :caller IS NULL OR NOT EXISTS (
+              SELECT 1 FROM UserBanData ubd
+              WHERE ubd.bannedUser = :caller 
+              AND ubd.category = p.category
+              AND ubd.isCategoryBan = TRUE
+              AND (
+                    ubd.isPermanentBan = TRUE
+                    OR ubd.unbanAt > CURRENT_TIMESTAMP
+                  )
+          )
     )
     """)
     Page<Post> findPostsFromUserFollowing(@Param("user") User user,

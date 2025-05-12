@@ -111,15 +111,21 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserBanDataResponseDto ban(UserBanRequestDto request, String moderatorPublicId, String targetPublicId) {
+        if (!request.getIsPermanentBan() && request.getUnbanAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Specified unbanAt time is before current time");
+        }
+
         User moderator = getByPublicId(moderatorPublicId);
         User targetUser = getByPublicId(targetPublicId);
 
-        if (targetUser.getUserBanData() != null) {
-            throw new RuntimeException("User already has a ban");
+        if (targetUser.getUserBanData() != null && targetUser.getUserBanData().stream().anyMatch(banData ->
+                !banData.getIsCategoryBan())) {
+            throw new RuntimeException(STR."User with publicId=\{targetPublicId} already has a ban");
         }
 
         UserBanData userBanData = UserBanData.builder()
                 .bannedAt(LocalDateTime.now())
+                .isCategoryBan(false)
                 .isPermanentBan(request.getIsPermanentBan())
                 .unbanAt(request.getUnbanAt())
                 .reason(request.getReason())
@@ -137,12 +143,14 @@ public class UserServiceImpl implements UserService {
     public void unban(String targetPublicId) {
         User user = getByPublicId(targetPublicId);
 
-        UserBanData userBanData = user.getUserBanData();
+        UserBanData userBanData = user.getUserBanData().stream()
+                .filter(banData -> !banData.getIsCategoryBan())
+                .findAny().orElseThrow(() ->
+                        new RuntimeException("Tried to unban a user without a ban"));
 
-        if (userBanData == null) {
-            throw new RuntimeException("Tried to unban a user without a ban");
-        }
-        user.setUserBanData(null);
+        user.setUserBanData(user.getUserBanData().stream()
+                .filter(banData -> !banData.equals(userBanData))
+                .toList());
         userBanData.setBannedUser(null);
 
         userBanDataRepository.delete(userBanData);
@@ -151,21 +159,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Page<UserBanDataResponseDto> findBannedUsers(Pageable pageable, String username) {
+    public Page<UserBanDataResponseDto> findBannedUsers(Pageable pageable, String username, Boolean isPermanentBan,
+                                                        LocalDateTime unbanTimeStart, LocalDateTime unbanTimeEnd) {
         User user = username != null ? getByUsername(username) : null;
-        Page<UserBanData> usersBanData = userBanDataRepository.findByBannedUser(user, pageable);
+        Page<UserBanData> usersBanData = userBanDataRepository.findByFilters(user, isPermanentBan,
+                unbanTimeStart, unbanTimeEnd, pageable);
         return usersBanData.map(userBanDataMapper::toResponseDto);
     }
 
     @Override
     @Transactional
     public UserBanDataResponseDto updateBanData(UserBanRequestDto request, String targetPublicId) {
+        if (!request.getIsPermanentBan() && request.getUnbanAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Specified unbanAt time is before current time");
+        }
+
         User targetUser = getByPublicId(targetPublicId);
 
-        UserBanData userBanData = targetUser.getUserBanData();
-        if (userBanData == null) {
-            throw new RuntimeException("Tried to update ban data for a user without a ban");
-        }
+        UserBanData userBanData = targetUser.getUserBanData().stream()
+                .filter(banData -> !banData.getIsCategoryBan())
+                .findAny().orElseThrow(() ->
+                        new RuntimeException("Tried to update user ban data for a user without a ban"));
+
         userBanData.setIsPermanentBan(request.getIsPermanentBan());
         userBanData.setReason(request.getReason());
         userBanData.setUnbanAt(request.getUnbanAt());

@@ -3,7 +3,6 @@ import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
-import { formatDistanceToNow } from 'date-fns';
 import UserCommentaryItem from './UserCommentaryItem.jsx';
 
 const PAGE_SIZE = 10;
@@ -125,13 +124,10 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
         }
     };
 
-    // Function to handle comment deletion from the list
     const handleCommentDeleted = useCallback((deletedCommentId) => {
         setCommentaries(prevCommentaries =>
             prevCommentaries.filter(comment => comment.id !== deletedCommentId)
         );
-        // Note: This doesn't update the total count displayed, only removes from the list.
-        // If you need to update the total count, you might need a separate state or refetch.
     }, []);
 
 
@@ -180,7 +176,7 @@ const UserCommentaries = ({ userPublicId, profileUser }) => {
                                 displayName={profileUser?.displayName}
                                 avatarUrl={profileUser?.avatarUrl}
                                 ref={idx === commentaries.length - 1 ? lastCommentaryRef : null}
-                                onCommentDeleted={handleCommentDeleted} // Pass the handler down
+                                onCommentDeleted={handleCommentDeleted}
                             />
                         </React.Fragment>
                     ))}

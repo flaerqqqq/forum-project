@@ -35,45 +35,40 @@ export default function Login() {
 
     return (
         <div className="flex w-[99.99%] h-screen[99.99%] py-20 justify-center items-center bg-background-light-gray font-sans text-black overflow-hidden">
-            {/* Medium-like card container */}
             <div className="bg-white w-full max-w-md rounded-md shadow-sm p-8 overflow-hidden">
-                {/* Heading */}
                 <h2 className="text-2xl font-heading text-black mb-6 text-center">Welcome Back</h2>
 
-                <form onSubmit={handleSubmit} className="space-y-6"> {/* Increased spacing */}
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-darker mb-1">Username</label> {/* Styled label */}
+                        <label className="block text-sm font-semibold text-gray-darker mb-1">Username</label>
                         <input
                             type="text"
                             name="username"
                             value={form.username}
                             onChange={handleChange}
                             required
-                            // Styled input
                             className="w-full p-2 border border-border rounded-md focus:outline-none focus:border-black text-gray-darker bg-white"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-gray-darker mb-1">Password</label> {/* Styled label */}
+                        <label className="block text-sm font-semibold text-gray-darker mb-1">Password</label>
                         <input
                             type={showPassword ? 'text' : 'password'}
                             name="password"
                             value={form.password}
                             onChange={handleChange}
                             required
-                            // Styled input
                             className="w-full p-2 border border-border rounded-md focus:outline-none focus:border-black text-gray-darker bg-white"
                         />
                     </div>
                     <div className="mt-1">
-                        <label className="flex items-center cursor-pointer text-sm text-gray-darker"> {/* Styled label */}
+                        <label className="flex items-center cursor-pointer text-sm text-gray-darker">
                             <input
                                 type="checkbox"
                                 className="sr-only peer"
                                 checked={showPassword}
                                 onChange={() => setShowPassword(!showPassword)}
                             />
-                            {/* Styled checkbox */}
                             <div className="w-5 h-5 border border-border rounded-sm flex items-center justify-center transition-all duration-150 peer-focus:ring-black peer-focus:ring-1 peer-checked:bg-accent-green peer-checked:border-transparent">
                                 {showPassword && (
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -84,20 +79,18 @@ export default function Login() {
                             <span className="ml-2">Show Password</span>
                         </label>
                     </div>
-                    <div className="flex justify-center mt-6"> {/* Added top margin */}
+                    <div className="flex justify-center mt-6">
                         <button
                             type="submit"
-                            // Styled button
                             className="w-full justify-center bg-accent-green hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                         >
                             Log In
                         </button>
                     </div>
                 </form>
-                {/* Sign up link */}
-                <p className="text-sm text-center text-gray-darker mt-6"> {/* Styled text and margin */}
+                <p className="text-sm text-center text-gray-darker mt-6">
                     Don't have an account?{' '}
-                    <a href="/register" className="text-accent-green hover:underline"> {/* Styled link */}
+                    <a href="/register" className="text-accent-green hover:underline">
                         Sign up
                     </a>
                 </p>

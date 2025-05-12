@@ -47,22 +47,11 @@ const Register = () => {
     };
 
     return (
-        // Main page container with flex layout
-        // This div will contain the sidebar (if present) and the main content area
         <div className="flex w-[99.99%] pt-6 bg-background-light-gray font-sans text-black">
 
-            {/*
-                Sidebar placeholder:
-                If you have a sidebar component with w-64, place it here.
-                Example: <div className="w-64 bg-gray-200 flex-shrink-0">Your Sidebar Content</div>
-                The flex layout of the parent div will automatically position it on the left.
-            */}
 
-            {/* Main content area - takes remaining width and centers its content */}
-            {/* flex-grow makes this div take up all space not used by the sidebar */}
-            {/* flex justify-center items-center centers the content (the form container) within this area */}
-            <div className="flex-grow flex justify-center items-center "> {/* Added py-8 for vertical spacing */}
-                {/* Form container - remains centered within the flex-grow area */}
+
+            <div className="flex-grow flex justify-center items-center ">
                 <div className="bg-white w-full max-w-md rounded-md shadow-sm p-8">
                     <h2 className="text-2xl font-heading text-black mb-6 text-center">Join the Forum Community</h2>
 

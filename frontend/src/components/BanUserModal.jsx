@@ -2,19 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
-import { X } from 'lucide-react'; // Assuming lucide-react for icons
-import { Oval } from 'react-loader-spinner'; // Assuming react-loader-spinner
+import { X } from 'lucide-react';
+import { Oval } from 'react-loader-spinner';
 
 const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
     const [isPermanentBan, setIsPermanentBan] = useState(false);
-    const [unbanAt, setUnbanAt] = useState(''); // Use string for input value
+    const [unbanAt, setUnbanAt] = useState('');
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const modalRef = useRef(null);
 
-    // Effect to handle closing the modal with the Escape key
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && isOpen) {
@@ -27,7 +26,6 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
         };
     }, [isOpen, onClose]);
 
-    // Effect to reset form state when modal is opened
     useEffect(() => {
         if (isOpen) {
             setIsPermanentBan(false);
@@ -38,7 +36,6 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
         }
     }, [isOpen]);
 
-    // Handle clicks outside the modal content
     const handleBackdropClick = (event) => {
         if (modalRef.current && !modalRef.current.contains(event.target)) {
             onClose();
@@ -57,7 +54,6 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
             return;
         }
 
-        // Validate input based on ban type
         if (!reason.trim()) {
             setError("Reason is required.");
             setLoading(false);
@@ -72,9 +68,7 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
                 return;
             }
             try {
-                // Convert the input string to LocalDateTime format expected by backend
-                // Assuming the input format is compatible with LocalDateTime parsing (e.g., YYYY-MM-DDTHH:mm)
-                finalUnbanAt = new Date(unbanAt).toISOString(); // Send as ISO string
+                finalUnbanAt = new Date(unbanAt).toISOString();
             } catch (parseError) {
                 setError("Invalid unban date or time format.");
                 setLoading(false);
@@ -85,7 +79,7 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
 
         const banRequestDto = {
             isPermanentBan: isPermanentBan,
-            unbanAt: isPermanentBan ? null : finalUnbanAt, // Send null for permanent ban
+            unbanAt: isPermanentBan ? null : finalUnbanAt,
             reason: reason.trim(),
         };
 
@@ -103,12 +97,11 @@ const BanUserModal = ({ isOpen, onClose, targetPublicId, onBanSuccess }) => {
 
             if (response.status === 200) {
                 toast.success(`User @${response.data.bannedUser.username} banned successfully.`);
-                onClose(); // Close the modal on success
+                onClose();
                 if (onBanSuccess) {
-                    onBanSuccess(); // Call parent success handler if provided
+                    onBanSuccess();
                 }
             } else {
-                // Handle unexpected status codes
                 setError(`Unexpected server response: ${response.status}`);
                 toast.error(`Failed to ban user: Unexpected server response.`);
             }

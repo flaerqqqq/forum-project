@@ -20,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @CrossOrigin
@@ -215,8 +216,11 @@ public class UserController {
     @GetMapping("/banned")
     @PreAuthorize("hasRole('ROLE_MODERATOR')")
     public ResponseEntity<Page<UserBanDataResponseDto>> getBannedUsers(Pageable pageable,
-                                                         @RequestParam(value = "username", required = false) String username) {
-        Page<UserBanDataResponseDto> bannedUsers = userService.findBannedUsers(pageable, username);
+                                                                       @RequestParam(value = "username", required = false) String username,
+                                                                       @RequestParam(value = "isPermanentBan", required = false) Boolean isPermanentBan,
+                                                                       @RequestParam(value = "unbanTimeStart", required = false) LocalDateTime unbanTimeStart,
+                                                                       @RequestParam(value = "unbanTimeEnd", required = false) LocalDateTime unbanTimeEnd) {
+        Page<UserBanDataResponseDto> bannedUsers = userService.findBannedUsers(pageable, username, isPermanentBan, unbanTimeStart, unbanTimeEnd);
         if (bannedUsers.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
@@ -227,7 +231,6 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_MODERATOR')")
     public ResponseEntity<UserBanDataResponseDto> updateBanData(@RequestBody UserBanRequestDto request,
                                                                 @PathVariable String targetPublicId) {
-
         UserBanDataResponseDto userBanData = userService.updateBanData(request, targetPublicId);
         return ResponseEntity.ok(userBanData);
     }

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -197,6 +198,14 @@ public class CategoryController {
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/slug/{categorySlug}/reports/{reportId}")
+    public ResponseEntity<ReportDto> findReportById(@PathVariable String categorySlug,
+                                                    @PathVariable Long reportId) {
+        ReportDto response = reportService.findReportByIdAndCategory(reportId, categorySlug);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/slug/{categorySlug}/reports")
     public ResponseEntity<Page<ReportDto>> findCategoryReports(@PathVariable String categorySlug,
                                                                @RequestParam(required = false) ReportStatus status,
@@ -210,4 +219,49 @@ public class CategoryController {
         }
         return ResponseEntity.ok(categoryReports);
     }
+
+    @PostMapping("/slug/{categorySlug}/ban/{targetUserPublicId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<UserBanDataDto> banUserInCategory(@PathVariable String categorySlug,
+                                                            @PathVariable String targetUserPublicId,
+                                                            @RequestBody UserBanRequestDto request,
+                                                            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        UserBanDataDto userBanData = categoryService.banUser(request, customUserDetails.getPublicId(), targetUserPublicId, categorySlug);
+        return ResponseEntity.ok(userBanData);
+    }
+
+    @DeleteMapping("/slug/{categorySlug}/unban/{targetUserPublicId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Void> unbanUserInCategory(@PathVariable String categorySlug,
+                                                    @PathVariable String targetUserPublicId,
+                                                    @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        categoryService.unbanUser(customUserDetails.getPublicId(), targetUserPublicId, categorySlug);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/{categorySlug}/banned")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<Page<UserBanDataResponseDto>> getBannedUsersInCategory(Pageable pageable,
+                                                                                 @PathVariable String categorySlug,
+                                                                                 @RequestParam(value = "username", required = false) String username,
+                                                                                 @RequestParam(value = "isPermanentBan", required = false) Boolean isPermanentBan,
+                                                                                 @RequestParam(value = "unbanTimeStart", required = false) LocalDateTime unbanTimeStart,
+                                                                                 @RequestParam(value = "unbanTimeEnd", required = false) LocalDateTime unbanTimeEnd) {
+        Page<UserBanDataResponseDto> bannedUsers = categoryService.findBannedUsers(pageable, categorySlug, username, isPermanentBan, unbanTimeStart, unbanTimeEnd);
+        if (bannedUsers.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return ResponseEntity.ok(bannedUsers);
+    }
+
+    @PutMapping("/{categorySlug}/update-ban/{targetUserPublicId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResponseEntity<UserBanDataResponseDto> updateBanData(@RequestBody UserBanRequestDto request,
+                                                                @PathVariable String categorySlug,
+                                                                @PathVariable String targetUserPublicId,
+                                                                @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        UserBanDataResponseDto userBanData = categoryService.updateBanData(request, customUserDetails.getPublicId(), targetUserPublicId, categorySlug);
+        return ResponseEntity.ok(userBanData);
+    }
+
 }

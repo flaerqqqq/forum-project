@@ -36,7 +36,7 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
             }
         };
         fetchReasons();
-    }, []); // Empty dependency array means this effect runs once on mount
+    }, []);
 
     const handleReport = async (e) => {
         e.preventDefault();
@@ -50,7 +50,6 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
             return;
         }
 
-        // Basic validation
         if (!selectedReason) {
             toast.error("Please select a reason for the report.");
             setLoading(false);
@@ -67,58 +66,49 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
             const response = await axios.post(
                 `http://localhost:8080/api/v1/reports`,
                 {
-                    targetType: targetType, // Use the targetType prop
-                    targetId: targetId,     // Use the targetId prop
+                    targetType: targetType,
+                    targetId: targetId,
                     reason: selectedReason,
-                    description, // Optional description
+                    description,
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`, // Include JWT token
-                        'Content-Type': 'application/json', // Specify content type
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 }
             );
 
             if (response.status === 201) {
-                // Report successfully created
                 toast.success("Report Submitted! We'll review your report shortly.");
-                onClose(); // Close the modal on success
+                onClose();
             } else {
-                // Handle unexpected successful responses (e.g., 200 OK instead of 201 Created)
                 console.warn('Report submission received unexpected status:', response.status, response.data);
                 toast.success("Report Submitted! (Server responded with non-201 status)");
                 onClose(); // Still close the modal
             }
         } catch (err) {
             console.error('Error reporting content:', err);
-            // Extract meaningful error message from response if available
             const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Error submitting report. Please try again.';
             toast.error(errorMessage);
         } finally {
-            // Set loading to false regardless of success or failure
             setLoading(false);
         }
     };
 
-    // Effect to close the modal when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Check if the click is outside the modal content
             if (modalRef.current && !modalRef.current.contains(event.target)) {
                 onClose();
             }
         };
 
-        // Add event listener for mousedown
         document.addEventListener('mousedown', handleClickOutside);
-        // Clean up the event listener on component unmount
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [onClose]); // Dependency: onClose function
+    }, [onClose]);
 
-    // Effect to close the modal when pressing the Escape key
     useEffect(() => {
         const handleEscapeKey = (event) => {
             if (event.key === 'Escape') {
@@ -126,15 +116,12 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
             }
         };
 
-        // Add event listener for keydown
         document.addEventListener('keydown', handleEscapeKey);
-        // Clean up the event listener on component unmount
         return () => {
             document.removeEventListener('keydown', handleEscapeKey);
         };
-    }, [onClose]); // Dependency: onClose function
+    }, [onClose]);
 
-    // Determine the modal title based on the target type
     const modalTitle = `Report ${targetType ? targetType.charAt(0).toUpperCase() + targetType.slice(1).toLowerCase() : 'Content'}`;
 
 
@@ -144,14 +131,12 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
         >
             <div ref={modalRef} className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-auto">
                 <div className="flex justify-between items-center mb-4">
-                    {/* Use the dynamic modalTitle */}
                     <h3 className="text-xl font-semibold text-gray-800">{modalTitle}</h3>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" aria-label="Close modal">
                         <X size={20} />
                     </button>
                 </div>
 
-                {/* Update the introductory text */}
                 <p className="text-sm text-gray-600 mb-4">Please select a reason for reporting this content.</p>
 
                 <div className="mt-2">
@@ -159,7 +144,7 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         value={selectedReason}
                         onChange={(e) => setSelectedReason(e.target.value)}
-                        disabled={loading || reasons.length === 0} // Disable select while loading reasons or if none are available
+                        disabled={loading || reasons.length === 0}
                     >
                         <option value="">Select a reason</option>
                         {reasons.map((reason) => (
@@ -178,7 +163,7 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
                              rows="4"
                              value={description}
                              onChange={(e) => setDescription(e.target.value)}
-                             disabled={loading} // Disable textarea while submitting
+                             disabled={loading}
                          ></textarea>
                     </div>
                 )}
@@ -187,13 +172,13 @@ const ReportContentModal = ({ targetType, targetId, onClose }) => {
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={loading} // Disable cancel button while submitting
+                        disabled={loading}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleReport}
-                        disabled={loading || !selectedReason || !targetType || !targetId} // Disable submit button while loading, no reason selected, or missing target info
+                        disabled={loading || !selectedReason || !targetType || !targetId}
                         className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (

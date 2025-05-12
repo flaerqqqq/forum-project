@@ -1,6 +1,5 @@
 package com.example.backend.services.impls;
 
-import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
@@ -10,6 +9,7 @@ import com.example.backend.exceptions.PostNotFoundException;
 import com.example.backend.mappers.PostMapper;
 import com.example.backend.repositories.PostRepository;
 import com.example.backend.services.PostSearchService;
+import com.example.backend.services.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,6 +27,7 @@ import java.util.List;
 public class PostSearchServiceImpl implements PostSearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
+    private final PostService postService;
     private final PostMapper postMapper;
     private final PostRepository postRepository;
 
@@ -48,13 +49,11 @@ public class PostSearchServiceImpl implements PostSearchService {
         SearchHits<Post> searchHits = elasticsearchOperations.search(query, Post.class);
 
         List<PostDto> posts = searchHits.get()
-                .map(hit -> mapToDto(hit.getContent()))
+                .map(hit -> (postRepository.findById(hit.getContent().getId()).orElseThrow(() ->
+                        new PostNotFoundException())))
+                .filter(postService::checkAccessToPost)
+                .map(postMapper::toDto)
                 .toList();
         return new PageImpl<>(posts, pageable, posts.size());
-    }
-
-    private PostDto mapToDto(Post post) {
-        return postMapper.toDto(postRepository.findById(post.getId()).orElseThrow(() ->
-                new PostNotFoundException()));
     }
 }

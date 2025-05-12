@@ -13,38 +13,32 @@ import { useFollowedCategories } from '../contexts/FollowedCategoriesContext';
 const CategoryView = ({ category }) => {
     const navigate = useNavigate();
     const { user, loading: userLoading } = useUser();
-    // Use the hook to get followed categories state and update functions
     const { followedCategorySlugs, loadingFollowedCategories, addFollowedCategory, removeFollowedCategory } = useFollowedCategories();
 
-    // Determine if the current category is followed based on the context state
-    // Added a check to ensure followedCategorySlugs is an array before calling .includes()
     const isFollowed = followedCategorySlugs.includes(category?.slug);
 
-    // Local state to manage the loading state specifically for the follow/unfollow action
     const [isFollowActionLoading, setIsFollowActionLoading] = useState(false);
 
 
     const handleFollowClick = async (event) => {
-        event.stopPropagation(); // Prevent navigating to the category page
+        event.stopPropagation();
 
-        // If user is still loading or not logged in, redirect to login
         if (userLoading || !user) {
             navigate('/login');
             return;
         }
 
-        // Prevent multiple clicks while an action is in progress
         if (isFollowActionLoading) {
             return;
         }
 
-        setIsFollowActionLoading(true); // Start local loading state
+        setIsFollowActionLoading(true);
 
         const token = Cookies.get('token');
         if (!token) {
             console.error('No JWT token found.');
             navigate('/login');
-            setIsFollowActionLoading(false); // Ensure loading state is reset
+            setIsFollowActionLoading(false);
             return;
         }
 
@@ -56,17 +50,12 @@ const CategoryView = ({ category }) => {
             };
 
             console.log('isFollowed', isFollowed);
-            // Use the current `isFollowed` state to determine the action
             if (isFollowed) {
-                // If currently followed, attempt to unfollow
                 await axios.delete(`http://localhost:8080/api/v1/categories/${category.id}/follows`, config);
-                // Update the context state immediately on success
                 removeFollowedCategory(category.slug);
                 toast.success(`Unfollowed ${category.name}`);
             } else {
-                // If not currently followed, attempt to follow
                 await axios.post(`http://localhost:8080/api/v1/categories/${category.id}/follows`, {}, config);
-                // Update the context state immediately on success
                 addFollowedCategory(category.slug);
                 toast.success(`Followed ${category.name}`);
             }
@@ -74,12 +63,8 @@ const CategoryView = ({ category }) => {
             console.error('Failed to follow/unfollow category.', err);
             const errorMessage = err.response?.data?.message || 'Failed to update follow status.';
             toast.error(errorMessage);
-            // If the API call fails, the context state might be out of sync.
-            // A refresh might be needed here, but for simplicity, we'll just rely on
-            // the next time the context fetches data (e.g., page reload or other triggers).
-            // If you need immediate consistency on error, you might call refreshFollowedCategories() here.
         } finally {
-            setIsFollowActionLoading(false); // Reset local loading state
+            setIsFollowActionLoading(false);
         }
     };
 
@@ -87,7 +72,6 @@ const CategoryView = ({ category }) => {
         navigate(`/categories/${category.slug}`);
     };
 
-    // Disable the button if user is loading, context is loading, or a follow/unfollow action is in progress
     const isButtonDisabled = userLoading || loadingFollowedCategories || isFollowActionLoading;
 
 
@@ -106,7 +90,7 @@ const CategoryView = ({ category }) => {
                         />
                     ) : (
                         <div className="w-12 h-12 rounded-full bg-gray-light flex items-center justify-center text-lg">
-                            🏷️ {/* Using an emoji as a placeholder icon */}
+                            🏷️
                         </div>
                     )}
                 </div>
@@ -124,22 +108,20 @@ const CategoryView = ({ category }) => {
                         </p>
                     </div>
 
-                    {/* Only show the follow button if user loading is complete */}
                     {!userLoading && (
                         <div className={`mt-4 transition-all duration-300`}>
                             <button
                                 onClick={handleFollowClick}
-                                disabled={isButtonDisabled} // Use the derived disabled state
+                                disabled={isButtonDisabled}
                                 className={`font-medium px-6 py-1 rounded-full focus:outline-none transition-colors duration-300
                                 ${
-                                    isFollowed // Button style depends on context state
+                                    isFollowed 
                                         ? 'bg-gray-light text-gray-darker border border-gray-medium hover:border-black hover:text-black'
                                         : 'bg-accent-green hover:bg-green-700 text-white'
                                 }
                                 ${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''} // Add disabled styles
                                 `}
                             >
-                                {/* Show spinner if the follow/unfollow action is loading */}
                                 {isFollowActionLoading ? (
                                     <Oval height={16} width={16} color={isFollowed ? "#4A5568" : "#fff"} secondaryColor={isFollowed ? "#E2E8F0" : "#EAEAEA"} strokeWidth={5} />
                                 ) : (

@@ -7,7 +7,7 @@ import { useUser } from "../contexts/UserContext.jsx";
 
 const popularCategoriesCache = {};
 const CACHE_KEY = 'popular_categories';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const CategoryInfoSidebar = ({ category }) => {
     const { user: currentUser } = useUser();
@@ -25,36 +25,30 @@ const CategoryInfoSidebar = ({ category }) => {
             const sidebarRect = sidebar.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
 
-            // Check if the sidebar top is above or near the fixed header (assuming header height is around 80px)
             if (sidebarRect.top <= 80) {
-                // If sidebar content is taller than the available space below the header
                 if (sidebar.scrollHeight > viewportHeight - 80) {
                     sidebar.style.height = `${viewportHeight - 80}px`;
                     sidebar.style.overflowY = 'auto';
-                    sidebar.classList.add('scrollbar-thin-light'); // Add scrollbar class
+                    sidebar.classList.add('scrollbar-thin-light');
                 } else {
-                    // If content fits, remove fixed height and scrolling
                     sidebar.style.height = '';
                     sidebar.style.overflowY = '';
-                    sidebar.classList.remove('scrollbar-thin-light'); // Remove scrollbar class
+                    sidebar.classList.remove('scrollbar-thin-light');
                 }
             } else {
-                // If sidebar top is below the fixed header, remove fixed height and scrolling
                 sidebar.style.height = '';
                 sidebar.style.overflowY = '';
-                sidebar.classList.remove('scrollbar-thin-light'); // Remove scrollbar class
+                sidebar.classList.remove('scrollbar-thin-light');
             }
         };
 
-        // Add scroll listener and call initially
         window.addEventListener('scroll', handleScroll);
-        handleScroll(); // Call on mount to set initial state
+        handleScroll();
 
-        // Clean up listener on unmount
         return () => {
             window.removeEventListener('scroll', handleScroll);
         };
-    }, [category, moderators]); // Re-run if category or moderators change (content height might change)
+    }, [category, moderators]);
 
 
     const getAvatarColorClass = (username) => {
@@ -151,7 +145,6 @@ const CategoryInfoSidebar = ({ category }) => {
 
                 <div className="p-6 flex flex-col gap-4">
                     <div>
-                        {/* Updated className for "About Category" header */}
                         <h2 className="text-sm font-sans font-bold uppercase text-black mb-2">About Category</h2>
                         <p className="text-sm text-gray-darker">{category.description || "No description provided."}</p>
                     </div>
@@ -199,7 +192,6 @@ const CategoryInfoSidebar = ({ category }) => {
                     <hr className="mt-2 border-border" />
 
                     <div>
-                        {/* Updated className for "Moderators" header */}
                         <h3 className="text-sm font-sans font-bold uppercase text-black mb-2">Moderators</h3>
 
                         {loadingModerators ? (

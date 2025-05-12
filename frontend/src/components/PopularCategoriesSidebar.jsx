@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // 👈 Import this
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
@@ -11,7 +11,7 @@ const CACHE_DURATION = 5 * 60 * 1000;
 const PopularCategoriesSidebar = () => {
     const [popularCategories, setPopularCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate(); // 👈 Get navigate function
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchPopularCategories = async () => {
@@ -29,7 +29,7 @@ const PopularCategoriesSidebar = () => {
                 const res = await axios.get('http://localhost:8080/api/v1/categories', {
                     params: {
                         page: 0,
-                        size: 8,
+                        size: 12,
                         sort: 'followersCount,desc'
                     }
                 });
@@ -51,10 +51,9 @@ const PopularCategoriesSidebar = () => {
         fetchPopularCategories();
     }, []);
 
-    // 🔄 Use SPA navigation
     const handleCategoryClick = (slug) => {
         navigate(`/categories/${slug}`);
-        window.scrollTo({ top: 0, behavior: 'instant' }); // or 'smooth'
+        window.scrollTo({ top: 0, behavior: 'instant' });
     };
 
     if (loading) {

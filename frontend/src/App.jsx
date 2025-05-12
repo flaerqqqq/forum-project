@@ -36,12 +36,10 @@ function App() {
                     <DeletedCommentsProvider>
                         <DeletedPostsProvider>
                             <BrowserRouter>
-                                {/* Wrap the MainLayout route with FollowedCategoriesProvider */}
                                 <FollowedCategoriesProvider>
                                     <Routes>
                                         <Route element={<MainLayout />}>
                                             <Route path="/email-verify-notice" element={<EmailVerificationNotice />} />
-                                            {/* Routes that need FollowedCategoriesContext */}
                                             <Route path="/users/:username" element={<UserProfile />} />
                                             <Route path="/" element={<Home />} />
                                             <Route path="/categories/:categorySlug" element={<CategoryPage />} />
@@ -82,7 +80,7 @@ function App() {
                                             } />
                                         </Route>
                                     </Routes>
-                                </FollowedCategoriesProvider> {/* Close the provider here */}
+                                </FollowedCategoriesProvider>
                                 <ToastContainer
                                     position="bottom-right"
                                     autoClose={3000}

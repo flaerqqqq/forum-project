@@ -97,8 +97,8 @@ public class User {
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     private List<Commentary> commentaries;
 
-    @OneToOne(mappedBy = "bannedUser", cascade = CascadeType.ALL)
-    private UserBanData userBanData;
+    @OneToMany(mappedBy = "bannedUser", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<UserBanData> userBanData;
 
     @OneToMany(mappedBy = "moderator")
     private List<UserBanData> bannedUsers;

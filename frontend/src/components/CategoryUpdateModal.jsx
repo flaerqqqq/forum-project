@@ -114,7 +114,7 @@ const CategoryUpdateModal = ({ onClose, category }) => {
             );
 
             toast.success('Category Updated Successfully!');
-            onClose(true); // Pass true to indicate successful update
+            onClose(true);
         } catch (err) {
             console.error(err);
             toast.error(err.response.data.body.detail.split(':')[1] || 'Failed to update category');
@@ -124,7 +124,7 @@ const CategoryUpdateModal = ({ onClose, category }) => {
     };
 
     const handleCloseWithoutSubmit = () => {
-        onClose(false); // Pass false to indicate closure without successful update
+        onClose(false);
     };
 
     return (
@@ -168,7 +168,11 @@ const CategoryUpdateModal = ({ onClose, category }) => {
                                 onChange={handleInputChange}
                                 className="w-full p-3 border border-gray-300 rounded-md text-black"
                                 placeholder="Enter Category Name"
+                                maxLength="50"
                             />
+                            <p className="text-xs text-gray-500 text-right mt-1">
+                                {categoryData.name.length}/50
+                            </p>
                         </div>
 
                         <div className="flex flex-col">
@@ -184,8 +188,13 @@ const CategoryUpdateModal = ({ onClose, category }) => {
                                 value={categoryData.description}
                                 onChange={handleInputChange}
                                 className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                rows="6"
                                 placeholder="Enter Description"
+                                maxLength="1000"
                             />
+                            <p className="text-xs text-gray-500 text-right mt-1">
+                                {categoryData.description.length}/1000
+                            </p>
                         </div>
                     </div>
                 )}
@@ -212,6 +221,12 @@ const CategoryUpdateModal = ({ onClose, category }) => {
                             >
                                 <p className="mt-1 text-sm text-gray-700">
                                     Drag 'n' drop or click to upload icon
+                                    <br />
+                                    <span className="text-xs text-gray-500">
+                                        Recommended size: 64x64 or greater.
+                                        Max file size: 5MB.
+                                    </span>
+                                    <br />
                                 </p>
                                 {categoryData.icon && (
                                     <p className="text-xs text-green-600 mt-1 truncate w-full">
@@ -250,6 +265,12 @@ const CategoryUpdateModal = ({ onClose, category }) => {
                             >
                                 <p className="mt-1 text-sm text-gray-700">
                                     Drag 'n' drop or click to upload banner
+                                    <br />
+                                    <span className="text-xs text-gray-500">
+                                        Recommended size: 256x256 or greater.
+                                        Max file size: 5MB.
+                                    </span>
+                                    <br />
                                 </p>
                                 {categoryData.banner && (
                                     <p className="text-xs text-green-600 mt-1 truncate w-full">
@@ -271,6 +292,9 @@ const CategoryUpdateModal = ({ onClose, category }) => {
 
                 {step === 3 && (
                     <div className="space-y-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Visibility
+                        </label>
                         <select
                             name="visibility"
                             value={categoryData.visibility}
@@ -284,6 +308,9 @@ const CategoryUpdateModal = ({ onClose, category }) => {
                             ))}
                         </select>
 
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Who can post?
+                        </label>
                         <select
                             name="postPermission"
                             value={categoryData.postPermission}

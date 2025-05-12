@@ -42,9 +42,7 @@
 
 body {
   background-color: theme('colors.background');
-  /* Corrected to use 'text' key from theme('colors') */
   color: theme('colors.text');
-  /* The font-family is now set in tailwind.config.js to include Noto Sans and Roboto */
   font-family: theme('fontFamily.sans');
   line-height: 1.6;
 }
@@ -66,48 +64,49 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
-/* --- Styles for lists within commentary content --- */
-/* Target the div containing the rendered HTML */
 .commentary-content {
-  /* Ensure default list styles are applied within this container */
-  /* This helps override potential global resets like list-style: none; */
-  /* Revert tries to use the browser's default style for the property */
   list-style: revert;
 }
 
-/* Target ordered lists specifically */
 .commentary-content ol {
-  /* Ensure ordered lists use decimal markers (1, 2, 3...) */
   list-style-type: decimal;
-  /* Add some left padding to make space for the markers */
-  /* Adjust the value (e.g., 1.5em, 20px) based on desired indentation */
   padding-left: 1.5em;
-  /* Add some vertical margin for spacing between lists and other content */
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
 
-/* Target list items within ordered lists */
 .commentary-content ol li {
-  /* Ensure list items are displayed correctly as list items */
   display: list-item;
-  /* You might need to adjust margin/padding here too if list items are too close */
-  /* margin-bottom: 0.25em; Add space between list items */
 }
 
-/* Optional: Styles for nested ordered lists */
 .commentary-content ol ol {
-  list-style-type: lower-alpha; /* Use a, b, c for nested lists */
+  list-style-type: lower-alpha;
 }
 
 .commentary-content ol ol ol {
-  list-style-type: lower-roman; /* Use i, ii, iii for deeper nesting */
+  list-style-type: lower-roman;
 }
-
-/* --- End of list styles --- */
 
 
 @layer utilities {
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hidden {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-visible:hover::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+    background: transparent;
+  }
+  .scrollbar-visible {
+    scrollbar-width: thin;
+    background: transparent;
+    width: 8px;
+  }
+
   .scrollbar-thin-light::-webkit-scrollbar {
     width: 8px;
   }
@@ -129,15 +128,14 @@ h1, h2, h3, h4, h5, h6 {
   .scrollbar-thin-light {
     scrollbar-width: thin;
     scrollbar-color: theme('colors.gray-light') transparent;
-    overflow-y: overlay;
+    overflow-y: hidden;
   }
 
   @font-face {
-    font-family: 'Noe Bold'; /* Must match the name in tailwind.config.js */
+    font-family: 'Noe Bold';
     src:     url("https://db.onlinewebfonts.com/t/d5057d1717ee8f3db3350cf9a6252f82.woff2")format("woff2");
-    font-weight: 700; /* Or whatever the weight is */
+    font-weight: 700;
     font-style: normal;
     font-display: swap;
   }
-  /* ... other @font-face rules ... */
 }

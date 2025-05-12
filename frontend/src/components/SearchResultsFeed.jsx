@@ -3,13 +3,13 @@ import axios from 'axios';
 import PostCard from './PostCard';
 import { Oval } from 'react-loader-spinner';
 import { toast } from 'react-toastify';
-import { useDeletedPosts } from '../contexts/DeletedPostsContext'; // Import the hook
+import { useDeletedPosts } from '../contexts/DeletedPostsContext';
+import Cookies from "js-cookie";
 
 const POSTS_PER_PAGE = 10;
 const getCacheKey = (searchQuery) => `search_results_cache_${searchQuery}`;
 
 const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsCache, clearSearchResultsPostsCache, searchQuery }) => {
-    // Consume the context to get deleted post IDs and the add function
     const { deletedPostIds, addDeletedPostId } = useDeletedPosts();
 
     const [posts, setPosts] = useState([]);
@@ -42,9 +42,11 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
             query: searchQuery
         };
 
+        const token = Cookies.get('token')
         try {
             const res = await axios.get(`http://localhost:8080/api/v1/posts/search`, {
-                params: params
+                params: params,
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
             if (res.status === 204 || res.data.content.length === 0) {
                 if (pageNumber === 0 && !append) {
@@ -54,13 +56,10 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                 setHasMore(false);
                 return res.data.content;
             } else {
-                // --- Filter out deleted posts from the fetched data ---
                 const newPosts = res.data.content.filter(post => !deletedPostIds.includes(post.id));
-                // --- End of filtering ---
 
                 if (append) {
                     setPosts(prev => {
-                        // Ensure prev is an array before concatenating
                         const prevArray = Array.isArray(prev) ? prev : [];
                         const existingPostIds = new Set(prevArray.map(p => p.id));
                         const uniqueNewPosts = newPosts.filter(p => !existingPostIds.has(p.id));
@@ -73,7 +72,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                     setLoadedPostCount(uniqueNewPosts.length);
                 }
                 setHasMore(!res.data.last);
-                return newPosts; // Return filtered posts
+                return newPosts;
             }
 
         } catch (err) {
@@ -88,7 +87,7 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                 setLoading(false);
             }
         }
-    }, [sortBy, searchQuery, deletedPostIds]); // Add deletedPostIds to dependencies
+    }, [sortBy, searchQuery, deletedPostIds]);
 
     useEffect(() => {
         if (!initialMountHandled.current) {
@@ -114,17 +113,15 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
                     setSortBy(cachedDataToUse.sortBy);
                 }
 
-                // --- Filter out deleted posts from cache data ---
                 const filteredCachedPosts = cachedDataToUse.posts.filter(post => !deletedPostIds.includes(post.id));
-                // --- End of filtering ---
 
                 setPosts(filteredCachedPosts);
-                setLoadedPostCount(filteredCachedPosts.length); // Update count based on filtered posts
+                setLoadedPostCount(filteredCachedPosts.length);
 
                 const restoredPages = Math.ceil(filteredCachedPosts.length / POSTS_PER_PAGE) - 1;
                 setPage(Math.max(restoredPages, 0));
 
-                setHasMore(cachedDataToUse.hasMore); // Keep original hasMore for now
+                setHasMore(cachedDataToUse.hasMore);
                 setLoading(false);
 
                 if (cachedDataToUse.scrollY !== undefined) {
@@ -226,20 +223,18 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
     }, [handleScroll]);
 
     const saveCurrentStateToCache = useCallback(() => {
-        // When saving to cache, filter out deleted posts first
         const postsToCache = posts.filter(post => !deletedPostIds.includes(post.id));
         if (postsToCache.length > 0) {
             saveSearchResultsPostsCache(
                 searchQuery,
                 sortBy,
-                postsToCache, // Save filtered posts
-                postsToCache.length, // Save filtered count
+                postsToCache,
+                postsToCache.length,
                 window.scrollY,
                 page,
                 hasMore
             );
         } else {
-            // If all posts are filtered out, clear the cache for this key/sort
             clearSearchResultsPostsCache(searchQuery, sortBy);
         }
     }, [sortBy, posts, page, hasMore, saveSearchResultsPostsCache, searchQuery, deletedPostIds, clearSearchResultsPostsCache]); // Add deletedPostIds and clearSearchResultsPostsCache to dependencies
@@ -255,25 +250,18 @@ const SearchResultsFeed = ({ saveSearchResultsPostsCache, getSearchResultsPostsC
         }
     };
 
-    // This function is still needed for deletions initiated *within* this feed component
     const handleDeletePost = useCallback((deletedPostId) => {
-        // Ensure currentPosts is an array before filtering
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => post.id !== deletedPostId) : []);
         setLoadedPostCount(prevCount => Math.max(0, prevCount - 1));
-        // When a post is deleted from here, also add it to the global context
         addDeletedPostId(deletedPostId);
-    }, [addDeletedPostId]); // Add addDeletedPostId to dependencies
+    }, [addDeletedPostId]);
 
-    // Effect to filter posts whenever deletedPostIds changes
     useEffect(() => {
-        // This effect runs when deletedPostIds changes (e.g., after returning from post detail page)
-        // Filter the currently displayed posts
-        // Ensure currentPosts is an array before filtering
+
         setPosts(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)) : []);
-        // Recalculate loadedPostCount based on filtered posts
         setLoadedPostCount(currentPosts => Array.isArray(currentPosts) ? currentPosts.filter(post => !deletedPostIds.includes(post.id)).length : 0);
 
-    }, [deletedPostIds]); // Dependency on deletedPostIds
+    }, [deletedPostIds]);
 
 
     const showInitialLoading = loading && posts.length === 0 && !error;

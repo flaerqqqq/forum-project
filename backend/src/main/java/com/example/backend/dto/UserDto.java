@@ -64,8 +64,4 @@ public class UserDto {
     private List<PostDto> posts;
 
     private List<CommentaryDto> commentaries;
-
-    private UserBanData userBanData;
-
-    private List<UserBanData> bannedUsers;
 }

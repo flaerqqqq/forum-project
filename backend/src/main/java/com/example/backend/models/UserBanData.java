@@ -22,6 +22,13 @@ public class UserBanData {
     @Column(name = "is_permanent_ban")
     private Boolean isPermanentBan = false;
 
+    @Column(name = "is_category_ban")
+    private Boolean isCategoryBan = false;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Column(name = "unban_at")
     private LocalDateTime unbanAt;
 
@@ -35,7 +42,7 @@ public class UserBanData {
     @JoinColumn(name = "moderator_id")
     private User moderator;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "banned_user_id")
     private User bannedUser;
 }

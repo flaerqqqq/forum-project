@@ -14,9 +14,9 @@ const ModeratorOnlyRoute = ({ children }) => {
         const roles = decoded.roles?.map(role => role.authority);
 
         if (roles?.includes('ROLE_MODERATOR')) {
-            return children; // Authorized
+            return children;
         } else {
-            return <Navigate to="/" replace />; // Not authorized
+            return <Navigate to="/" replace />;
         }
     } catch (error) {
         console.error('Error decoding token:', error);

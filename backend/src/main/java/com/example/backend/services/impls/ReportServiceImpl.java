@@ -49,6 +49,11 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public ReportDto findById(Long reportId) {
         Report report = reportRepository.findById(reportId).orElseThrow(() -> new ReportNotFoundException());
+        if (report.getTargetType() == ReportTargetType.POST) {
+            throw new ReportNotFoundException();
+        } else if (report.getTargetType() == ReportTargetType.COMMENTARY) {
+            throw new ReportNotFoundException();
+        }
         return reportMapper.toDto(report);
     }
 
@@ -112,6 +117,28 @@ public class ReportServiceImpl implements ReportService {
         Page<Report> categoryReports = reportRepository.findCategoryReportsWithFilters(category.getId(),targetType, reason, status, reporterId, pageable);
 
         return categoryReports.map(reportMapper::toDto);
+    }
+
+    @Override
+    public ReportDto findReportByIdAndCategory(Long reportId, String categorySlug) {
+        Category category = categoryRepository.findBySlug(categorySlug).orElseThrow(() ->
+                new CategoryNotFoundException(STR."Category with slug=\{categorySlug} not found"));
+        Report report = reportRepository.findById(reportId).orElseThrow(() -> new ReportNotFoundException());
+        ReportTargetType targetType = report.getTargetType();
+        if (targetType == ReportTargetType.POST) {
+            Post post = postRepository.findById(Long.valueOf(report.getTargetId())).orElseThrow(() -> new PostNotFoundException());
+            if (!post.getCategory().equals(category)) {
+                throw new ReportNotFoundException();
+            }
+        } else if (targetType == ReportTargetType.COMMENTARY) {
+            Commentary commentary = commentaryRepository.findById(Long.valueOf(report.getTargetId())).orElseThrow(() -> new CommentaryNotFoundException());
+            if (!commentary.getPost().getCategory().equals(category)) {
+                throw new ReportNotFoundException();
+            }
+        } else {
+            throw new ReportNotFoundException();
+        }
+        return reportMapper.toDto(report);
     }
 
     private ReportResponseDto reportUser(User reporter, ReportRequestDto reportRequest) {

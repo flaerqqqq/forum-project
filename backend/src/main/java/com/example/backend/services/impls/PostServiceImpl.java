@@ -1,6 +1,5 @@
 package com.example.backend.services.impls;
 
-import com.amazonaws.services.dynamodbv2.xspec.S;
 import com.example.backend.dto.PostCreateRequestDto;
 import com.example.backend.dto.PostDto;
 import com.example.backend.dto.PostUpdateRequestDto;
@@ -29,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.Principal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -264,13 +262,18 @@ public class PostServiceImpl implements PostService {
         return postImages;
     }
 
-    private Boolean checkAccessToPost(Post post) {
+    @Override
+    public Boolean checkAccessToPost(Post post) {
         Category category = post.getCategory();
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (principal != null & !(principal instanceof String)) {
             String publicId = ((CustomUserDetails)principal).getPublicId();
             User user = findUserByPublicId(publicId);
+            if (user.getUserBanData() != null && user.getUserBanData().stream()
+                    .anyMatch(banData -> banData.getIsCategoryBan() && banData.getCategory().equals(category))) {
+                return false;
+            }
             switch (category.getVisibility()) {
                 case Visibility.PUBLIC:
                     return true;

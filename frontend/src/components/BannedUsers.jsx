@@ -8,6 +8,8 @@ import ManageBanModal from './ManageBanModal.jsx';
 import ConfirmationModal from './ConfirmationModal.jsx';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import BanUserFlowModal from './BanUserFlowModal.jsx';
+
 
 const PAGE_SIZE = 10;
 const MIN_LOADING_TIME = 300;
@@ -15,7 +17,7 @@ const SCROLL_THRESHOLD = 500;
 
 const NOT_FOUND_ERROR_MESSAGE = "No banned users found matching the criteria.";
 
-const BannedUsers = () => {
+const BannedUsers = ({ categorySlug }) => {
     const [bannedUsers, setBannedUsers] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -36,6 +38,9 @@ const BannedUsers = () => {
     const [banTypeFilter, setBanTypeFilter] = useState('all');
     const [unbanTimeStart, setUnbanTimeStart] = useState(null);
     const [unbanTimeEnd, setUnbanTimeEnd] = useState(null);
+
+    const [showBanUserFlowModal, setShowBanUserFlowModal] = useState(false);
+    const [triggerKey, setTriggerKey] = useState(0);
 
 
     const observer = useRef();
@@ -103,9 +108,13 @@ const BannedUsers = () => {
             }
         }
 
+        const apiUrl = categorySlug
+            ? `http://localhost:8080/api/v1/categories/${categorySlug}/banned`
+            : `http://localhost:8080/api/v1/users/banned`;
+
 
         try {
-            const res = await axios.get(`http://localhost:8080/api/v1/users/banned`, {
+            const res = await axios.get(apiUrl, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: params,
             });
@@ -114,6 +123,7 @@ const BannedUsers = () => {
             const isLast = res.data.last;
 
             setBannedUsers(prev => (pageNumber === 0 ? fetchedBannedUsers : [...prev, ...fetchedBannedUsers]));
+
 
             let morePages = !isLast;
 
@@ -142,7 +152,12 @@ const BannedUsers = () => {
                     setError(NOT_FOUND_ERROR_MESSAGE);
                     setBannedUsers([]);
                     setHasMore(false);
-                } else {
+                } else if (categorySlug && err.response?.status === 204) {
+                    setError(NOT_FOUND_ERROR_MESSAGE);
+                    setBannedUsers([]);
+                    setHasMore(false);
+                }
+                else {
                     const errorMessage = err.response?.data?.body?.detail || err.response?.data?.message || 'Failed to load banned users.';
                     toast.error(errorMessage);
                     setError(errorMessage);
@@ -155,12 +170,13 @@ const BannedUsers = () => {
                 setLoading(false);
             }, remainingTime);
         }
-    }, [searchUsernameQuery, banTypeFilter, unbanTimeStart, unbanTimeEnd]);
+    }, [searchUsernameQuery, banTypeFilter, unbanTimeStart, unbanTimeEnd, categorySlug]);
 
 
     useEffect(() => {
+        scrollTo(0, 0);
         fetchBannedUsers(page);
-    }, [page, fetchBannedUsers]);
+    }, [page,triggerKey, fetchBannedUsers]);
 
 
     useEffect(() => {
@@ -235,15 +251,23 @@ const BannedUsers = () => {
             return;
         }
 
+        const apiUrl = categorySlug
+            ? `http://localhost:8080/api/v1/categories/slug/${categorySlug}/unban/${userToUnbanPublicId}`
+            : `http://localhost:8080/api/v1/users/${userToUnbanPublicId}/unban`;
+
+
         try {
-            await axios.delete(`http://localhost:8080/api/v1/users/${userToUnbanPublicId}/unban`, {
+            await axios.delete(apiUrl, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             });
 
             toast.success(`User ${userToUnbanPublicId} has been unbanned.`);
+            // Remove the unbanned user from the list locally for immediate feedback
             setBannedUsers(prevUsers => prevUsers.filter(banData => banData.bannedUser.publicId !== userToUnbanPublicId));
+            // Optional: Trigger a full refresh to be sure, especially if filtering is active
+            // setPage(0); // This will trigger the useEffect to fetch page 0
 
         } catch (err) {
             console.error('Error unbanning user:', err);
@@ -295,10 +319,29 @@ const BannedUsers = () => {
         setPage(0);
     };
 
+    const handleOpenBanUserFlowModal = () => {
+        if (categorySlug) {
+            setShowBanUserFlowModal(true);
+        } else {
+            toast.info("User banning in a category can only be initiated from a category moderator page.");
+        }
+    };
+
+    const handleCloseBanUserFlowModal = () => {
+        setShowBanUserFlowModal(false);
+    };
+
+    const handleUserBanSuccess = useCallback(() => {
+        setBannedUsers([]);
+        setTriggerKey(prevKey => prevKey + 1);
+        setPage(0);
+        setHasMore(true);
+    }, [setBannedUsers, setPage, setHasMore]);
+
 
     const noBannedUsersMessage = isSearching
         ? `No banned users found matching "${searchUsernameQuery}".`
-        : 'No banned users found.';
+        : (categorySlug ? `No banned users found in ${categorySlug}.` : 'No banned users found.');
 
 
     return (
@@ -345,10 +388,23 @@ const BannedUsers = () => {
                             calendarClassName="rasta-stripes"
                             showTimeInput
                             dateFormat="yyyy-MM-dd'T'HH:mm:ss"
-                            wrapperClassName="w-full" // Ensure the wrapper takes full width of its flex container
+                            wrapperClassName="w-full"
                         />
                     </div>
                 )}
+
+                {categorySlug && (
+                    <div>
+                        <label className="block text-xs font-normal text-gray-medium mb-1 uppercase tracking-wide">&nbsp;</label>
+                        <button
+                            onClick={handleOpenBanUserFlowModal}
+                            className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 bg-red-600 text-white hover:bg-red-700"
+                        >
+                            Ban User in Category
+                        </button>
+                    </div>
+                )}
+
             </div>
 
             {(initialLoading && bannedUsers.length === 0 && !error) && (
@@ -413,6 +469,7 @@ const BannedUsers = () => {
                     targetPublicId={targetUserPublicId}
                     banData={banDataToManage}
                     onUpdateSuccess={handleBanUpdateSuccess}
+                    categorySlug={categorySlug}
                 />
             )}
 
@@ -424,6 +481,15 @@ const BannedUsers = () => {
                     title="Confirm Unban"
                     message={`Are you sure you want to unban user ${userToUnbanPublicId}? This action cannot be undone.`}
                     confirmButtonText="Unban"
+                />
+            )}
+
+            {showBanUserFlowModal && (
+                <BanUserFlowModal
+                    isOpen={showBanUserFlowModal}
+                    onClose={handleCloseBanUserFlowModal}
+                    categorySlug={categorySlug}
+                    onBanSuccess={handleUserBanSuccess}
                 />
             )}
         </div>
